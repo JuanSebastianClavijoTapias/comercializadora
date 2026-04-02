@@ -3,36 +3,6 @@
 {% block page_title %}Dashboard{% endblock %}
 {% block content %}
 
-<!-- PANEL DE FILTROS -->
-<div class="card border-0 shadow-sm mb-4" style="border-radius: 12px; background: var(--bg-light);">
-  <div class="card-body p-4">
-    <div class="row g-3 align-items-end">
-      <div class="col-md-3">
-        <label class="form-label fw-semibold small text-uppercase" style="color: var(--text-secondary); letter-spacing: 0.5px;">Desde</label>
-        <input type="date" class="form-control" id="fechaInicio" style="border-radius: 8px; border: 1px solid var(--border-light); padding: 0.75rem 1rem;">
-      </div>
-      <div class="col-md-3">
-        <label class="form-label fw-semibold small text-uppercase" style="color: var(--text-secondary); letter-spacing: 0.5px;">Hasta</label>
-        <input type="date" class="form-control" id="fechaFin" style="border-radius: 8px; border: 1px solid var(--border-light); padding: 0.75rem 1rem;">
-      </div>
-      <div class="col-md-3">
-        <label class="form-label fw-semibold small text-uppercase" style="color: var(--text-secondary); letter-spacing: 0.5px;">Estado</label>
-        <select class="form-select" id="estadoFiltro" style="border-radius: 8px; border: 1px solid var(--border-light); padding: 0.75rem 1rem;">
-          <option value="">Todos</option>
-          <option value="completado">Completado</option>
-          <option value="pendiente">Pendiente</option>
-          <option value="cancelado">Cancelado</option>
-        </select>
-      </div>
-      <div class="col-md-3">
-        <button class="btn btn-sm w-100" style="background: var(--orange-primary); color: white; border-radius: 8px; border: none; padding: 0.75rem 1rem; font-weight: 600;">
-          <i class="bi bi-funnel me-2"></i>FiltrarRR
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
-
 <!-- KPI STAT CARDS -->
 <div class="row row-cols-1 row-cols-md-2 row-cols-xl-5 g-3 mb-4">
   <div class="col">

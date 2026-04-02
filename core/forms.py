@@ -53,24 +53,26 @@ class CategoriaGastoForm(forms.ModelForm):
 class ViajeForm(forms.ModelForm):
     class Meta:
         model = Viaje
-        fields = ['proveedor', 'producto', 'fecha', 'observaciones']
+        fields = ['proveedor', 'producto', 'fecha', 'kg_bruto', 'kg_podridos', 'cantidad_canastillas_negras', 'cantidad_canastillas_colores', 'observaciones']
         widgets = {
             'proveedor': forms.Select(attrs={'class': 'form-select'}),
             'producto': forms.Select(attrs={'class': 'form-select'}),
             'fecha': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'kg_bruto': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'kg_podridos': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'cantidad_canastillas_negras': forms.NumberInput(attrs={'class': 'form-control', 'min': '0'}),
+            'cantidad_canastillas_colores': forms.NumberInput(attrs={'class': 'form-control', 'min': '0'}),
             'observaciones': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
         }
 
 class LoteClasificacionForm(forms.ModelForm):
     class Meta:
         model = LoteClasificacion
-        fields = ['clasificacion', 'precio_por_kg', 'kg_bruto', 'cantidad_canastillas_negras', 'cantidad_canastillas_colores']
+        fields = ['clasificacion', 'kg_neto', 'precio_por_kg']
         widgets = {
             'clasificacion': forms.Select(attrs={'class': 'form-select'}),
+            'kg_neto': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'precio_por_kg': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
-            'kg_bruto': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
-            'cantidad_canastillas_negras': forms.NumberInput(attrs={'class': 'form-control', 'min': '0'}),
-            'cantidad_canastillas_colores': forms.NumberInput(attrs={'class': 'form-control', 'min': '0'}),
         }
 
 class PagoProveedorForm(forms.ModelForm):

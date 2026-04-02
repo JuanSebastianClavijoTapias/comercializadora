@@ -50,12 +50,34 @@ class CategoriaGasto(models.Model):
         verbose_name = 'Categoría de Gasto'; verbose_name_plural = 'Categorías de Gasto'; ordering = ['nombre']
 
 class Viaje(models.Model):
+    PESO_CANASTILLA_NEGRA = Decimal('1.6')
+    PESO_CANASTILLA_COLOR = Decimal('2.2')
+
     proveedor = models.ForeignKey(Proveedor, on_delete=models.PROTECT, related_name='viajes', verbose_name='Proveedor')
     producto = models.ForeignKey(Producto, on_delete=models.PROTECT, related_name='viajes', verbose_name='Producto')
     fecha = models.DateField(verbose_name='Fecha')
     observaciones = models.TextField(blank=True, verbose_name='Observaciones')
+    
+    kg_bruto = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name='Kg Bruto Recibido')
+    kg_podridos = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name='Kg Podridos / Rechazo')
+    cantidad_canastillas_negras = models.IntegerField(default=0, verbose_name='Canastillas Negras')
+    cantidad_canastillas_colores = models.IntegerField(default=0, verbose_name='Canastillas Colores')
+    
     created_at = models.DateTimeField(auto_now_add=True)
     def __str__(self): return f"Viaje {self.producto} - {self.fecha} ({self.proveedor})"
+    
+    @property
+    def peso_canastillas(self):
+        return (Decimal(str(self.cantidad_canastillas_negras)) * self.PESO_CANASTILLA_NEGRA +
+                Decimal(str(self.cantidad_canastillas_colores)) * self.PESO_CANASTILLA_COLOR)
+
+    @property
+    def neto_a_pagar(self):
+        neto = self.kg_bruto - self.kg_podridos - self.peso_canastillas
+        if self.producto.tiene_descuento_gobierno and self.producto.porcentaje_descuento > 0:
+            neto = neto - (neto * self.producto.porcentaje_descuento / 100)
+        return max(neto, Decimal('0'))
+
     @property
     def total_kg_neto(self): return sum(lote.kg_neto for lote in self.lotes.all())
     @property
@@ -68,24 +90,11 @@ class Viaje(models.Model):
         verbose_name = 'Viaje'; verbose_name_plural = 'Viajes'; ordering = ['-fecha', '-created_at']
 
 class LoteClasificacion(models.Model):
-    PESO_CANASTILLA_NEGRA = Decimal('1.6')
-    PESO_CANASTILLA_COLOR = Decimal('2.2')
     viaje = models.ForeignKey(Viaje, on_delete=models.CASCADE, related_name='lotes', verbose_name='Viaje')
     clasificacion = models.ForeignKey(Clasificacion, on_delete=models.PROTECT, verbose_name='Clasificación')
+    kg_neto = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name='Kg Neto Clasificado')
     precio_por_kg = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Precio por kg')
-    kg_bruto = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Kg bruto (con canastillas)')
-    cantidad_canastillas_negras = models.IntegerField(default=0, verbose_name='Canastillas negras')
-    cantidad_canastillas_colores = models.IntegerField(default=0, verbose_name='Canastillas de colores')
-    @property
-    def peso_canastillas(self):
-        return (Decimal(str(self.cantidad_canastillas_negras)) * self.PESO_CANASTILLA_NEGRA +
-                Decimal(str(self.cantidad_canastillas_colores)) * self.PESO_CANASTILLA_COLOR)
-    @property
-    def kg_neto(self):
-        neto = self.kg_bruto - self.peso_canastillas
-        if self.viaje.producto.tiene_descuento_gobierno and self.viaje.producto.porcentaje_descuento > 0:
-            neto = neto - (neto * self.viaje.producto.porcentaje_descuento / 100)
-        return neto
+    
     @property
     def total(self): return self.kg_neto * self.precio_por_kg
     def __str__(self): return f"{self.clasificacion.nombre} - {self.kg_neto:.2f} kg neto"
