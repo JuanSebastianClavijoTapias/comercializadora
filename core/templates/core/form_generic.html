@@ -40,7 +40,11 @@
               <i class="bi bi-check2 me-1"></i> Guardar Cambios
             </button>
             {% if back_url %}
-            <a href="{% url back_url %}" class="btn btn-outline-secondary py-2 border-0 fw-semibold" style="color: var(--text-sec);"><i class="bi bi-x-circle me-1"></i> Cancelar</a>
+              {% if back_url_args %}
+              <a href="{% url back_url back_url_args|first %}" class="btn btn-outline-secondary py-2 border-0 fw-semibold" style="color: var(--text-sec);"><i class="bi bi-x-circle me-1"></i> Cancelar</a>
+              {% else %}
+              <a href="{% url back_url %}" class="btn btn-outline-secondary py-2 border-0 fw-semibold" style="color: var(--text-sec);"><i class="bi bi-x-circle me-1"></i> Cancelar</a>
+              {% endif %}
             {% else %}
             <a href="javascript:history.back()" class="btn btn-outline-secondary py-2 border-0 fw-semibold" style="color: var(--text-sec);"><i class="bi bi-x-circle me-1"></i> Cancelar</a>
             {% endif %}
@@ -78,6 +82,70 @@
       inputPrecio.addEventListener('input', updateTotal);
       updateTotal(); // initial check
     }
+
+    // Botón HOY para campos de fecha
+    const fechaInputs = document.querySelectorAll('input[type="date"]');
+    fechaInputs.forEach(input => {
+      const btnHoy = document.createElement('button');
+      btnHoy.type = 'button';
+      btnHoy.className = 'btn btn-outline-secondary btn-sm ms-2';
+      btnHoy.innerText = 'Hoy';
+      btnHoy.onclick = function() {
+        const today = new Date();
+        // Format to YYYY-MM-DD
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        input.value = `${yyyy}-${mm}-${dd}`;
+      };
+      
+      // Envolver el input y el botón
+      const wrapper = document.createElement('div');
+      wrapper.className = 'd-flex align-items-center';
+      input.parentNode.insertBefore(wrapper, input);
+      wrapper.appendChild(input);
+      wrapper.appendChild(btnHoy);
+    });
+
+    // Mostrar stock disponible de la clasificación seleccionada
+    const clasificacionSelects = document.querySelectorAll('select[id*="clasificacion"]');
+    clasificacionSelects.forEach(select => {
+      // Crear elemento para mostrar stock
+      const stockDisplay = document.createElement('div');
+      stockDisplay.className = 'alert alert-info mt-2 mb-2';
+      stockDisplay.style.display = 'none';
+      stockDisplay.innerHTML = '<strong>Stock disponible:</strong> <span id="stock_value">0</span> kg';
+      
+      // Insertar después del select
+      select.parentNode.insertBefore(stockDisplay, select.nextSibling);
+      
+      // Actualizar stock cuando cambia la clasificación
+      select.addEventListener('change', function() {
+        const optionSelected = this.options[this.selectedIndex];
+        const stockText = optionSelected.textContent;
+        
+        // Extraer el stock del formato "Producto - Clasificación (Stock: X kg)"
+        const stockMatch = stockText.match(/\(Stock:\s*([\d.]+)\s*kg\)/);
+        if (stockMatch) {
+          const stock = parseFloat(stockMatch[1]);
+          stockDisplay.querySelector('#stock_value').textContent = stock.toFixed(2);
+          stockDisplay.style.display = 'block';
+          
+          // Validar que el kg_vendido no exceda el stock
+          if (inputKg && parseFloat(inputKg.value) > stock) {
+            inputKg.value = '';
+            alert(`No puedes vender más de ${stock} kg disponibles`);
+          }
+        } else {
+          stockDisplay.style.display = 'none';
+        }
+      });
+      
+      // Trigger inicial si hay selección
+      if (select.value) {
+        select.dispatchEvent(new Event('change'));
+      }
+    });
   });
 </script>
 {% endblock %}

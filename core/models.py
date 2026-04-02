@@ -39,7 +39,9 @@ class Clasificacion(models.Model):
     nombre = models.CharField(max_length=100, verbose_name='Nombre clasificación')
     orden = models.IntegerField(default=1, verbose_name='Orden')
     activo = models.BooleanField(default=True, verbose_name='Activa')
-    def __str__(self): return f"{self.producto.nombre} - {self.nombre}"
+    stock_kg = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name='Stock (Kg)')
+    
+    def __str__(self): return f"{self.producto.nombre} - {self.nombre} (Stock: {self.stock_kg} kg)"
     class Meta:
         verbose_name = 'Clasificación'; verbose_name_plural = 'Clasificaciones'; ordering = ['producto', 'orden']
 
@@ -62,6 +64,7 @@ class Viaje(models.Model):
     kg_podridos = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name='Kg Podridos / Rechazo')
     cantidad_canastillas_negras = models.IntegerField(default=0, verbose_name='Canastillas Negras')
     cantidad_canastillas_colores = models.IntegerField(default=0, verbose_name='Canastillas Colores')
+    precio_total_acordado = models.DecimalField(max_digits=12, decimal_places=2, default=0, verbose_name='Precio Total Acordado')
     
     created_at = models.DateTimeField(auto_now_add=True)
     def __str__(self): return f"Viaje {self.producto} - {self.fecha} ({self.proveedor})"
@@ -81,7 +84,7 @@ class Viaje(models.Model):
     @property
     def total_kg_neto(self): return sum(lote.kg_neto for lote in self.lotes.all())
     @property
-    def total_valor(self): return sum(lote.total for lote in self.lotes.all())
+    def total_valor(self): return self.precio_total_acordado
     @property
     def total_pagado(self): return sum(p.monto for p in self.pagos_proveedor.all())
     @property
@@ -93,10 +96,7 @@ class LoteClasificacion(models.Model):
     viaje = models.ForeignKey(Viaje, on_delete=models.CASCADE, related_name='lotes', verbose_name='Viaje')
     clasificacion = models.ForeignKey(Clasificacion, on_delete=models.PROTECT, verbose_name='Clasificación')
     kg_neto = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name='Kg Neto Clasificado')
-    precio_por_kg = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Precio por kg')
     
-    @property
-    def total(self): return self.kg_neto * self.precio_por_kg
     def __str__(self): return f"{self.clasificacion.nombre} - {self.kg_neto:.2f} kg neto"
     class Meta:
         verbose_name = 'Lote por Clasificación'; verbose_name_plural = 'Lotes por Clasificación'
@@ -116,6 +116,7 @@ class Gasto(models.Model):
     descripcion = models.CharField(max_length=300, verbose_name='Descripción')
     monto = models.DecimalField(max_digits=12, decimal_places=2, verbose_name='Monto')
     fecha = models.DateField(verbose_name='Fecha')
+    pago_proveedor = models.OneToOneField(PagoProveedor, on_delete=models.CASCADE, null=True, blank=True, related_name='gasto_generado', verbose_name='Pago Proveedor (vinculado)')
     def __str__(self): return f"{self.descripcion} - ${self.monto}"
     class Meta:
         verbose_name = 'Gasto'; verbose_name_plural = 'Gastos'; ordering = ['-fecha']
@@ -195,3 +196,93 @@ class DetalleInventario(models.Model):
     def __str__(self): return f"{self.clasificacion} - {self.kg_restante} kg restante"
     class Meta:
         verbose_name = 'Detalle de Inventario'; verbose_name_plural = 'Detalles de Inventario'
+
+# ------------- SEÑALES PARA INVENTARIO (STOCK) -------------
+from django.db.models.signals import pre_save, post_save, post_delete
+from django.dispatch import receiver
+from django.db.models import F
+
+@receiver(pre_save, sender=LoteClasificacion)
+def captura_anterior_lote(sender, instance, **kwargs):
+    if instance.pk:
+        orig = LoteClasificacion.objects.get(pk=instance.pk)
+        instance._old_kg_neto = orig.kg_neto
+    else:
+        instance._old_kg_neto = Decimal('0')
+
+@receiver(post_save, sender=LoteClasificacion)
+def actualiza_stock_lote_save(sender, instance, created, **kwargs):
+    # Cuando entra mercancia al LoteClasificacion, SUMA al stock
+    diff = instance.kg_neto - getattr(instance, '_old_kg_neto', Decimal('0'))
+    if diff != 0 and instance.clasificacion:
+        instance.clasificacion.stock_kg = F('stock_kg') + diff
+        instance.clasificacion.save(update_fields=['stock_kg'])
+
+@receiver(post_delete, sender=LoteClasificacion)
+def actualiza_stock_lote_delete(sender, instance, **kwargs):
+    if instance.clasificacion:
+        instance.clasificacion.stock_kg = F('stock_kg') - instance.kg_neto
+        instance.clasificacion.save(update_fields=['stock_kg'])
+
+@receiver(pre_save, sender=VentaEfectivo)
+def captura_anterior_venta_efectivo(sender, instance, **kwargs):
+    if instance.pk:
+        orig = VentaEfectivo.objects.get(pk=instance.pk)
+        instance._old_kg_vendido = orig.kg_vendido
+        instance._old_clasificacion = orig.clasificacion
+    else:
+        instance._old_kg_vendido = Decimal('0')
+        instance._old_clasificacion = None
+
+@receiver(post_save, sender=VentaEfectivo)
+def actualiza_stock_venta_efectivo_save(sender, instance, created, **kwargs):
+    # Venta RESTA al stock
+    if instance._old_clasificacion and instance._old_clasificacion != instance.clasificacion:
+        # Devolvió stock al anterior
+        instance._old_clasificacion.stock_kg = F('stock_kg') + instance._old_kg_vendido
+        instance._old_clasificacion.save(update_fields=['stock_kg'])
+        # Resta todo al nuevo
+        if instance.clasificacion:
+            instance.clasificacion.stock_kg = F('stock_kg') - instance.kg_vendido
+            instance.clasificacion.save(update_fields=['stock_kg'])
+    else:
+        diff = instance.kg_vendido - getattr(instance, '_old_kg_vendido', Decimal('0'))
+        if diff != 0 and instance.clasificacion:
+            instance.clasificacion.stock_kg = F('stock_kg') - diff
+            instance.clasificacion.save(update_fields=['stock_kg'])
+
+@receiver(post_delete, sender=VentaEfectivo)
+def actualiza_stock_venta_efectivo_delete(sender, instance, **kwargs):
+    if instance.clasificacion:
+        instance.clasificacion.stock_kg = F('stock_kg') + instance.kg_vendido
+        instance.clasificacion.save(update_fields=['stock_kg'])
+
+@receiver(pre_save, sender=DetalleVentaCredito)
+def captura_anterior_venta_credito(sender, instance, **kwargs):
+    if instance.pk:
+        orig = DetalleVentaCredito.objects.get(pk=instance.pk)
+        instance._old_kg_vendido = orig.kg_vendido
+        instance._old_clasificacion = orig.clasificacion
+    else:
+        instance._old_kg_vendido = Decimal('0')
+        instance._old_clasificacion = None
+
+@receiver(post_save, sender=DetalleVentaCredito)
+def actualiza_stock_venta_credito_save(sender, instance, created, **kwargs):
+    if instance._old_clasificacion and instance._old_clasificacion != instance.clasificacion:
+        instance._old_clasificacion.stock_kg = F('stock_kg') + instance._old_kg_vendido
+        instance._old_clasificacion.save(update_fields=['stock_kg'])
+        if instance.clasificacion:
+            instance.clasificacion.stock_kg = F('stock_kg') - instance.kg_vendido
+            instance.clasificacion.save(update_fields=['stock_kg'])
+    else:
+        diff = instance.kg_vendido - getattr(instance, '_old_kg_vendido', Decimal('0'))
+        if diff != 0 and instance.clasificacion:
+            instance.clasificacion.stock_kg = F('stock_kg') - diff
+            instance.clasificacion.save(update_fields=['stock_kg'])
+
+@receiver(post_delete, sender=DetalleVentaCredito)
+def actualiza_stock_venta_credito_delete(sender, instance, **kwargs):
+    if instance.clasificacion:
+        instance.clasificacion.stock_kg = F('stock_kg') + instance.kg_vendido
+        instance.clasificacion.save(update_fields=['stock_kg'])

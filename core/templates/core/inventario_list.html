@@ -3,34 +3,6 @@
 {% block page_title %}Liquidación de Inventario{% endblock %}
 {% block content %}
 
-<!-- FILTROS -->
-<div class="card border-0 shadow-sm mb-4" style="border-radius: 12px; background: var(--bg-light);">
-  <div class="card-body p-4">
-    <h6 class="fw-bold mb-4" style="color: var(--text-main); font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.5px;">
-      <i class="bi bi-funnel me-2"></i>Filtros de Búsqueda
-    </h6>
-    <div class="row g-3">
-      <div class="col-md-2">
-        <label class="form-label fw-semibold small" style="color: var(--text-secondary);">Desde</label>
-        <input type="date" class="form-control" style="border-radius: 8px; border: 1px solid var(--border-light); padding: 0.75rem 1rem;">
-      </div>
-      <div class="col-md-2">
-        <label class="form-label fw-semibold small" style="color: var(--text-secondary);">Hasta</label>
-        <input type="date" class="form-control" style="border-radius: 8px; border: 1px solid var(--border-light); padding: 0.75rem 1rem;">
-      </div>
-      <div class="col-md-3">
-        <label class="form-label fw-semibold small" style="color: var(--text-secondary);">Período</label>
-        <input type="text" class="form-control" placeholder="Ej: Enero 2024..." style="border-radius: 8px; border: 1px solid var(--border-light); padding: 0.75rem 1rem;">
-      </div>
-      <div class="col-md-3 d-flex align-items-end gap-2">
-        <button class="btn w-100" style="background: var(--orange-primary); color: white; border-radius: 8px; border: none; padding: 0.75rem 1rem; font-weight: 600; font-size: 0.9rem;">
-          <i class="bi bi-search me-1"></i>Buscar
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
-
 <!-- ESTAD�?STICAS -->
 <div class="row row-cols-1 row-cols-md-3 g-3 mb-4">
   <div class="col">
@@ -110,8 +82,11 @@
           </td>
           <td class="text-end pe-2 text-muted small"><i class="bi bi-clock me-1"></i>{{ l.fecha_creacion|date:"d/m/Y H:i" }}</td>
           <td class="text-end pe-4">
-            <a href="{% url 'inventario_detail' l.pk %}" class="btn btn-sm" style="background-color: var(--bg-light); color: var(--orange-primary); border-radius: 6px; padding: 6px 10px; border: 1px solid var(--border-light);">
+            <a href="{% url 'inventario_detail' l.pk %}" class="btn btn-sm" style="background-color: var(--bg-light); color: var(--orange-primary); border-radius: 6px; padding: 6px 10px; border: 1px solid var(--border-light);" title="Ver Detalle">
               <i class="bi bi-eye"></i>
+            </a>
+            <a href="{% url 'inventario_delete' l.pk %}" class="btn btn-sm" style="background-color: #ffebee; color: #d32f2f; border-radius: 6px; padding: 6px 10px; border: 1px solid #ffcdd2; margin-left: 5px;" title="Eliminar Entrada">
+              <i class="bi bi-trash"></i>
             </a>
           </td>
         </tr>

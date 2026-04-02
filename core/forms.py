@@ -51,28 +51,36 @@ class CategoriaGastoForm(forms.ModelForm):
         widgets = {'nombre': forms.TextInput(attrs={'class': 'form-control'})}
 
 class ViajeForm(forms.ModelForm):
+    """Formulario simplificado para registrar nuevo viaje - solo datos básicos"""
     class Meta:
         model = Viaje
-        fields = ['proveedor', 'producto', 'fecha', 'kg_bruto', 'kg_podridos', 'cantidad_canastillas_negras', 'cantidad_canastillas_colores', 'observaciones']
+        fields = ['proveedor', 'producto', 'fecha', 'kg_bruto']
         widgets = {
             'proveedor': forms.Select(attrs={'class': 'form-select'}),
             'producto': forms.Select(attrs={'class': 'form-select'}),
             'fecha': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'kg_bruto': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+        }
+
+class ViajeDetallesForm(forms.ModelForm):
+    """Formulario para editar detalles del viaje después de su creación"""
+    class Meta:
+        model = Viaje
+        fields = ['kg_podridos', 'cantidad_canastillas_negras', 'cantidad_canastillas_colores', 'precio_total_acordado']
+        widgets = {
             'kg_podridos': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'cantidad_canastillas_negras': forms.NumberInput(attrs={'class': 'form-control', 'min': '0'}),
             'cantidad_canastillas_colores': forms.NumberInput(attrs={'class': 'form-control', 'min': '0'}),
-            'observaciones': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+            'precio_total_acordado': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
         }
 
 class LoteClasificacionForm(forms.ModelForm):
     class Meta:
         model = LoteClasificacion
-        fields = ['clasificacion', 'kg_neto', 'precio_por_kg']
+        fields = ['clasificacion', 'kg_neto']
         widgets = {
             'clasificacion': forms.Select(attrs={'class': 'form-select'}),
             'kg_neto': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
-            'precio_por_kg': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
         }
 
 class PagoProveedorForm(forms.ModelForm):
@@ -110,9 +118,21 @@ class VentaEfectivoForm(forms.ModelForm):
             'precio_por_kg': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'id': 'id_precio_por_kg'}),
             'observaciones': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
         }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Asegurar que el queryset de clasificación muestre el stock en las opciones
+        self.fields['clasificacion'].queryset = Clasificacion.objects.filter(
+            activo=True
+        ).order_by('producto', 'orden')
 
 class VentaCreditoForm(forms.ModelForm):
-    clasificacion = forms.ModelChoiceField(queryset=Clasificacion.objects.all(), required=True, label='Clasificación', widget=forms.Select(attrs={'class': 'form-select'}))
+    clasificacion = forms.ModelChoiceField(
+        queryset=Clasificacion.objects.filter(activo=True).order_by('producto', 'orden'), 
+        required=True, 
+        label='Clasificación', 
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
     kg_vendido = forms.DecimalField(max_digits=10, decimal_places=2, required=True, label='Kg vendido', widget=forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'id': 'id_kg_vendido_c'}))
     precio_por_kg = forms.DecimalField(max_digits=10, decimal_places=2, required=True, label='Precio por kg', widget=forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'id': 'id_precio_por_kg_c'}))
 

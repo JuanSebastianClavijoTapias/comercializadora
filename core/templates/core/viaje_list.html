@@ -143,6 +143,9 @@
             <a href="{% url 'viaje_detail' v.pk %}" class="btn btn-sm" style="background-color: var(--bg-light); color: var(--orange-primary); border-radius: 6px; padding: 6px 10px; border: 1px solid var(--border-light);" title="Ver Detalle">
               <i class="bi bi-eye"></i>
             </a>
+            <a href="{% url 'viaje_delete' v.pk %}" class="btn btn-sm" style="background-color: #ffebee; color: #d32f2f; border-radius: 6px; padding: 6px 10px; border: 1px solid #ffcdd2; margin-left: 5px;" title="Eliminar Viaje">
+              <i class="bi bi-trash"></i>
+            </a>
           </td>
         </tr>
         {% empty %}

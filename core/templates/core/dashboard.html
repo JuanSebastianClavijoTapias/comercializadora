@@ -74,8 +74,13 @@
   <!-- GRÁFICO: Ventas vs Gastos -->
   <div class="col-lg-8">
     <div class="card border-0 shadow-sm" style="border-radius: 12px; overflow: hidden; height: 100%;">
-      <div class="card-header bg-orange py-3 border-bottom-0" style="background: var(--orange-primary); color: white;">
+      <div class="card-header bg-orange py-3 border-bottom-0" style="background: var(--orange-primary); color: white; display: flex; justify-content: space-between; align-items: center;">
         <h6 class="mb-0 fw-bold"><i class="bi bi-graph-up me-2"></i>Ventas vs Gastos (Últimos 7 días)</h6>
+        <div class="btn-group btn-group-sm" role="group">
+            <button type="button" class="btn btn-sm" id="btn-efectivo" onclick="cambiarGrafico('efectivo')" style="background-color: rgba(255, 255, 255, 0.2); color: white; border-color: white;"><i class="bi bi-cash-coin me-1"></i>Efectivo</button>
+            <button type="button" class="btn btn-sm" id="btn-credito" onclick="cambiarGrafico('credito')" style="background-color: rgba(255, 255, 255, 0.2); color: white; border-color: white;"><i class="bi bi-credit-card me-1"></i>Crédito</button>
+            <button type="button" class="btn btn-sm active" id="btn-total" onclick="cambiarGrafico('total')" style="background-color: rgba(255, 255, 255, 0.4); color: white; border-color: white; font-weight: 600;"><i class="bi bi-graph-up me-1"></i>Total</button>
+          </div>
       </div>
       <div class="card-body p-4">
         <div style="position: relative; height: 250px; width: 100%;">
@@ -311,18 +316,54 @@
 
 <!-- SCRIPT: Chart.js Initialization -->
 <script>
+  let chartVentasGastos = null;
+  
+  function cambiarGrafico(tipo) {
+    // Actualizar botones activos
+    document.getElementById('btn-efectivo').classList.remove('active');
+    document.getElementById('btn-credito').classList.remove('active');
+    document.getElementById('btn-total').classList.remove('active');
+    
+    if (tipo === 'efectivo') {
+      document.getElementById('btn-efectivo').classList.add('active');
+      // Mostrar solo Efectivo y Gastos
+      chartVentasGastos.data.datasets[0].hidden = false;  // Efectivo
+      chartVentasGastos.data.datasets[1].hidden = true;   // Crédito
+      chartVentasGastos.data.datasets[2].hidden = false;  // Gastos
+    } else if (tipo === 'credito') {
+      document.getElementById('btn-credito').classList.add('active');
+      // Mostrar solo Crédito y Gastos
+      chartVentasGastos.data.datasets[0].hidden = true;   // Efectivo
+      chartVentasGastos.data.datasets[1].hidden = false;  // Crédito
+      chartVentasGastos.data.datasets[2].hidden = false;  // Gastos
+    } else {
+      document.getElementById('btn-total').classList.add('active');
+      // Mostrar Efectivo, Crédito y Gastos
+      chartVentasGastos.data.datasets[0].hidden = false;  // Efectivo
+      chartVentasGastos.data.datasets[1].hidden = false;  // Crédito
+      chartVentasGastos.data.datasets[2].hidden = false;  // Gastos
+    }
+    
+    chartVentasGastos.update();
+  }
+
   document.addEventListener('DOMContentLoaded', function() {
     // CHART 1: Ventas vs Gastos (Últimos 7 días)
     const ventasCtx = document.getElementById('ventasGastosChart');
     if (ventasCtx) {
-      new Chart(ventasCtx, {
+      // Datos reales del servidor
+      const datosServer = {{ ventas_gastos_data|safe }};
+      
+      console.log('Datos gráfico:', datosServer);
+      
+      chartVentasGastos = new Chart(ventasCtx, {
         type: 'line',
         data: {
-          labels: ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'],
+          labels: datosServer.labels,
           datasets: [
             {
               label: 'Ventas Efectivo ($)',
-              data: [1200, 1500, 1100, 1800, 2100, 1600, 1950],
+              data: datosServer.ventas_efectivo,
               borderColor: '#4CAF50',
               backgroundColor: 'rgba(76, 175, 80, 0.1)',
               borderWidth: 3,
@@ -334,8 +375,21 @@
               fill: true
             },
             {
+              label: 'Ventas Crédito ($)',
+              data: datosServer.ventas_credito,
+              borderColor: '#1976D2',
+              backgroundColor: 'rgba(25, 118, 210, 0.1)',
+              borderWidth: 3,
+              tension: 0.4,
+              pointRadius: 5,
+              pointBackgroundColor: '#1976D2',
+              pointBorderColor: 'white',
+              pointBorderWidth: 2,
+              fill: true
+            },
+            {
               label: 'Gastos ($)',
-              data: [300, 400, 350, 500, 450, 380, 420],
+              data: datosServer.gastos,
               borderColor: '#FF6B35',
               backgroundColor: 'rgba(255, 107, 53, 0.1)',
               borderWidth: 3,
@@ -372,16 +426,23 @@
           }
         }
       });
+      
+      // Configurar estado inicial (mostrar solo Efectivo y Gastos)
+      chartVentasGastos.data.datasets[1].hidden = true;  // Crédito oculto
     }
 
     // CHART 2: Distribución de Ingresos (Pie)
     const ingresoCtx = document.getElementById('ingresosPieChart');
     if (ingresoCtx) {
-      // Usar defaults validos para JS. Extraer como string y parsear a Float para evitar "SyntaxError" por renderizado de Django (separadores, nulos, etc). 
-      let valEfectivo = "{{ total_efectivo|default:'0' }}";
-      let valCredito = "{{ total_credito_hoy|default:'0' }}";
-      let v_efectivo = parseFloat(valEfectivo.replace(/,/g, '')) || 0;
-      let v_credito = parseFloat(valCredito.replace(/,/g, '')) || 0;
+      // Usar los valores exactos como vienen del contexto (ya con formato)
+      let valEfectivo = "{{ total_efectivo|floatformat:0|default:'0' }}";
+      let valCredito = "{{ total_credito_hoy|floatformat:0|default:'0' }}";
+      
+      // Remover separadores de miles (puntos y comas)
+      let v_efectivo = parseFloat(valEfectivo.replace(/\./g, '').replace(/,/g, '')) || 0;
+      let v_credito = parseFloat(valCredito.replace(/\./g, '').replace(/,/g, '')) || 0;
+      
+      console.log('Valores del gráfico - Efectivo: ' + v_efectivo + ', Crédito: ' + v_credito);
       
       new Chart(ingresoCtx, {
         type: 'doughnut',

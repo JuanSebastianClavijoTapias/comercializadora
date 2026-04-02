@@ -20,11 +20,11 @@
   <div class="card-header py-2 fw-semibold"><i class="bi bi-table me-2"></i>Detalle por Clasificación</div>
   <div class="card-body p-0">
     <table class="table table-hover mb-0">
-      <thead><tr><th>Producto</th><th>Clasificación</th><th>Kg Ingresado</th><th>Kg Vendido</th><th>Kg Restante</th><th>Precio/kg</th><th>Total</th></tr></thead>
+      <thead><tr><th>Producto</th><th>Clasificación</th><th>Kg Ingresado</th><th>Kg Vendido</th><th>Kg Restante</th><th>Precio/kg</th><th>Total</th><th class="text-end pe-3">Acciones</th></tr></thead>
       <tbody>
       {% regroup detalles by clasificacion.producto as por_producto %}
       {% for grupo in por_producto %}
-      <tr class="table-light"><td colspan="7" class="fw-bold text-success"><i class="bi bi-box-seam me-2"></i>{{ grupo.grouper }}</td></tr>
+      <tr class="table-light"><td colspan="8" class="fw-bold text-success"><i class="bi bi-box-seam me-2"></i>{{ grupo.grouper }}</td></tr>
       {% for d in grupo.list %}
       <tr>
         <td></td>
@@ -34,6 +34,14 @@
         <td class="fw-bold">{{ d.kg_restante|default:0|floatformat:2 }} kg</td>
         <td>${{ d.precio_por_kg }}</td>
         <td class="fw-bold text-warning">${{ d.total|default:0|floatformat:0 }}</td>
+        <td class="text-end pe-3">
+          <a href="{% url 'detalle_inventario_edit' d.pk %}" class="btn btn-sm" style="background-color: var(--bg-light); color: var(--orange-primary); border-radius: 6px; padding: 6px 10px; border: 1px solid var(--border-light);" title="Editar">
+            <i class="bi bi-pencil"></i>
+          </a>
+          <a href="{% url 'detalle_inventario_delete' d.pk %}" class="btn btn-sm" style="background-color: #ffebee; color: #d32f2f; border-radius: 6px; padding: 6px 10px; border: 1px solid #ffcdd2; margin-left: 3px;" title="Eliminar">
+            <i class="bi bi-trash"></i>
+          </a>
+        </td>
       </tr>
       {% endfor %}
       {% endfor %}

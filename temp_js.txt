@@ -1,0 +1,51 @@
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const inputsNeto = document.querySelectorAll('.neto-input');
+      const inputsPrecio = document.querySelectorAll('.precio-input');
+      
+      // Obtenemos el total de Kilos netos reales a pagar del viaje (reemplazando comas por puntos en caso de coma decimal)
+      const netoPagableStr = '{{ viaje.neto_a_pagar|stringformat:"f" }}';
+      const netoPagable = parseFloat(netoPagableStr.replace(',', '.')) || 0;
+      
+>     function calcularTotales() {
+        let sumaKg = 0;
+        let sumaDinero = 0;
+        
+        inputsNeto.forEach((input, index) => {
+          const kg = parseFloat(input.value) || 0;
+          const precio = parseFloat(inputsPrecio[index].value) || 0;
+          
+          sumaKg += kg;
+          const totalFila = kg * precio;
+          sumaDinero += totalFila;
+          
+          // Actualizar el total de la fila localmente
+          const rowTotalTd = input.closest('tr').querySelector('.total-row');
+          rowTotalTd.innerText = '$' + totalFila.toLocaleString('es-CO', {maximumFractionDigits:0});
+        });
+        
+        // Actualizar los totales globales (footer de la tabla)
+        document.getElementById('total_kg_distribuido').innerText = sumaKg.toFixed(2) + ' kg';
+        document.getElementById('total_dinero_calculado').innerText = '$' + sumaDinero.toLocaleString('es-CO', {maximumFractionDigits:0});
+        
+        // Validacion frente al total a pagar
+        const faltan = netoPagable - sumaKg;
+        const badgeRestante = document.getElementById('kilos_restantes_badge');
+        const errMsg = document.getElementById('error_msg');
+        const btnSubmit = document.getElementById('btn_guardar_clas');
+        
+        if (faltan < -0.1) {
+          // Excedido
+          badgeRestante.className = 'badge bg-danger';
+          badgeRestante.innerText = 'Excedido por: ' + Math.abs(faltan).toFixed(2) + ' kg';
+          errMsg.style.display = 'block';
+          btnSubmit.disabled = true;
+        } else if (faltan > 0.1) {
+          // Faltan kilos
+          badgeRestante.className = 'badge bg-warning text-dark';
+          badgeRestante.innerText = 'Faltan: ' + faltan.toFixed(2) + ' kg';
+          errMsg.style.display = 'none';
+          btnSubmit.disabled = false;
+        } else {
+          // Exacto

@@ -1,9 +1,11 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.db.models import Sum, Q
+from django.db.models import Sum, Q, F
 from django.utils import timezone
+from django.db import transaction
 from datetime import date, timedelta
+from decimal import Decimal
 from .models import *
 from .forms import *
 
@@ -58,6 +60,46 @@ def dashboard(request):
     ultimas_ventas.sort(key=lambda x: x['id'], reverse=True)
     ultimas_ventas_hoy_top = ultimas_ventas[:10]
     
+    # Datos para gráfico: Últimos 7 días
+    import json
+    ventas_efectivo_7dias = []
+    ventas_credito_7dias = []
+    ventas_totales_7dias = []
+    gastos_7dias = []
+    labels_dias = []
+    
+    for i in range(6, -1, -1):  # 6 días atrás hasta hoy
+        fecha_dia = hoy - timedelta(days=i)
+        
+        # Ventas efectivo
+        ventas_ef_dia = VentaEfectivo.objects.filter(fecha=fecha_dia)
+        total_ventas_ef_dia = sum(v.monto for v in ventas_ef_dia)
+        
+        # Ventas crédito
+        ventas_cr_dia = VentaCredito.objects.filter(fecha=fecha_dia)
+        total_ventas_cr_dia = sum(v.total for v in ventas_cr_dia)
+        
+        # Total ventas
+        total_ventas_dia = total_ventas_ef_dia + total_ventas_cr_dia
+        
+        # Gastos del día
+        gastos_dia = Gasto.objects.filter(fecha=fecha_dia)
+        total_gastos_dia = sum(g.monto for g in gastos_dia)
+        
+        ventas_efectivo_7dias.append(int(total_ventas_ef_dia))
+        ventas_credito_7dias.append(int(total_ventas_cr_dia))
+        ventas_totales_7dias.append(int(total_ventas_dia))
+        gastos_7dias.append(int(total_gastos_dia))
+        labels_dias.append(fecha_dia.strftime('%a'))  # Lunes, Martes, etc
+    
+    ventas_gastos_data = {
+        'labels': labels_dias,
+        'ventas_efectivo': ventas_efectivo_7dias,
+        'ventas_credito': ventas_credito_7dias,
+        'ventas_totales': ventas_totales_7dias,
+        'gastos': gastos_7dias
+    }
+    
     pago_form = PagoVentaCreditoForm()
     
     ctx = {
@@ -76,6 +118,7 @@ def dashboard(request):
         'num_abonos': abonos_hoy.count(),
         'num_ventas_credito': ventas_credito_hoy.count(),
         'pago_form': pago_form,
+        'ventas_gastos_data': json.dumps(ventas_gastos_data),
     }
     return render(request, 'core/dashboard.html', ctx)
 
@@ -286,35 +329,51 @@ def viaje_detail(request, pk):
     if request.method == 'POST' and 'guardar_clasificaciones' in request.POST:
         for c in clasificaciones:
             kg_str = request.POST.get(f'kg_neto_{c.id}', '')
-            precio_str = request.POST.get(f'precio_por_kg_{c.id}', '')
             
             try:
                 kg_val = Decimal(kg_str) if kg_str.strip() else Decimal('0')
             except InvalidOperation:
                 kg_val = Decimal('0')
                 
-            try:
-                pr_val = Decimal(precio_str) if precio_str.strip() else Decimal('0')
-            except InvalidOperation:
-                pr_val = Decimal('0')
-                
-            if kg_val > 0 or pr_val > 0:
+            if kg_val > 0:
                 lote, created = LoteClasificacion.objects.get_or_create(
                     viaje=viaje, 
                     clasificacion=c, 
-                    defaults={'kg_neto': kg_val, 'precio_por_kg': pr_val}
+                    defaults={'kg_neto': kg_val}
                 )
                 if not created:
                     lote.kg_neto = kg_val
-                    lote.precio_por_kg = pr_val
                     lote.save()
             else:
                 if c.id in lotes_dict:
                     lotes_dict[c.id].delete()
-                    
-        messages.success(request, 'Clasificaciones y precios guardados.')
+        
+        # Guardar automáticamente en inventario
+        from django.utils import timezone
+        liq, _ = LiquidacionInventario.objects.get_or_create(
+            fecha_inicio=viaje.fecha,
+            fecha_fin=viaje.fecha,
+            defaults={'observaciones': f'Entrada de viaje {viaje.id}'}
+        )
+        
+        # Crear/actualizar detalles de inventario
+        for lote in viaje.lotes.all():
+            DetalleInventario.objects.filter(
+                liquidacion=liq,
+                clasificacion=lote.clasificacion
+            ).delete()
+            DetalleInventario.objects.create(
+                liquidacion=liq,
+                clasificacion=lote.clasificacion,
+                kg_ingresado=lote.kg_neto,
+                kg_vendido=Decimal('0'),
+                kg_restante=lote.kg_neto,
+                precio_por_kg=Decimal('0')
+            )
+        
+        messages.success(request, 'Clasificaciones guardadas y registradas en inventario.')
         return redirect('viaje_detail', pk=pk)
-
+    
     # Pre-build data for the template
     clases_data = []
     for c in clasificaciones:
@@ -322,27 +381,117 @@ def viaje_detail(request, pk):
         clases_data.append({
             'clasificacion': c,
             'kg_neto': float(ext_lote.kg_neto) if (ext_lote and ext_lote.kg_neto) else '',
-            'precio_por_kg': float(ext_lote.precio_por_kg) if (ext_lote and ext_lote.precio_por_kg) else ''
         })
-
+    
     pagos = viaje.pagos_proveedor.all()
     pago_form = PagoProveedorForm()
+    
+    # Pasar los lotes al contexto
+    total_kg_neto = sum(lote.kg_neto for lote in lotes)
+    
+    # Cálculos de desglose de peso para mostrar paso a paso
+    kg_bruto = Decimal(str(viaje.kg_bruto)) if viaje.kg_bruto else Decimal('0')
+    kg_podrido = Decimal(str(viaje.kg_podridos)) if viaje.kg_podridos else Decimal('0')
+    cant_neg = viaje.cantidad_canastillas_negras or 0
+    cant_col = viaje.cantidad_canastillas_colores or 0
+    
+    peso_can_negras = Decimal(str(cant_neg)) * Decimal('1.6')
+    peso_can_colores = Decimal(str(cant_col)) * Decimal('2.2')
+    
+    after_podrido = kg_bruto - kg_podrido
+    after_negras = after_podrido - peso_can_negras
+    neto_final = after_negras - peso_can_colores
+    
     ctx = {
         'viaje': viaje, 'clases_data': clases_data, 'pagos': pagos,
-        'pago_form': pago_form,
+        'pago_form': pago_form, 'lotes': lotes, 'total_kg_neto': total_kg_neto,
+        # Desglose de cálculos
+        'kg_bruto': float(kg_bruto),
+        'kg_podrido': float(kg_podrido),
+        'cant_neg': cant_neg,
+        'cant_col': cant_col,
+        'peso_can_negras': float(peso_can_negras),
+        'peso_can_colores': float(peso_can_colores),
+        'after_podrido': float(after_podrido),
+        'after_negras': float(after_negras),
+        'neto_final': float(neto_final),
     }
     return render(request, 'core/viaje_detail.html', ctx)
 
 @login_required
 def viaje_pago_add(request, pk):
+    """
+    Registra un pago al proveedor y automáticamente crea un gasto correspondiente.
+    Usa transacciones para garantizar atomicidad: si falla el gasto, el pago no se registra.
+    El gasto y el pago se vinculan con OneToOneField para sincronizar eliminaciones.
+    """
     viaje = get_object_or_404(Viaje, pk=pk)
     form = PagoProveedorForm(request.POST)
+    
     if form.is_valid():
-        pago = form.save(commit=False)
-        pago.viaje = viaje
-        pago.save()
-        messages.success(request, 'Pago registrado.')
+        try:
+            with transaction.atomic():
+                # Crear el pago
+                pago = form.save(commit=False)
+                pago.viaje = viaje
+                pago.save()
+                
+                # Obtener o crear la categoría "Pagos a Proveedores"
+                try:
+                    categoria_pagos = CategoriaGasto.objects.get(nombre='Pagos a Proveedores')
+                except CategoriaGasto.DoesNotExist:
+                    categoria_pagos = CategoriaGasto.objects.create(nombre='Pagos a Proveedores')
+                
+                # Crear automáticamente el gasto correspondiente
+                descripcion = f'Pago a {viaje.proveedor.nombre} - {viaje.producto.nombre}'
+                
+                gasto = Gasto.objects.create(
+                    categoria=categoria_pagos,
+                    descripcion=descripcion,
+                    monto=pago.monto,
+                    fecha=pago.fecha,
+                    pago_proveedor=pago
+                )
+                
+                messages.success(
+                    request, 
+                    f'Pago de ${pago.monto:,.2f} registrado correctamente. Gasto automático creado.'
+                )
+                
+        except Exception as e:
+            messages.error(
+                request, 
+                f'Error al registrar el pago: {str(e)}. Intente nuevamente.'
+            )
+    else:
+        messages.error(request, 'Datos de pago inválidos. Verifique los campos.')
+    
     return redirect('viaje_detail', pk=pk)
+
+@login_required
+def viaje_delete(request, pk):
+    viaje = get_object_or_404(Viaje, pk=pk)
+    if request.method == 'POST':
+        viaje.delete()
+        messages.success(request, 'Viaje eliminado satisfactoriamente.')
+        return redirect('viaje_list')
+    return render(request, 'core/confirm_delete.html', {'obj': viaje, 'tipo': 'Viaje', 'cancel_url': 'viaje_list'})
+
+@login_required
+def viaje_detalles_edit(request, pk):
+    """Editar detalles adicionales del viaje (rechazos, canastillas, precio)"""
+    viaje = get_object_or_404(Viaje, pk=pk)
+    form = ViajeDetallesForm(request.POST or None, instance=viaje)
+    if form.is_valid():
+        form.save()
+        messages.success(request, 'Detalles del viaje actualizados correctamente.')
+        return redirect('viaje_detail', pk=pk)
+    return render(request, 'core/form_generic.html', {
+        'form': form, 
+        'titulo': f'Editar Detalles - {viaje}', 
+        'back_url': 'viaje_detail',
+        'back_url_args': [pk]
+    })
 
 @login_required
 def lote_delete(request, pk):
@@ -354,10 +503,32 @@ def lote_delete(request, pk):
 
 @login_required
 def pago_proveedor_delete(request, pk):
+    """
+    Elimina un pago al proveedor.
+    Si hay un gasto vinculado, también se elimina automáticamente (por la relación OneToOneField).
+    """
     pago = get_object_or_404(PagoProveedor, pk=pk)
     viaje_pk = pago.viaje.pk
-    pago.delete()
-    messages.success(request, 'Pago eliminado.')
+    
+    try:
+        with transaction.atomic():
+            # Verificar si hay un gasto vinculado
+            tiene_gasto = hasattr(pago, 'gasto_generado') and pago.gasto_generado
+            
+            # Eliminar el pago (el gasto se elimina automáticamente por CASCADE)
+            pago.delete()
+            
+            if tiene_gasto:
+                messages.success(
+                    request, 
+                    'Pago y su gasto asociado eliminados correctamente.'
+                )
+            else:
+                messages.success(request, 'Pago eliminado correctamente.')
+                
+    except Exception as e:
+        messages.error(request, f'Error al eliminar el pago: {str(e)}')
+    
     return redirect('viaje_detail', pk=viaje_pk)
 
 # ---- GASTOS ----
@@ -413,6 +584,10 @@ def venta_efectivo_list(request):
     if form.is_valid():
         venta = form.save(commit=False)
         venta.monto = venta.kg_vendido * venta.precio_por_kg
+        # Validar que hay stock disponible
+        if venta.clasificacion and venta.kg_vendido > venta.clasificacion.stock_kg:
+            messages.error(request, f'No hay suficiente stock. Disponible: {venta.clasificacion.stock_kg} kg')
+            return render(request, 'core/form_generic.html', {'form': form, 'titulo': 'Nueva Venta en Efectivo', 'back_url': 'venta_efectivo_list'})
         venta.save()
         messages.success(request, 'Venta en efectivo registrada.')
         return redirect(f'/ventas/efectivo/?fecha={fecha}')
@@ -454,11 +629,19 @@ def venta_credito_list(request):
 def venta_credito_create(request):
     form = VentaCreditoForm(request.POST or None)
     if form.is_valid():
+        clasificacion = form.cleaned_data['clasificacion']
+        kg_vendido = form.cleaned_data['kg_vendido']
+        
+        # Validar stock disponible
+        if kg_vendido > clasificacion.stock_kg:
+            messages.error(request, f'No hay suficiente stock. Disponible: {clasificacion.stock_kg} kg')
+            return render(request, 'core/venta_credito_form.html', {'form': form})
+        
         venta = form.save()
         DetalleVentaCredito.objects.create(
             venta=venta,
-            clasificacion=form.cleaned_data['clasificacion'],
-            kg_vendido=form.cleaned_data['kg_vendido'],
+            clasificacion=clasificacion,
+            kg_vendido=kg_vendido,
             precio_por_kg=form.cleaned_data['precio_por_kg']
         )
         
@@ -605,6 +788,66 @@ def inventario_detail(request, pk):
     liq = get_object_or_404(LiquidacionInventario, pk=pk)
     detalles = liq.detalles.select_related('clasificacion__producto').all()
     return render(request, 'core/inventario_detail.html', {'liq': liq, 'detalles': detalles})
+
+@login_required
+def inventario_delete(request, pk):
+    liq = get_object_or_404(LiquidacionInventario, pk=pk)
+    if request.method == 'POST':
+        liq.delete()
+        messages.success(request, 'Liquidación de Inventario eliminada satisfactoriamente.')
+        return redirect('inventario_list')
+    return render(request, 'core/confirm_delete.html', {'obj': liq, 'tipo': 'Liquidación de Inventario', 'cancel_url': 'inventario_list'})
+
+@login_required
+def detalle_inventario_edit(request, pk):
+    detalle = get_object_or_404(DetalleInventario, pk=pk)
+    liq_id = detalle.liquidacion.pk
+    
+    if request.method == 'POST':
+        # Si la diferencia de kg_restante es positiva, suma al stock. Si es negativa, resta.
+        diff_kg = detalle.kg_restante - Decimal(request.POST.get('kg_restante', '0'))
+        detalle.kg_restante = Decimal(request.POST.get('kg_restante', '0'))
+        detalle.kg_ingresado = Decimal(request.POST.get('kg_ingresado', '0'))
+        detalle.kg_vendido = Decimal(request.POST.get('kg_vendido', '0'))
+        detalle.precio_por_kg = Decimal(request.POST.get('precio_por_kg', '0')) if request.POST.get('precio_por_kg') else Decimal('0')
+        detalle.save()
+        
+        # Actualizar stock de la clasificación
+        if diff_kg != 0 and detalle.clasificacion:
+            detalle.clasificacion.stock_kg = F('stock_kg') - diff_kg
+            detalle.clasificacion.save(update_fields=['stock_kg'])
+        
+        messages.success(request, 'Detalle de inventario actualizado.')
+        return redirect('inventario_detail', pk=liq_id)
+    
+    ctx = {
+        'detalle': detalle,
+        'liq': detalle.liquidacion,
+    }
+    return render(request, 'core/detalle_inventario_form.html', ctx)
+
+@login_required
+def detalle_inventario_delete(request, pk):
+    detalle = get_object_or_404(DetalleInventario, pk=pk)
+    liq_id = detalle.liquidacion.pk
+    
+    if request.method == 'POST':
+        # Devolver los kg al stock de la clasificación
+        if detalle.clasificacion:
+            detalle.clasificacion.stock_kg = F('stock_kg') + detalle.kg_restante
+            detalle.clasificacion.save(update_fields=['stock_kg'])
+        
+        detalle.delete()
+        messages.success(request, 'Detalle de inventario eliminado.')
+        return redirect('inventario_detail', pk=liq_id)
+    
+    ctx = {
+        'obj': detalle,
+        'titulo': 'Eliminar Detalle de Inventario',
+        'back_url': 'inventario_detail',
+        'back_url_id': liq_id,
+    }
+    return render(request, 'core/confirm_delete.html', ctx)
 
 # ---- REPORTES ----
 @login_required

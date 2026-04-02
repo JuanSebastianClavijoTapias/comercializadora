@@ -1,0 +1,73 @@
+{% extends "core/base.html" %}
+
+{% block title %}
+Editar Detalle de Inventario - {{ detalle.clasificacion.producto.nombre }}
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h2>Editar Detalle de Inventario</h2>
+            <small class="text-muted">Clasificación: <strong>{{ detalle.clasificacion }}</strong></small>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <form method="post" class="form">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="id_kg_ingresado" class="form-label">KG Ingresado</label>
+                            <input type="number" name="kg_ingresado" id="id_kg_ingresado" class="form-control" 
+                                   step="0.01" required value="{{ detalle.kg_ingresado }}">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="id_kg_vendido" class="form-label">KG Vendido</label>
+                            <input type="number" name="kg_vendido" id="id_kg_vendido" class="form-control" 
+                                   step="0.01" required value="{{ detalle.kg_vendido }}">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="id_kg_restante" class="form-label">KG Restante</label>
+                            <input type="number" name="kg_restante" id="id_kg_restante" class="form-control" 
+                                   step="0.01" required value="{{ detalle.kg_restante }}">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="id_precio_por_kg" class="form-label">Precio por KG</label>
+                            <input type="number" name="precio_por_kg" id="id_precio_por_kg" class="form-control" 
+                                   step="0.01" value="{% if detalle.precio_por_kg %}{{ detalle.precio_por_kg }}{% endif %}">
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                            <a href="{% url 'inventario_detail' liq.pk %}" class="btn btn-secondary">Cancelar</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-info">
+                    <h6 class="mb-0">Información del Inventario</h6>
+                </div>
+                <div class="card-body">
+                    <p><strong>Liquidación:</strong> {{ liq.viaje.codigo }} - {{ liq.viaje.fecha }}</p>
+                    <p><strong>Producto:</strong> {{ detalle.clasificacion.producto.nombre }}</p>
+                    <p><strong>Clasificación:</strong> {{ detalle.clasificacion.clasificacion }}</p>
+                    <p><strong>Stock Actual:</strong> {{ detalle.clasificacion.stock_kg }} kg</p>
+                    <hr>
+                    <p><small class="text-muted">Nota: Al editar los kg, el stock se actualizará automáticamente.</small></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
