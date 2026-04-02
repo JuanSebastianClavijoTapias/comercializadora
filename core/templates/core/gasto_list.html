@@ -1,0 +1,177 @@
+{% extends 'core/base.html' %}
+{% block title %}Gastos{% endblock %}
+{% block page_title %}Gastos Diarios{% endblock %}
+{% block content %}
+
+<!-- ESTAD�?STICAS DE GASTOS -->
+<div class="row row-cols-1 row-cols-md-3 g-3 mb-4">
+  <div class="col">
+    <div class="stat-card-white h-100">
+      <div>
+        <div class="small fw-semibold">Total Gastos Hoy</div>
+        <div class="fs-4 fw-bold">${{ total|default:0|floatformat:0 }}</div>
+        <div class="small">{{ num_gastos|default:0 }} Registros</div>
+      </div>
+      <div class="stat-icon-wrapper" style="background: rgba(211, 47, 47, 0.2); color: #d32f2f;">
+        <i class="bi bi-receipt"></i>
+      </div>
+    </div>
+  </div>
+  <div class="col">
+    <div class="stat-card-white h-100">
+      <div>
+        <div class="small fw-semibold">Gasto Promedio</div>
+        <div class="fs-4 fw-bold">${{ gasto_promedio|default:0|floatformat:0 }}</div>
+        <div class="small">Por registro</div>
+      </div>
+      <div class="stat-icon-wrapper" style="background: rgba(255, 107, 53, 0.2); color: var(--orange-primary);">
+        <i class="bi bi-calculator"></i>
+      </div>
+    </div>
+  </div>
+  <div class="col">
+    <div class="stat-card-white h-100">
+      <div>
+        <div class="small fw-semibold">Mayor Gasto</div>
+        <div class="fs-4 fw-bold">${{ gasto_maximo|default:0|floatformat:0 }}</div>
+        <div class="small">Categoría</div>
+      </div>
+      <div class="stat-icon-wrapper" style="background: rgba(63, 81, 181, 0.2); color: #3f51b5;">
+        <i class="bi bi-exclamation-circle-fill"></i>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- FORMULARIO PARA REGISTRAR GASTO -->
+  <div class="col-md-5">
+    <div class="card border-0 shadow-sm" style="border-radius: 12px; overflow: hidden;">
+      <div class="card-header py-4 bg-white border-bottom-0 d-flex align-items-center">
+        <div class="stat-icon-wrapper d-inline-flex me-3 shadow-sm" style="width: 36px; height: 36px; font-size: 1.1rem; background: var(--bg-base); color: #d32f2f;">
+          <i class="bi bi-plus-circle"></i>
+        </div>
+        <h6 class="mb-0 fw-bold" style="color: var(--text-main);">Registrar Gasto</h6>
+      </div>
+      <div class="card-body px-4 pb-4 pt-1">
+        <form method="post" action="">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label class="form-label fw-semibold small text-uppercase" style="color: var(--text-secondary); letter-spacing: 0.5px;">Fecha</label>
+            <input type="date" name="fecha" value="{{ fecha }}" class="form-control" style="border-radius: 8px; border: 1px solid var(--border-light); padding: 0.75rem 1rem;">
+          </div>
+          {% for field in form %}
+            {% if field.name != 'fecha' %}
+            <div class="mb-3">
+              <label class="form-label fw-semibold small text-uppercase" style="color: var(--text-secondary); letter-spacing: 0.5px;">{{ field.label }}</label>
+              {{ field }}
+              {% if field.errors %}<div class="text-danger small mt-1 p-2 bg-danger bg-opacity-10 rounded">{{ field.errors }}</div>{% endif %}
+            </div>
+            {% endif %}
+          {% endfor %}
+          <button type="submit" class="btn w-100 py-2 mt-3 fw-semibold text-white" style="background: linear-gradient(135deg, #d32f2f 0%, #b71c1c 100%); border: none; box-shadow: 0 4px 12px rgba(211, 47, 47, 0.2); border-radius: 8px;">
+            <i class="bi bi-plus-lg me-2"></i>Registrar Gasto
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+  
+  <!-- TABLA DE GASTOS -->
+  <div class="col-md-7">
+    <!-- FILTROS -->
+    <div class="card border-0 shadow-sm mb-3" style="border-radius: 12px; background: var(--bg-light);">
+      <div class="card-body p-3">
+        <div class="row g-2 align-items-end">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold small" style="color: var(--text-secondary);">Categoría</label>
+            <input type="text" class="form-control" placeholder="Filtrar por categoría..." style="border-radius: 8px; border: 1px solid var(--border-light); padding: 0.5rem 0.75rem; font-size: 0.9rem;">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold small" style="color: var(--text-secondary);">Fecha</label>
+            <input type="date" value="{{ fecha }}" class="form-control" style="border-radius: 8px; border: 1px solid var(--border-light); padding: 0.5rem 0.75rem; font-size: 0.9rem;">
+          </div>
+          <div class="col-md-2 d-flex gap-1">
+            <button class="btn btn-sm w-100" style="background: var(--orange-primary); color: white; border-radius: 8px; border: none; padding: 0.5rem; font-weight: 600; font-size: 0.85rem;">
+              <i class="bi bi-search"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TABLA -->
+    <div class="card border-0 shadow-sm" style="border-radius: 12px; overflow: hidden;">
+      <div class="card-header border-bottom-0 bg-white py-4 d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center">
+          <div class="stat-icon-wrapper d-inline-flex me-3 shadow-sm" style="width: 36px; height: 36px; font-size: 1.1rem; background: var(--bg-base); color: #d32f2f;">
+            <i class="bi bi-receipt"></i>
+          </div>
+          <h6 class="mb-0 fw-bold" style="color: var(--text-main);">Gastos del Día</h6>
+        </div>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="bg-light">
+              <tr>
+                <th class="ps-4 fw-bold small" style="color: var(--text-secondary);">CATEGOR�?A</th>
+                <th class="fw-bold small" style="color: var(--text-secondary);">DESCRIPCIÓN</th>
+                <th class="fw-bold small text-end pe-2" style="color: var(--text-secondary);">MONTO</th>
+                <th class="text-end pe-4 fw-bold small" style="color: var(--text-secondary);">ACCIONES</th>
+              </tr>
+            </thead>
+            <tbody class="border-top-0">
+            {% for g in gastos %}
+            <tr>
+              <td class="ps-4">
+                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-2 py-1">
+                  {{ g.categoria }}
+                </span>
+              </td>
+              <td class="text-muted small">{{ g.descripcion }}</td>
+              <td class="text-end pe-2 fw-bold text-danger">${{ g.monto|default:0|floatformat:0 }}</td>
+              <td class="text-end pe-4">
+                <div class="btn-group btn-group-sm" role="group">
+                  <a href="{% url 'gasto_edit' g.pk %}" class="btn btn-sm" style="background-color: var(--bg-light); color: var(--orange-primary); border-radius: 6px; padding: 6px 10px; border: 1px solid var(--border-light);" title="Editar">
+                    <i class="bi bi-pencil"></i>
+                  </a>
+                  <a href="{% url 'gasto_delete' g.pk %}" class="btn btn-sm" style="background-color: #ffebee; color: #d32f2f; border-radius: 6px; padding: 6px 10px; border: none;" title="Eliminar">
+                    <i class="bi bi-trash3"></i>
+                  </a>
+                </div>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="4" class="text-center py-5">
+                <div class="d-flex flex-column align-items-center justify-content-center" style="color: var(--text-secondary);">
+                  <i class="bi bi-inbox fs-1 mb-3" style="opacity: 0.4;"></i>
+                  <h6 class="fw-semibold mb-2">Sin gastos registrados</h6>
+                  <p class="small text-muted">No hay gastos para la fecha seleccionada.</p>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+            {% if gastos %}
+            <tfoot>
+              <tr class="table-light">
+                <td colspan="2" class="ps-4 fw-bold text-uppercase" style="font-size: 0.8rem; letter-spacing: 0.5px; color: var(--text-secondary);">Total Gastos</td>
+                <td class="fw-bold fs-5 text-end pe-2 text-danger">${{ total|default:0|floatformat:0 }}</td>
+                <td></td>
+              </tr>
+            </tfoot>
+            {% endif %}
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+
+
+

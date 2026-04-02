@@ -1,0 +1,83 @@
+{% extends 'core/base.html' %}
+{% block title %}{{ titulo }}{% endblock %}
+{% block page_title %}{{ titulo }}{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-7">
+    <div class="card border-0 shadow-sm" style="border-radius: 12px; overflow: hidden;">
+      <div class="card-header py-4 bg-white border-bottom-0">
+        <h5 class="mb-0 fw-bold" style="color: var(--text-main);">
+          <div class="stat-icon-wrapper d-inline-flex me-2 shadow-sm" style="width: 36px; height: 36px; font-size: 1.1rem;">
+            <i class="bi bi-pencil-square"></i>
+          </div>
+          {{ titulo }}
+        </h5>
+      </div>
+      <div class="card-body p-4 pt-0">
+        <form method="post">
+          {% csrf_token %}
+          <div class="row g-3">
+          {% for field in form %}
+            <div class="col-12 {% if field.field.widget.input_type == 'select' %}col-md-6{% endif %}">
+              <label class="form-label form-control-sm text-uppercase fw-semibold mb-1" style="color: var(--text-sec); letter-spacing: 0.5px;">{{ field.label }}</label>
+              {{ field }}
+              {% if field.errors %}<div class="text-danger small mt-1 py-1 px-2 bg-danger bg-opacity-10 rounded">{{ field.errors }}</div>{% endif %}
+              {% if field.help_text %}<div class="form-text mt-1 text-muted"><small>{{ field.help_text }}</small></div>{% endif %}
+            </div>
+          {% endfor %}
+          </div>
+
+          <!-- Total Preview (solo aparecerá si hay campos de KG y Precio) -->
+          <div class="mt-4 p-3 bg-light rounded border border-success border-opacity-25" id="total_preview_container" style="display: none;">
+            <div class="d-flex justify-content-between align-items-center">
+              <span class="text-uppercase fw-bold text-success" style="font-size: 0.85rem; letter-spacing: 0.5px;">Total a Cobrar</span>
+              <span class="fs-4 fw-bold text-success" id="total_preview_val">$0</span>
+            </div>
+          </div>
+
+          <div class="d-flex align-items-center gap-3 mt-4 pt-3 border-top" style="border-color: rgba(0,0,0,0.05) !important;">
+            <button type="submit" class="btn btn-primary px-4 py-2 fw-semibold">
+              <i class="bi bi-check2 me-1"></i> Guardar Cambios
+            </button>
+            {% if back_url %}
+            <a href="{% url back_url %}" class="btn btn-outline-secondary py-2 border-0 fw-semibold" style="color: var(--text-sec);"><i class="bi bi-x-circle me-1"></i> Cancelar</a>
+            {% else %}
+            <a href="javascript:history.back()" class="btn btn-outline-secondary py-2 border-0 fw-semibold" style="color: var(--text-sec);"><i class="bi bi-x-circle me-1"></i> Cancelar</a>
+            {% endif %}
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Buscar tanto los IDs de venta contado como los de crédito
+    const inputKg = document.getElementById('id_kg_vendido') || document.getElementById('id_kg_vendido_c');
+    const inputPrecio = document.getElementById('id_precio_por_kg') || document.getElementById('id_precio_por_kg_c');
+    const previewContainer = document.getElementById('total_preview_container');
+    const previewVal = document.getElementById('total_preview_val');
+
+    function updateTotal() {
+      if (!inputKg || !inputPrecio) return;
+      const kg = parseFloat(inputKg.value) || 0;
+      const precio = parseFloat(inputPrecio.value) || 0;
+      const total = kg * precio;
+      
+      if (total > 0) {
+        previewContainer.style.display = 'block';
+        previewVal.innerText = '$' + total.toFixed(2);
+      } else {
+        previewContainer.style.display = 'none';
+      }
+    }
+
+    if (inputKg && inputPrecio && previewContainer) {
+      inputKg.addEventListener('input', updateTotal);
+      inputPrecio.addEventListener('input', updateTotal);
+      updateTotal(); // initial check
+    }
+  });
+</script>
+{% endblock %}

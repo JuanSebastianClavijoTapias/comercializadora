@@ -1,0 +1,164 @@
+{% extends 'core/base.html' %}
+{% block title %}Productos{% endblock %}
+{% block page_title %}Productos{% endblock %}
+{% block content %}
+
+<!-- ESTAD�?STICAS -->
+<div class="row row-cols-1 row-cols-md-3 g-3 mb-4">
+  <div class="col">
+    <div class="stat-card-white h-100">
+      <div>
+        <div class="small fw-semibold">Total Productos</div>
+        <div class="fs-4 fw-bold">{{ num_productos }}</div>
+        <div class="small">Registrados</div>
+      </div>
+      <div class="stat-icon-wrapper">
+        <i class="bi bi-box-seam"></i>
+      </div>
+    </div>
+  </div>
+  <div class="col">
+    <div class="stat-card-white h-100">
+      <div>
+        <div class="small fw-semibold">Productos Activos</div>
+        <div class="fs-4 fw-bold">{{ num_activos|default:0 }}</div>
+        <div class="small">En venta</div>
+      </div>
+      <div class="stat-icon-wrapper" style="background: rgba(76, 175, 80, 0.2); color: #4CAF50;">
+        <i class="bi bi-check-circle-fill"></i>
+      </div>
+    </div>
+  </div>
+  <div class="col">
+    <div class="stat-card-white h-100">
+      <div>
+        <div class="small fw-semibold">Con Descuento Govt</div>
+        <div class="fs-4 fw-bold">{{ num_descuento }}</div>
+        <div class="small">Aplicable</div>
+      </div>
+      <div class="stat-icon-wrapper" style="background: rgba(255, 193, 7, 0.2); color: #FFC107;">
+        <i class="bi bi-percent"></i>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FILTRO DE BÚSQUEDA -->
+<div class="card border-0 shadow-sm mb-4" style="border-radius: 12px; background: var(--bg-light);">
+  <div class="card-body p-4">
+    <form class="d-flex gap-2 align-items-end">
+      <div style="flex: 1;">
+        <label class="form-label fw-semibold small" style="color: var(--text-secondary);">Buscar Producto</label>
+        <input type="text" name="q" class="form-control" placeholder="Nombre del producto..." style="border-radius: 8px; border: 1px solid var(--border-light); padding: 0.75rem 1rem;">
+      </div>
+      <div>
+        <label class="form-label fw-semibold small" style="color: var(--text-secondary);">Estado</label>
+        <select class="form-select" style="border-radius: 8px; border: 1px solid var(--border-light); padding: 0.75rem 1rem;">
+          <option value="">Todos</option>
+          <option value="activo">Activos</option>
+          <option value="inactivo">Inactivos</option>
+        </select>
+      </div>
+      <button class="btn w-auto" style="background: var(--orange-primary); color: white; border-radius: 8px; border: none; padding: 0.75rem 1.5rem; font-weight: 600;">
+        <i class="bi bi-search me-2"></i>Buscar
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- TABLA DE PRODUCTOS -->
+<div class="card border-0 shadow-sm" style="border-radius: 12px; overflow: hidden;">
+  <div class="card-header border-bottom-0 bg-white py-4 d-flex justify-content-between align-items-center">
+    <div class="d-flex align-items-center">
+      <div class="stat-icon-wrapper d-inline-flex me-3 shadow-sm" style="width: 40px; height: 40px; font-size: 1.2rem;">
+        <i class="bi bi-box-seam"></i>
+      </div>
+      <h5 class="mb-0 fw-bold" style="color: var(--text-main);">Productos</h5>
+    </div>
+    <a href="{% url 'producto_create' %}" class="btn px-3 py-2 fw-semibold shadow-sm" style="background: var(--orange-primary); color: white; border: none; border-radius: 8px;">
+      <i class="bi bi-plus-lg me-1"></i> Nuevo Producto
+    </a>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="bg-light">
+          <tr>
+            <th class="ps-4 fw-bold small" style="color: var(--text-secondary);">NOMBRE</th>
+            <th class="fw-bold small" style="color: var(--text-secondary);">DESC. GOBIERNO</th>
+            <th class="fw-bold small text-center" style="color: var(--text-secondary);">% DESC</th>
+            <th class="fw-bold small text-center" style="color: var(--text-secondary);">CLASIFICACIONES</th>
+            <th class="fw-bold small" style="color: var(--text-secondary);">ESTADO</th>
+            <th class="text-end pe-4 fw-bold small" style="color: var(--text-secondary);">ACCIONES</th>
+          </tr>
+        </thead>
+        <tbody class="border-top-0">
+        {% for p in productos %}
+        <tr>
+          <td class="ps-4 fw-semibold" style="color: var(--text-main);">
+            <i class="bi bi-box-seam me-2" style="opacity: 0.5;"></i>{{ p.nombre }}
+          </td>
+          <td>
+            {% if p.tiene_descuento_gobierno %}
+              <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 px-2 py-1">
+                <i class="bi bi-check-circle me-1"></i>Sí
+              </span>
+            {% else %}
+              <span class="text-muted small">No</span>
+            {% endif %}
+          </td>
+          <td class="text-center">
+            {% if p.tiene_descuento_gobierno %}
+              <span class="fw-semibold" style="color: var(--text-main);">{{ p.porcentaje_descuento }}%</span>
+            {% else %}
+              <span style="opacity: 0.5;">-</span>
+            {% endif %}
+          </td>
+          <td class="text-center">
+            <a href="{% url 'producto_clasificaciones' p.pk %}" class="btn btn-sm" style="background-color: var(--bg-light); color: #3f51b5; border-radius: 6px; padding: 6px 10px; border: 1px solid var(--border-light);" title="Ver Clasificaciones">
+              <i class="bi bi-list-ol me-1"></i>{{ p.clasificaciones.count }}
+            </a>
+          </td>
+          <td>
+            {% if p.activo %}
+              <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1">
+                <i class="bi bi-check-circle me-1"></i>Activo
+              </span>
+            {% else %}
+              <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 px-2 py-1">
+                <i class="bi bi-x-circle me-1"></i>Inactivo
+              </span>
+            {% endif %}
+          </td>
+          <td class="text-end pe-4">
+            <div class="btn-group btn-group-sm" role="group">
+              <a href="{% url 'producto_edit' p.pk %}" class="btn btn-sm" style="background-color: var(--bg-light); color: var(--orange-primary); border-radius: 6px; padding: 6px 10px; border: 1px solid var(--border-light);" title="Editar">
+                <i class="bi bi-pencil"></i>
+              </a>
+              <a href="{% url 'producto_delete' p.pk %}" class="btn btn-sm" style="background-color: #ffebee; color: #d32f2f; border-radius: 6px; padding: 6px 10px; border: none;" title="Eliminar">
+                <i class="bi bi-trash3"></i>
+              </a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" class="text-center py-5">
+            <div class="d-flex flex-column align-items-center justify-content-center" style="color: var(--text-secondary);">
+              <i class="bi bi-inbox fs-1 mb-3" style="opacity: 0.4;"></i>
+              <h6 class="fw-semibold mb-2">Sin productos registrados</h6>
+              <p class="small text-muted">No hay productos en el sistema.</p>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+
+

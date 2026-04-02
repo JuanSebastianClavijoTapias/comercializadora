@@ -1,0 +1,36 @@
+{% extends 'core/base.html' %}
+{% block title %}Cartera Clientes{% endblock %}
+{% block page_title %}Cartera de Clientes{% endblock %}
+{% block content %}
+<div class="card mb-3">
+  <div class="card-body d-flex justify-content-between align-items-center">
+    <div><span class="text-muted">Total cartera pendiente:</span></div>
+    <div class="fs-3 fw-bold text-danger">${{ total_cartera|default:0|floatformat:0 }}</div>
+  </div>
+</div>
+<div class="card">
+  <div class="card-header py-2 fw-semibold"><i class="bi bi-people me-2"></i>Créditos Pendientes de Cobro</div>
+  <div class="card-body p-0">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Cliente</th><th>Fecha Venta</th><th>Total Venta</th><th>Pagado</th><th>Saldo Pendiente</th><th></th></tr></thead>
+      <tbody>
+      {% for v in pendientes %}
+      <tr>
+        <td class="fw-semibold">{{ v.cliente }}</td>
+        <td>{{ v.fecha }}</td>
+        <td>${{ v.total|default:0|floatformat:0 }}</td>
+        <td class="text-success">${{ v.total_pagado|default:0|floatformat:0 }}</td>
+        <td class="text-danger fw-bold">${{ v.saldo_pendiente|default:0|floatformat:0 }}</td>
+        <td><a href="{% url 'venta_credito_detail' v.pk %}" class="btn btn-sm btn-outline-primary">Ver</a></td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" class="text-center text-muted py-4"><i class="bi bi-check-circle text-success me-2"></i>¡Sin saldos pendientes!</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+
+

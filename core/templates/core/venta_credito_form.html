@@ -1,0 +1,162 @@
+{% extends 'core/base.html' %}
+{% block title %}Nueva Venta a Crédito{% endblock %}
+{% block page_title %}Nueva Venta a Crédito{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-8">
+    <div class="card border-0 shadow-sm" style="border-radius: 12px; overflow: hidden;">
+      <div class="card-header py-4 bg-white border-bottom-0">
+        <h5 class="mb-0 fw-bold" style="color: var(--text-main);">
+          <div class="stat-icon-wrapper d-inline-flex me-2 shadow-sm" style="width: 36px; height: 36px; font-size: 1.1rem;">
+            <i class="bi bi-cart-plus"></i>
+          </div>
+          Nueva Venta a Crédito
+        </h5>
+      </div>
+      <div class="card-body p-4 pt-0">
+        <form method="post">
+          {% csrf_token %}
+          <div class="row g-3">
+            {% for field in form %}
+              <div class="col-12 {% if field.name in 'fecha fecha_vencimiento cliente producto clasificacion kg_vendido precio_por_kg' %}col-md-6{% endif %}">
+                <label class="form-label form-control-sm text-uppercase fw-semibold mb-1" style="color: var(--text-sec); letter-spacing: 0.5px;">{{ field.label }}</label>
+                
+                {% if field.name == 'fecha' %}
+                <div class="input-group">
+                  {{ field }}
+                  <button type="button" class="btn btn-outline-secondary" id="btn-fecha-hoy" title="Usar fecha de hoy">
+                    <i class="bi bi-calendar-event"></i> Hoy
+                  </button>
+                </div>
+                {% else %}
+                  {{ field }}
+                {% endif %}
+                
+                {% if field.errors %}<div class="text-danger small mt-1 py-1 px-2 bg-danger bg-opacity-10 rounded">{{ field.errors }}</div>{% endif %}
+                {% if field.help_text %}<div class="form-text mt-1 text-muted"><small>{{ field.help_text }}</small></div>{% endif %}
+              </div>
+            {% endfor %}
+          </div>
+          
+          <!-- Total Preview -->
+          <div class="mt-4 p-3 bg-light rounded border border-success border-opacity-25" id="total_preview_container" style="display: none;">
+            <div class="d-flex justify-content-between align-items-center">
+              <span class="text-uppercase fw-bold text-success" style="font-size: 0.85rem; letter-spacing: 0.5px;">Total a Cobrar</span>
+              <span class="fs-4 fw-bold text-success" id="total_preview_val">$0</span>
+            </div>
+          </div>
+          
+          <!-- Abono Inicial -->
+          <div class="mt-4 border p-3 rounded" style="background-color: var(--bg-base);">
+            <div class="form-check form-switch mb-2">
+              <input class="form-check-input" type="checkbox" id="checkAbonoInicial" name="aplicar_abono_inicial">
+              <label class="form-check-label fw-bold text-success" for="checkAbonoInicial">
+                ¿Realizar un abono inicial en este momento?
+              </label>
+            </div>
+            
+            <div class="row g-2 align-items-end mt-1" id="abono_inicial_container" style="display: none;">
+              <div class="col-md-6">
+                <label class="form-label text-muted small">Monto a abonar</label>
+                <div class="input-group">
+                  <span class="input-group-text">$</span>
+                  <input type="number" step="0.01" min="0" class="form-control" name="monto_abono_inicial" id="monto_abono_inicial" placeholder="Ej: 30000">
+                </div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label text-muted small">Método de pago</label>
+                <select name="medio_pago_abono" class="form-select">
+                  <option value="efectivo">Efectivo</option>
+                  <option value="transferencia">Transferencia</option>
+                  <option value="cheque">Cheque</option>
+                </select>
+              </div>
+              <div class="col-12 mt-2">
+                <div class="d-flex justify-content-between text-muted small rounded px-2 py-1 bg-white border">
+                  <span>Saldo a quedar:</span>
+                  <span id="saldo_proyectado" class="fw-bold text-danger">--</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="d-flex align-items-center gap-3 mt-4 pt-3 border-top" style="border-color: rgba(0,0,0,0.05) !important;">
+            <button type="submit" class="btn btn-primary px-4 py-2 fw-semibold">
+              <i class="bi bi-check2 me-1"></i> Guardar Venta
+            </button>
+            <a href="{% url 'venta_credito_list' %}" class="btn btn-outline-secondary py-2 border-0 fw-semibold" style="color: var(--text-sec);">
+              <i class="bi bi-x-circle me-1"></i> Cancelar
+            </a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const inputKg = document.getElementById('id_kg_vendido_c') || document.getElementById('id_kg_vendido');
+    const inputPrecio = document.getElementById('id_precio_por_kg_c') || document.getElementById('id_precio_por_kg');
+    const previewContainer = document.getElementById('total_preview_container');
+    const previewVal = document.getElementById('total_preview_val');
+    
+    // Fecha Hoy
+    const inputFecha = document.getElementById('id_fecha');
+    const btnFechaHoy = document.getElementById('btn-fecha-hoy');
+    
+    if(btnFechaHoy && inputFecha) {
+      btnFechaHoy.addEventListener('click', () => {
+        const today = new Date();
+        // Ajustar al formato yyyy-mm-dd local
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        inputFecha.value = `${yyyy}-${mm}-${dd}`;
+      });
+    }
+
+    // Abono inicial
+    const checkAbono = document.getElementById('checkAbonoInicial');
+    const containerAbono = document.getElementById('abono_inicial_container');
+    const inputMontoAbono = document.getElementById('monto_abono_inicial');
+    const valSaldoProyectado = document.getElementById('saldo_proyectado');
+
+    function updateTotal() {
+      const kg = parseFloat(inputKg?.value) || 0;
+      const precio = parseFloat(inputPrecio?.value) || 0;
+      const total = kg * precio;
+      let saldo = total;
+      
+      if (total > 0) {
+        previewContainer.style.display = 'block';
+        previewVal.innerText = '$' + total.toFixed(2);
+      } else {
+        previewContainer.style.display = 'none';
+      }
+
+      if (checkAbono.checked) {
+        const abono = parseFloat(inputMontoAbono.value) || 0;
+        saldo = total - abono;
+        valSaldoProyectado.innerText = '$' + Math.max(0, saldo).toFixed(2);
+      }
+    }
+
+    if (checkAbono) {
+      checkAbono.addEventListener('change', function() {
+        containerAbono.style.display = this.checked ? 'flex' : 'none';
+        if(this.checked) inputMontoAbono.focus();
+        updateTotal();
+      });
+    }
+
+    if(inputMontoAbono) inputMontoAbono.addEventListener('input', updateTotal);
+
+    if (inputKg && inputPrecio && previewContainer) {
+      inputKg.addEventListener('input', updateTotal);
+      inputPrecio.addEventListener('input', updateTotal);
+      updateTotal(); // initial check
+    }
+  });
+</script>
+{% endblock %}

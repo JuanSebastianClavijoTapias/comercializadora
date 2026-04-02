@@ -1,0 +1,51 @@
+{% extends 'core/base.html' %}
+{% block title %}Liquidación Inventario{% endblock %}
+{% block page_title %}Liquidación: {{ liq.fecha_inicio }} - {{ liq.fecha_fin }}{% endblock %}
+{% block content %}
+<div class="mb-3"><a href="{% url 'inventario_list' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i>Volver</a></div>
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="row">
+      <div class="col-md-6">
+        <p class="mb-1"><strong>Período:</strong> {{ liq.fecha_inicio }} al {{ liq.fecha_fin }}</p>
+        {% if liq.observaciones %}<p class="mb-1"><strong>Observaciones:</strong> {{ liq.observaciones }}</p>{% endif %}
+      </div>
+      <div class="col-md-6 text-md-end">
+        <h4 class="text-warning fw-bold">Total inventario: ${{ liq.total_valor|default:0|floatformat:0 }}</h4>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="card">
+  <div class="card-header py-2 fw-semibold"><i class="bi bi-table me-2"></i>Detalle por Clasificación</div>
+  <div class="card-body p-0">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Producto</th><th>Clasificación</th><th>Kg Ingresado</th><th>Kg Vendido</th><th>Kg Restante</th><th>Precio/kg</th><th>Total</th></tr></thead>
+      <tbody>
+      {% regroup detalles by clasificacion.producto as por_producto %}
+      {% for grupo in por_producto %}
+      <tr class="table-light"><td colspan="7" class="fw-bold text-success"><i class="bi bi-box-seam me-2"></i>{{ grupo.grouper }}</td></tr>
+      {% for d in grupo.list %}
+      <tr>
+        <td></td>
+        <td>{{ d.clasificacion.nombre }}</td>
+        <td>{{ d.kg_ingresado|default:0|floatformat:2 }} kg</td>
+        <td>{{ d.kg_vendido|default:0|floatformat:2 }} kg</td>
+        <td class="fw-bold">{{ d.kg_restante|default:0|floatformat:2 }} kg</td>
+        <td>${{ d.precio_por_kg }}</td>
+        <td class="fw-bold text-warning">${{ d.total|default:0|floatformat:0 }}</td>
+      </tr>
+      {% endfor %}
+      {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr class="table-warning fw-bold">
+          <td colspan="6">TOTAL INVENTARIO</td>
+          <td>${{ liq.total_valor|default:0|floatformat:0 }}</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+</div>
+{% endblock %}
+

@@ -1,0 +1,169 @@
+{% extends 'core/base.html' %}
+{% block title %}Viajes{% endblock %}
+{% block page_title %}Viajes / Entradas de Fruta{% endblock %}
+{% block content %}
+
+<!-- FILTROS -->
+<div class="card border-0 shadow-sm mb-4" style="border-radius: 12px; background: var(--bg-light);">
+  <div class="card-body p-4">
+    <h6 class="fw-bold mb-4" style="color: var(--text-main); font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.5px;">
+      <i class="bi bi-funnel me-2"></i>Filtros de Búsqueda
+    </h6>
+    <div class="row g-3">
+      <div class="col-md-3">
+        <label class="form-label fw-semibold small" style="color: var(--text-secondary);">Producto</label>
+        <input type="text" class="form-control" placeholder="Buscar producto..." style="border-radius: 8px; border: 1px solid var(--border-light); padding: 0.75rem 1rem;">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label fw-semibold small" style="color: var(--text-secondary);">Proveedor</label>
+        <input type="text" class="form-control" placeholder="Buscar proveedor..." style="border-radius: 8px; border: 1px solid var(--border-light); padding: 0.75rem 1rem;">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label fw-semibold small" style="color: var(--text-secondary);">Desde</label>
+        <input type="date" class="form-control" style="border-radius: 8px; border: 1px solid var(--border-light); padding: 0.75rem 1rem;">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label fw-semibold small" style="color: var(--text-secondary);">Hasta</label>
+        <input type="date" class="form-control" style="border-radius: 8px; border: 1px solid var(--border-light); padding: 0.75rem 1rem;">
+      </div>
+      <div class="col-md-2 d-flex align-items-end gap-2">
+        <button class="btn w-100" style="background: var(--orange-primary); color: white; border-radius: 8px; border: none; padding: 0.75rem 1rem; font-weight: 600; font-size: 0.9rem;">
+          <i class="bi bi-search me-1"></i>Buscar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ESTAD�?STICAS -->
+<div class="row row-cols-1 row-cols-md-4 g-3 mb-4">
+  <div class="col">
+    <div class="stat-card-white h-100">
+      <div>
+        <div class="small fw-semibold">Total Viajes</div>
+        <div class="fs-4 fw-bold">{{ num_viajes|default:0 }}</div>
+        <div class="small">Registrados</div>
+      </div>
+      <div class="stat-icon-wrapper">
+        <i class="bi bi-truck"></i>
+      </div>
+    </div>
+  </div>
+  <div class="col">
+    <div class="stat-card-white h-100">
+      <div>
+        <div class="small fw-semibold">Total Kg</div>
+        <div class="fs-4 fw-bold">{{ total_kg|default:0|floatformat:1 }}</div>
+        <div class="small">Kilogramos</div>
+      </div>
+      <div class="stat-icon-wrapper" style="background: rgba(255, 107, 53, 0.2); color: var(--orange-primary);">
+        <i class="bi bi-boxes"></i>
+      </div>
+    </div>
+  </div>
+  <div class="col">
+    <div class="stat-card-white h-100">
+      <div>
+        <div class="small fw-semibold">Costo Total</div>
+        <div class="fs-4 fw-bold">${{ total_costo|default:0|floatformat:0 }}</div>
+        <div class="small">Inversión</div>
+      </div>
+      <div class="stat-icon-wrapper" style="background: rgba(63, 81, 181, 0.2); color: #3f51b5;">
+        <i class="bi bi-credit-card"></i>
+      </div>
+    </div>
+  </div>
+  <div class="col">
+    <div class="stat-card-white h-100">
+      <div>
+        <div class="small fw-semibold">Saldo Pendiente</div>
+        <div class="fs-4 fw-bold text-danger" style="color: #d32f2f;">$ {{ saldo_pendiente|default:0|floatformat:0 }}</div>
+        <div class="small">Por pagar</div>
+      </div>
+      <div class="stat-icon-wrapper" style="background: rgba(211, 47, 47, 0.2); color: #d32f2f;">
+        <i class="bi bi-exclamation-circle-fill"></i>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TABLA DE VIAJES -->
+<div class="card border-0 shadow-sm" style="border-radius: 12px; overflow: hidden;">
+  <div class="card-header border-bottom-0 bg-white py-4 d-flex justify-content-between align-items-center">
+    <div class="d-flex align-items-center">
+      <div class="stat-icon-wrapper d-inline-flex me-3 shadow-sm" style="width: 40px; height: 40px; font-size: 1.2rem;">
+        <i class="bi bi-truck"></i>
+      </div>
+      <h5 class="mb-0 fw-bold" style="color: var(--text-main);">Viajes Registrados</h5>
+    </div>
+    <a href="{% url 'viaje_create' %}" class="btn px-3 py-2 fw-semibold shadow-sm" style="background: var(--orange-primary); color: white; border: none; border-radius: 8px;">
+      <i class="bi bi-plus-lg me-1"></i> Nuevo Viaje
+    </a>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="bg-light">
+          <tr>
+            <th class="ps-4 fw-bold small" style="color: var(--text-secondary);">FECHA</th>
+            <th class="fw-bold small" style="color: var(--text-secondary);">PRODUCTO</th>
+            <th class="fw-bold small" style="color: var(--text-secondary);">PROVEEDOR</th>
+            <th class="fw-bold small text-end pe-2" style="color: var(--text-secondary);">KG NETO</th>
+            <th class="fw-bold small text-end pe-2" style="color: var(--text-secondary);">TOTAL</th>
+            <th class="fw-bold small text-end pe-2" style="color: var(--text-secondary);">PAGADO</th>
+            <th class="fw-bold small text-end pe-2" style="color: var(--text-secondary);">SALDO</th>
+            <th class="text-end pe-4 fw-bold small" style="color: var(--text-secondary);">ACCIONES</th>
+          </tr>
+        </thead>
+        <tbody class="border-top-0">
+        {% for v in viajes %}
+        <tr>
+          <td class="ps-4"><span class="small fw-semibold" style="color: var(--text-main);">{{ v.fecha|date:"d/m/Y" }}</span></td>
+          <td>
+            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1">
+              {{ v.producto }}
+            </span>
+          </td>
+          <td class="text-muted small">{{ v.proveedor }}</td>
+          <td class="text-end pe-2 fw-semibold" style="color: var(--text-main);">{{ v.total_kg_neto|default:0|floatformat:1 }} kg</td>
+          <td class="text-end pe-2 fw-bold" style="color: var(--text-main);">${{ v.total_valor|default:0|floatformat:0 }}</td>
+          <td class="text-end pe-2 fw-semibold" style="color: #4CAF50;">${{ v.total_pagado|default:0|floatformat:0 }}</td>
+          <td class="text-end pe-2">
+            {% if v.saldo_pendiente > 0 %}
+              <span class="badge fw-bold px-2 py-1" style="background-color: rgba(211, 47, 47, 0.15); color: #d32f2f; border: 1px solid rgba(211, 47, 47, 0.3);">
+                ${{ v.saldo_pendiente|default:0|floatformat:0 }}
+              </span>
+            {% else %}
+              <span class="badge fw-bold px-2 py-1" style="background-color: rgba(76, 175, 80, 0.15); color: #4CAF50; border: 1px solid rgba(76, 175, 80, 0.3);">
+                SALDADO
+              </span>
+            {% endif %}
+          </td>
+          <td class="text-end pe-4">
+            <a href="{% url 'viaje_detail' v.pk %}" class="btn btn-sm" style="background-color: var(--bg-light); color: var(--orange-primary); border-radius: 6px; padding: 6px 10px; border: 1px solid var(--border-light);" title="Ver Detalle">
+              <i class="bi bi-eye"></i>
+            </a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="8" class="text-center py-5">
+            <div class="d-flex flex-column align-items-center justify-content-center" style="color: var(--text-secondary);">
+              <i class="bi bi-inbox fs-1 mb-3" style="opacity: 0.4;"></i>
+              <h6 class="fw-semibold mb-2">Sin viajes registrados</h6>
+              <p class="small text-muted">No hay viajes registrados en el sistema.</p>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+
+
+

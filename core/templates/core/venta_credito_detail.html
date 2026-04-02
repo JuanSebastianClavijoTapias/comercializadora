@@ -1,0 +1,227 @@
+{% extends 'core/base.html' %}
+{% block title %}Venta Crédito - {{ venta.cliente }}{% endblock %}
+{% block page_title %}Venta a Crédito: {{ venta.cliente }}{% endblock %}
+{% block content %}
+<div class="mb-4 d-flex justify-content-between align-items-center">
+  <a href="{% url 'venta_credito_list' %}" class="btn btn-outline-secondary py-2 border-0 fw-semibold" style="color: var(--text-sec);">
+    <i class="bi bi-arrow-left me-1"></i> Volver al listado
+  </a>
+  <a href="{% url 'venta_credito_delete' venta.pk %}" class="btn btn-danger py-2 fw-semibold px-3" style="border-radius: 8px;">
+    <i class="bi bi-trash3 me-1"></i> Eliminar Toda la Venta
+  </a>
+</div>
+
+<div class="row g-4 mb-4">
+  <div class="col-lg-4">
+    <div class="card border-0 shadow-sm h-100" style="border-radius: 12px; overflow: hidden; background: linear-gradient(135deg, #ffffff 0%, var(--bg-base) 100%);">
+      <div class="card-body p-4">
+        <div class="d-flex align-items-center mb-4">
+          <div class="stat-icon-wrapper d-inline-flex me-3 shadow-sm" style="width: 48px; height: 48px; font-size: 1.4rem;">
+            <i class="bi bi-person-lines-fill"></i>
+          </div>
+          <div>
+            <h6 class="text-uppercase fw-bold mb-0" style="color: var(--text-sec); font-size: 0.75rem; letter-spacing: 0.5px;">Resumen de la Venta</h6>
+            <h5 class="fw-bold mb-0" style="color: var(--text-main);">{{ venta.cliente }}</h5>
+          </div>
+        </div>
+
+        <div class="d-flex flex-column gap-2 mb-4">
+          <div class="d-flex justify-content-between">
+            <span class="text-muted"><i class="bi bi-box me-2 opacity-50"></i>Producto:</span>
+            <span class="fw-semibold">{{ venta.producto|default:"Varios" }}</span>
+          </div>
+          <div class="d-flex justify-content-between">
+            <span class="text-muted"><i class="bi bi-calendar-plus me-2 opacity-50"></i>Fecha Venta:</span>
+            <span class="fw-semibold">{{ venta.fecha|date:"d/m/Y" }}</span>
+          </div>
+          <div class="d-flex justify-content-between">
+            <span class="text-muted"><i class="bi bi-calendar-x me-2 opacity-50"></i>Vencimiento:</span>
+            <span class="fw-semibold {% if venta.saldo_pendiente > 0 %}text-danger{% endif %}">{{ venta.fecha_vencimiento|date:"d/m/Y"|default:"-" }}</span>
+          </div>
+          {% if venta.observaciones %}
+          <div class="mt-2 text-muted small fst-italic">"{{ venta.observaciones }}"</div>
+          {% endif %}
+        </div>
+
+        <div class="p-3 rounded mb-3" style="background-color: var(--surface-color); border: 1px solid rgba(0,0,0,0.05);">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="text-muted fw-semibold">Total Venta:</span>
+            <span class="fw-bold" style="color: var(--text-main);">${{ venta.total|default:0|floatformat:0 }}</span>
+          </div>
+          <div class="d-flex justify-content-between align-items-center">
+            <span class="text-muted fw-semibold">Total Pagado:</span>
+            <span class="text-success fw-bold">${{ venta.total_pagado|default:0|floatformat:0 }}</span>
+          </div>
+        </div>
+
+        <div class="p-3 rounded d-flex justify-content-between align-items-center shadow-sm" style="background: {% if venta.saldo_pendiente > 0 %}linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%){% else %}linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%){% endif %};">
+          <span class="fw-bold {% if venta.saldo_pendiente > 0 %}text-danger{% else %}text-success{% endif %}">Saldo Pendiente:</span>
+          <span class="fs-4 fw-bold {% if venta.saldo_pendiente > 0 %}text-danger{% else %}text-success{% endif %}">${{ venta.saldo_pendiente|default:0|floatformat:0 }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-8 d-flex flex-column gap-4">
+    <!-- Agregar Producto (Opcional extra) -->
+    <div class="card border-0 shadow-sm" style="border-radius: 12px; overflow: hidden;">
+      <div class="card-header bg-white py-3 border-bottom-0 d-flex align-items-center">
+        <i class="bi bi-cart-plus me-2 fs-5" style="color: var(--orange-primary);"></i>
+        <h6 class="mb-0 fw-bold" style="color: var(--text-main);">Agregar Producto a la Venta</h6>
+      </div>
+      <div class="card-body px-4 pb-4 pt-0">
+        <form method="post" class="row g-3 align-items-end">
+          {% csrf_token %}
+          <div class="col-md-5">
+            <label class="form-label form-control-sm text-uppercase fw-semibold mb-1" style="color: var(--text-sec); letter-spacing: 0.5px;">{{ detalle_form.clasificacion.label }}</label>
+            {{ detalle_form.clasificacion }}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label form-control-sm text-uppercase fw-semibold mb-1" style="color: var(--text-sec); letter-spacing: 0.5px;">{{ detalle_form.kg_vendido.label }}</label>
+            {{ detalle_form.kg_vendido }}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label form-control-sm text-uppercase fw-semibold mb-1" style="color: var(--text-sec); letter-spacing: 0.5px;">{{ detalle_form.precio_por_kg.label }}</label>
+            {{ detalle_form.precio_por_kg }}
+          </div>
+          <div class="col-md-1">
+            <button type="submit" name="detalle_submit" class="btn btn-primary w-100 py-2 d-flex justify-content-center" title="Agregar producto">
+              <i class="bi bi-plus-lg"></i>
+            </button>
+          </div>
+        </form>
+        
+        <!-- Total Preview -->
+        <div class="mt-3 p-2 bg-light rounded border border-success border-opacity-25" id="total_preview_container" style="display: none;">
+          <div class="d-flex justify-content-between align-items-center">
+            <span class="text-uppercase fw-bold text-success" style="font-size: 0.8rem; letter-spacing: 0.5px;">Subtotal</span>
+            <span class="fs-5 fw-bold text-success" id="total_preview_val">$0</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Grid Layout para Tablas -->
+    <div class="row g-4">
+      <div class="col-md-6">
+        <div class="card border-0 shadow-sm h-100" style="border-radius: 12px; overflow: hidden;">
+          <div class="card-header bg-white py-3 border-bottom-0">
+            <h6 class="mb-0 fw-bold" style="color: var(--text-main);"><i class="bi bi-box-seam me-2 opacity-50"></i>Productos Vendidos</h6>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light">
+                  <tr><th class="ps-3">Clasificación</th><th>Kg</th><th>Total</th><th class="text-end pe-3"></th></tr>
+                </thead>
+                <tbody class="border-top-0">
+                {% for d in detalles %}
+                <tr>
+                  <td class="ps-3">
+                    <div class="fw-semibold" style="color: var(--text-main);">{{ d.clasificacion }}</div>
+                    <div class="small text-muted">${{ d.precio_por_kg }}/kg</div>
+                  </td>
+                  <td>{{ d.kg_vendido }}</td>
+                  <td class="fw-bold" style="color: var(--text-main);">${{ d.total|default:0|floatformat:0 }}</td>
+                  <td class="text-end pe-3">
+                    <a href="{% url 'detalle_venta_delete' d.pk %}" class="btn btn-sm btn-link text-danger p-0" onclick="return confirm('¿Eliminar?')" title="Eliminar producto">
+                      <i class="bi bi-trash3"></i>
+                    </a>
+                  </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" class="text-center text-muted py-4"><i class="bi bi-inbox fs-4 d-block mb-2 opacity-25"></i>Sin productos</td></tr>
+                {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6">
+        <div class="card border-0 shadow-sm h-100" style="border-radius: 12px; overflow: hidden;">
+          <div class="card-header bg-white py-3 border-bottom-0 d-flex justify-content-between align-items-center">
+            <h6 class="mb-0 fw-bold" style="color: var(--text-main);"><i class="bi bi-cash-stack me-2 opacity-50"></i>Pagos Recibidos</h6>
+          </div>
+          <div class="card-body px-3 pb-3 pt-0">
+            <form method="post" action="{% url 'venta_credito_pago_add' venta.pk %}" class="row g-2 mb-3 align-items-end p-2 rounded" style="background-color: var(--bg-base);">
+              {% csrf_token %}
+              <div class="col-12 mb-1">
+                <span class="text-uppercase fw-bold text-success" style="font-size: 0.7rem; letter-spacing: 0.5px;">Registrar Abono</span>
+              </div>
+              <div class="col-4">{{ pago_form.monto }}</div>
+              <div class="col-4">{{ pago_form.fecha }}</div>
+              <div class="col-4">
+                <button type="submit" class="btn btn-success w-100 h-100 py-1" style="background: linear-gradient(135deg, #43a047 0%, #2e7d32 100%); border: none;">
+                  <i class="bi bi-check-lg"></i>
+                </button>
+              </div>
+              <!-- Medio de pago oculto o compacto si hace falta -->
+              <div class="col-12 mt-1">
+                {{ pago_form.medio_pago }}
+              </div>
+            </form>
+            
+            <div class="table-responsive">
+              <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light">
+                  <tr><th class="ps-3">Fecha</th><th>Monto/Medio</th><th class="text-end pe-3"></th></tr>
+                </thead>
+                <tbody class="border-top-0">
+                {% for p in pagos %}
+                <tr>
+                  <td class="ps-3 text-muted small">{{ p.fecha|date:"d/m/Y" }}</td>
+                  <td>
+                    <div class="text-success fw-bold">${{ p.monto|default:0|floatformat:0 }}</div>
+                    <span class="badge bg-light text-dark border px-2 py-0 mt-1" style="font-size: 0.65rem;">{{ p.get_medio_pago_display }}</span>
+                  </td>
+                  <td class="text-end pe-3">
+                    <a href="{% url 'pago_venta_delete' p.pk %}" class="btn btn-sm btn-link text-danger p-0" onclick="return confirm('¿Eliminar pago?')" title="Eliminar pago">
+                      <i class="bi bi-trash3"></i>
+                    </a>
+                  </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="3" class="text-center text-muted py-4"><i class="bi bi-wallet2 fs-4 d-block mb-2 opacity-25"></i>Sin abonos</td></tr>
+                {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const inputKg = document.getElementById('id_kg_vendido');
+    const inputPrecio = document.getElementById('id_precio_por_kg');
+    const previewContainer = document.getElementById('total_preview_container');
+    const previewVal = document.getElementById('total_preview_val');
+
+    function updateTotal() {
+      if (!inputKg || !inputPrecio) return;
+      const kg = parseFloat(inputKg.value) || 0;
+      const precio = parseFloat(inputPrecio.value) || 0;
+      const total = kg * precio;
+      
+      if (total > 0) {
+        previewContainer.style.display = 'block';
+        previewVal.innerText = '$' + total.toFixed(2);
+      } else {
+        previewContainer.style.display = 'none';
+      }
+    }
+
+    if (inputKg && inputPrecio && previewContainer) {
+      inputKg.addEventListener('input', updateTotal);
+      inputPrecio.addEventListener('input', updateTotal);
+      updateTotal(); // evaluate initially
+    }
+  });
+</script>
+{% endblock %}
+

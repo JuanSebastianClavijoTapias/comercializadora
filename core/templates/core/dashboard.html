@@ -1,0 +1,442 @@
+{% extends 'core/base.html' %}
+{% block title %}Dashboard - FrutaSystem{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block content %}
+
+<!-- PANEL DE FILTROS -->
+<div class="card border-0 shadow-sm mb-4" style="border-radius: 12px; background: var(--bg-light);">
+  <div class="card-body p-4">
+    <div class="row g-3 align-items-end">
+      <div class="col-md-3">
+        <label class="form-label fw-semibold small text-uppercase" style="color: var(--text-secondary); letter-spacing: 0.5px;">Desde</label>
+        <input type="date" class="form-control" id="fechaInicio" style="border-radius: 8px; border: 1px solid var(--border-light); padding: 0.75rem 1rem;">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label fw-semibold small text-uppercase" style="color: var(--text-secondary); letter-spacing: 0.5px;">Hasta</label>
+        <input type="date" class="form-control" id="fechaFin" style="border-radius: 8px; border: 1px solid var(--border-light); padding: 0.75rem 1rem;">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label fw-semibold small text-uppercase" style="color: var(--text-secondary); letter-spacing: 0.5px;">Estado</label>
+        <select class="form-select" id="estadoFiltro" style="border-radius: 8px; border: 1px solid var(--border-light); padding: 0.75rem 1rem;">
+          <option value="">Todos</option>
+          <option value="completado">Completado</option>
+          <option value="pendiente">Pendiente</option>
+          <option value="cancelado">Cancelado</option>
+        </select>
+      </div>
+      <div class="col-md-3">
+        <button class="btn btn-sm w-100" style="background: var(--orange-primary); color: white; border-radius: 8px; border: none; padding: 0.75rem 1rem; font-weight: 600;">
+          <i class="bi bi-funnel me-2"></i>FiltrarRR
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- KPI STAT CARDS -->
+<div class="row row-cols-1 row-cols-md-2 row-cols-xl-5 g-3 mb-4">
+  <div class="col">
+    <div class="stat-card-white h-100" style="background: linear-gradient(135deg, var(--orange-primary) 0%, var(--orange-secondary) 100%);">
+      <div>
+        <div class="small fw-semibold" style="color: white;">Efectivo Hoy</div>
+        <div class="fs-4 fw-bold" style="color: white;">${{ total_efectivo|default:0|floatformat:0 }}</div>
+        <div class="small" style="color: rgba(255,255,255,0.9);">{{ num_ventas_efectivo }} Vta. | {{ num_abonos }} Abonos</div>
+      </div>
+      <div class="stat-icon-wrapper" style="background: rgba(255,255,255,0.25); color: white;">
+        <i class="bi bi-cash-coin"></i>
+      </div>
+    </div>
+  </div>
+  <div class="col">
+    <div class="stat-card-white h-100" style="background: linear-gradient(135deg, #5C6BC0 0%, #3949AB 100%);">
+      <div>
+        <div class="small fw-semibold" style="color: white;">Crédito Disp. (Hoy)</div>
+        <div class="fs-4 fw-bold" style="color: white;">${{ saldo_credito_hoy|default:0|floatformat:0 }}</div>
+        <div class="small" style="color: rgba(255,255,255,0.9);">Emitido: ${{ total_credito_hoy|default:0|floatformat:0 }}</div>
+      </div>
+      <div class="stat-icon-wrapper" style="background: rgba(255,255,255,0.25); color: white;">
+        <i class="bi bi-credit-card"></i>
+      </div>
+    </div>
+  </div>
+  <div class="col">
+    <div class="stat-card-white h-100" style="cursor: pointer; background: linear-gradient(135deg, #F57C00 0%, #E65100 100%);" data-bs-toggle="modal" data-bs-target="#modalPorCobrar">
+      <div>
+        <div class="small fw-semibold" style="color: white;">Total por Cobrar</div>
+        <div class="fs-4 fw-bold" style="color: white;">${{ total_por_cobrar|default:0|floatformat:0 }}</div>
+        <div class="mt-2">
+          <span class="badge rounded-pill shadow-sm" style="background-color: rgba(255,255,255,0.3); color: white; padding: 6px 14px; font-weight: 500; font-size: 0.75rem; border: 1px solid rgba(255, 255, 255, 0.5);">
+            <i class="bi bi-person-lines-fill me-1"></i> ¡Ver Clientes!
+          </span>
+        </div>
+      </div>
+      <div class="stat-icon-wrapper" style="background: rgba(255,255,255,0.25); color: white;">
+        <i class="bi bi-wallet2"></i>
+      </div>
+    </div>
+  </div>
+  <div class="col">
+    <div class="stat-card-white h-100" style="background: linear-gradient(135deg, #E91E63 0%, #C2185B 100%);">
+      <div>
+        <div class="small fw-semibold" style="color: white;">Gastos Hoy</div>
+        <div class="fs-4 fw-bold" style="color: white;">${{ total_gastos|default:0|floatformat:0 }}</div>
+        <div class="small" style="color: rgba(255,255,255,0.9);">Egresos del día</div>
+      </div>
+      <div class="stat-icon-wrapper" style="background: rgba(255,255,255,0.25); color: white;">
+        <i class="bi bi-receipt"></i>
+      </div>
+    </div>
+  </div>
+  <div class="col">
+    <div class="stat-card-white h-100" style="background: linear-gradient(135deg, #4CAF50 0%, #388E3C 100%);">
+      <div>
+        <div class="small fw-semibold" style="color: white;">Balance Hoy</div>
+        <div class="fs-4 fw-bold" style="color: white;">${{ balance_hoy|default:0|floatformat:0 }}</div>
+        <div class="small" style="color: rgba(255,255,255,0.9);">Efectivo - Gastos</div>
+      </div>
+      <div class="stat-icon-wrapper" style="background: rgba(255,255,255,0.25); color: white;">
+        <i class="bi bi-bar-chart-line"></i>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="row g-3 mt-1">
+  <!-- GRÁFICO: Ventas vs Gastos -->
+  <div class="col-lg-8">
+    <div class="card border-0 shadow-sm" style="border-radius: 12px; overflow: hidden; height: 100%;">
+      <div class="card-header bg-orange py-3 border-bottom-0" style="background: var(--orange-primary); color: white;">
+        <h6 class="mb-0 fw-bold"><i class="bi bi-graph-up me-2"></i>Ventas vs Gastos (Últimos 7 días)</h6>
+      </div>
+      <div class="card-body p-4">
+        <div style="position: relative; height: 250px; width: 100%;">
+          <canvas id="ventasGastosChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GRÁFICO: Distribución de Ingresos -->
+  <div class="col-lg-4">
+    <div class="card border-0 shadow-sm" style="border-radius: 12px; overflow: hidden; height: 100%;">
+      <div class="card-header bg-orange py-3 border-bottom-0" style="background: var(--orange-primary); color: white;">
+        <h6 class="mb-0 fw-bold"><i class="bi bi-pie-chart me-2"></i>Distribución de Ingresos</h6>
+      </div>
+      <div class="card-body p-4">
+        <div style="position: relative; height: 250px; width: 100%; display: flex; justify-content: center; align-items: center;">
+          <canvas id="ingresosPieChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ÚLTIMAS VENTAS DEL DÍA -->
+<div class="row g-3 mt-1">
+  <div class="col-12">
+    <div class="card border-0 shadow-sm" style="border-radius: 12px; overflow: hidden;">
+      <div class="card-header bg-orange py-3 border-bottom-0 d-flex justify-content-between align-items-center" style="background: var(--orange-primary); color: white;">
+        <h6 class="mb-0 fw-bold"><i class="bi bi-cart-check me-2"></i>Últimas 10 Ventas del Día</h6>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="bg-light">
+              <tr>
+                <th class="ps-4">Cliente</th>
+                <th>Producto / Referencia</th>
+                <th>Tipo de Venta</th>
+                <th class="text-end pe-4">Monto</th>
+              </tr>
+            </thead>
+            <tbody class="border-top-0">
+              {% for venta in ultimas_ventas_hoy %}
+              <tr>
+                <td class="ps-4 fw-semibold" style="color: var(--text-main);">{{ venta.cliente }}</td>
+                <td class="text-muted small"><i class="bi bi-box-seam me-1 opacity-50"></i>{{ venta.producto }}</td>
+                <td>
+                  {% if venta.tipo == 'Efectivo' %}
+                    <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25"><i class="bi bi-cash-coin me-1"></i>Efectivo</span>
+                  {% else %}
+                    <span class="badge" style="background-color: rgba(255, 107, 53, 0.1); color: var(--orange-primary); border: 1px solid rgba(255, 107, 53, 0.25);"><i class="bi bi-credit-card me-1"></i>Crédito</span>
+                  {% endif %}
+                </td>
+                <td class="text-end pe-4 fw-bold {% if venta.tipo == 'Efectivo' %}text-success{% else %}text-dark{% endif %}">
+                  ${{ venta.monto|default:0|floatformat:0 }}
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="4" class="text-center py-5">
+                  <div class="text-muted"><i class="bi bi-inbox fs-2 d-block mb-3" style="opacity: 0.3;"></i>Aún no hay ventas registradas el día de hoy.</div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="row g-3 mt-1">
+  <div class="col-12">
+    <div class="card border-0 shadow-sm" style="border-radius: 12px; overflow: hidden;">
+      <div class="card-header border-bottom-0 d-flex justify-content-between align-items-center py-3">
+        <span><i class="bi bi-truck me-2 text-success" style="font-size: 1.1rem;"></i><span class="fw-bold">Últimos Viajes</span></span>
+        <a href="{% url 'viaje_create' %}" class="btn btn-sm" style="background: var(--orange-primary); color: white; border-radius: 6px;"><i class="bi bi-plus-lg"></i> Nuevo</a>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="bg-light"><tr><th class="ps-4" style="min-width: 120px;">Producto</th><th style="min-width: 120px;">Proveedor</th><th style="min-width: 100px;">Fecha</th><th class="text-end pe-4" style="min-width: 100px;">Total</th></tr></thead>
+            <tbody class="border-top-0">
+            {% for v in viajes_recientes %}
+            <tr>
+              <td class="ps-4 fw-semibold" style="color: var(--text-main);">{{ v.producto }}</td>
+              <td class="text-muted small">{{ v.proveedor }}</td>
+              <td class="text-muted small">{{ v.fecha|date:"d/m/Y" }}</td>
+              <td class="text-end pe-4 fw-bold text-dark">${{ v.total_valor|default:0|floatformat:0 }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="text-center text-muted py-4">Sin viajes registrados</td></tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-12">
+    <div class="card border-0 shadow-sm" style="border-radius: 12px; overflow: hidden;">
+      <div class="card-header border-bottom-0 d-flex justify-content-between align-items-center py-3">
+        <span><i class="bi bi-exclamation-circle me-2 text-warning" style="font-size: 1.1rem;"></i><span class="fw-bold">Créditos Pendientes</span></span>
+        <a href="{% url 'reporte_cartera' %}" class="btn btn-sm btn-outline-secondary" style="border-radius: 6px;">Ver todos</a>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="bg-light"><tr><th class="ps-4" style="min-width: 100px;">Cliente</th><th style="min-width: 100px;">Fecha</th><th class="text-end pe-4" style="min-width: 80px;">Saldo</th></tr></thead>
+            <tbody class="border-top-0">
+            {% for v in ventas_pendientes %}
+            <tr>
+              <td class="ps-4"><a href="{% url 'venta_credito_detail' v.pk %}" class="text-decoration-none fw-semibold" style="color: var(--orange-primary);">{{ v.cliente }}</a></td>
+              <td class="text-muted small">{{ v.fecha|date:"d/m/Y" }}</td>
+              <td class="text-end pe-4 fw-bold text-danger">${{ v.saldo_pendiente|default:0|floatformat:0 }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="3" class="text-center text-muted py-4">Sin pendientes</td></tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mt-1">
+  <div class="col-12">
+    <div class="card border-0 shadow-sm" style="border-radius: 12px;">
+      <div class="card-body p-4">
+        <h6 class="fw-bold mb-3" style="color: var(--text-main);">Accesos Rápidos</h6>
+        <div class="d-flex flex-wrap gap-2">
+          <a href="{% url 'venta_efectivo_list' %}" class="btn px-4 shadow-sm" style="background-color: white; border: 1px solid var(--border-light); color: var(--text-main); font-weight: 500; border-radius: 8px;"><i class="bi bi-cash me-2 text-success"></i>Venta Efectivo</a>
+          <a href="{% url 'venta_credito_create' %}" class="btn px-4 shadow-sm" style="background-color: white; border: 1px solid var(--border-light); color: var(--text-main); font-weight: 500; border-radius: 8px;"><i class="bi bi-credit-card me-2" style="color: var(--orange-primary);"></i>Venta Crédito</a>
+          <a href="{% url 'viaje_create' %}" class="btn px-4 shadow-sm" style="background-color: white; border: 1px solid var(--border-light); color: var(--text-main); font-weight: 500; border-radius: 8px;"><i class="bi bi-truck me-2 text-primary"></i>Nuevo Viaje</a>
+          <a href="{% url 'gasto_list' %}" class="btn px-4 shadow-sm" style="background-color: white; border: 1px solid var(--border-light); color: var(--text-main); font-weight: 500; border-radius: 8px;"><i class="bi bi-receipt me-2 text-danger"></i>Registrar Gasto</a>
+          <a href="{% url 'reporte_diario' %}" class="btn px-4 shadow-sm" style="background-color: white; border: 1px solid var(--border-light); color: var(--text-main); font-weight: 500; border-radius: 8px;"><i class="bi bi-bar-chart me-2 text-info"></i>Reporte del Día</a>
+          <a href="{% url 'inventario_create' %}" class="btn px-4 shadow-sm" style="background-color: white; border: 1px solid var(--border-light); color: var(--text-main); font-weight: 500; border-radius: 8px;"><i class="bi bi-clipboard-check me-2 text-warning"></i>Liquidar Inventario</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Cuentas por Cobrar -->
+<div class="modal fade" id="modalPorCobrar" tabindex="-1" aria-labelledby="modalPorCobrarLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content" style="border-radius: 12px; border: none;">
+      <div class="modal-header bg-light border-bottom-0" style="padding: 1.5rem;">
+        <div class="d-flex align-items-center">
+          <div class="stat-icon-wrapper d-inline-flex me-3 shadow-sm" style="width: 40px; height: 40px; background: var(--bg-base); color: var(--orange-primary);">
+            <i class="bi bi-wallet-fill"></i>
+          </div>
+          <div>
+            <h5 class="modal-title fw-bold" id="modalPorCobrarLabel" style="color: var(--text-main);">Cuentas por Cobrar</h5>
+            <span class="text-muted small">Total pendiente: <strong class="text-danger">${{ total_por_cobrar|default:0|floatformat:0 }}</strong></span>
+          </div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="bg-light">
+              <tr>
+                <th class="ps-4">Cliente</th>
+                <th>Fecha Emisión</th>
+                <th>Vencimiento</th>
+                <th>Total</th>
+                <th>Pagado</th>
+                <th>Saldo <i class="bi bi-exclamation-circle text-danger ms-1"></i></th>
+                <th class="pe-4" style="min-width: 250px;">Abonar</th>
+              </tr>
+            </thead>
+            <tbody class="border-top-0">
+              {% for vp in ventas_por_cobrar %}
+              <tr>
+                <td class="ps-4 fw-semibold" style="color: var(--text-main);">
+                  {{ vp.cliente }}
+                  <div class="small fw-normal text-muted">{{ vp.producto|default:"Varios" }}</div>
+                </td>
+                <td class="text-muted small">{{ vp.fecha|date:"d/m/Y" }}</td>
+                <td class="text-muted small">{% if vp.fecha_vencimiento %}{{ vp.fecha_vencimiento|date:"d/m/Y" }}{% else %}-{% endif %}</td>
+                <td class="fw-semibold">${{ vp.total|default:0|floatformat:0 }}</td>
+                <td class="text-success">${{ vp.total_pagado|default:0|floatformat:0 }}</td>
+                <td>
+                  <span class="badge text-dark fw-bold px-2 py-1" style="background-color: rgba(211, 47, 47, 0.1); color: #d32f2f !important;">
+                    ${{ vp.saldo_pendiente|default:0|floatformat:0 }}
+                  </span>
+                </td>
+                <td class="pe-4">
+                  <!-- Formulario de Abono Rápido -->
+                  <form method="post" action="{% url 'venta_credito_pago_add' vp.pk %}?next={% url 'dashboard' %}" class="d-flex align-items-center gap-1 m-0">
+                    {% csrf_token %}
+                    <div style="flex: 1;">
+                      <input type="number" step="0.01" name="monto" class="form-control form-control-sm" placeholder="Monto" required>
+                    </div>
+                    <div style="flex: 1;">
+                      <input type="date" name="fecha" value="{{ hoy|date:'Y-m-d' }}" class="form-control form-control-sm" required>
+                    </div>
+                    <select name="medio_pago" class="form-select form-select-sm d-none">
+                      <option value="efectivo" selected>Efec</option>
+                      <option value="transferencia">Transf</option>
+                    </select>
+                    <button type="submit" class="btn btn-success btn-sm px-2 text-white" title="Registrar Abono" style="background: var(--orange-primary); border: none;">
+                      <i class="bi bi-check2-circle"></i>
+                    </button>
+                    <a href="{% url 'venta_credito_detail' vp.pk %}" class="btn btn-outline-secondary btn-sm px-2" title="Ver Detalle">
+                      <i class="bi bi-eye"></i>
+                    </a>
+                    <a href="{% url 'venta_credito_delete' vp.pk %}?next={% url 'dashboard' %}" class="btn btn-sm btn-outline-danger px-2 border-0" title="Eliminar Venta Crédito">
+                      <i class="bi bi-trash3"></i>
+                    </a>
+                  </form>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="7" class="text-center py-5">
+                  <div class="text-muted"><i class="bi bi-shield-check fs-1 d-block mb-3" style="color: #4CAF50; opacity: 0.8;"></i>No hay clientes con saldos pendientes. Excelente.</div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SCRIPT: Chart.js Initialization -->
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // CHART 1: Ventas vs Gastos (Últimos 7 días)
+    const ventasCtx = document.getElementById('ventasGastosChart');
+    if (ventasCtx) {
+      new Chart(ventasCtx, {
+        type: 'line',
+        data: {
+          labels: ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'],
+          datasets: [
+            {
+              label: 'Ventas Efectivo ($)',
+              data: [1200, 1500, 1100, 1800, 2100, 1600, 1950],
+              borderColor: '#4CAF50',
+              backgroundColor: 'rgba(76, 175, 80, 0.1)',
+              borderWidth: 3,
+              tension: 0.4,
+              pointRadius: 5,
+              pointBackgroundColor: '#4CAF50',
+              pointBorderColor: 'white',
+              pointBorderWidth: 2,
+              fill: true
+            },
+            {
+              label: 'Gastos ($)',
+              data: [300, 400, 350, 500, 450, 380, 420],
+              borderColor: '#FF6B35',
+              backgroundColor: 'rgba(255, 107, 53, 0.1)',
+              borderWidth: 3,
+              tension: 0.4,
+              pointRadius: 5,
+              pointBackgroundColor: '#FF6B35',
+              pointBorderColor: 'white',
+              pointBorderWidth: 2,
+              fill: true
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'top',
+              labels: {
+                usePointStyle: true,
+                padding: 15,
+                font: { weight: '600', size: 13 }
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: { font: { size: 11 } }
+            },
+            x: {
+              ticks: { font: { size: 11 } }
+            }
+          }
+        }
+      });
+    }
+
+    // CHART 2: Distribución de Ingresos (Pie)
+    const ingresoCtx = document.getElementById('ingresosPieChart');
+    if (ingresoCtx) {
+      // Usar defaults validos para JS. Extraer como string y parsear a Float para evitar "SyntaxError" por renderizado de Django (separadores, nulos, etc). 
+      let valEfectivo = "{{ total_efectivo|default:'0' }}";
+      let valCredito = "{{ total_credito_hoy|default:'0' }}";
+      let v_efectivo = parseFloat(valEfectivo.replace(/,/g, '')) || 0;
+      let v_credito = parseFloat(valCredito.replace(/,/g, '')) || 0;
+      
+      new Chart(ingresoCtx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Efectivo', 'Crédito'],
+          datasets: [{
+            data: [v_efectivo, v_credito],
+            backgroundColor: ['#4CAF50', '#FF6B35'],
+            borderColor: ['#fff', '#fff'],
+            borderWidth: 3
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: { font: { size: 12 }, padding: 15 }
+            }
+          }
+        }
+      });
+    }
+  });
+</script>
+{% endblock %}
+

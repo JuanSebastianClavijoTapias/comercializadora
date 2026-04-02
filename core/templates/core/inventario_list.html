@@ -1,0 +1,141 @@
+{% extends 'core/base.html' %}
+{% block title %}Inventario{% endblock %}
+{% block page_title %}Liquidación de Inventario{% endblock %}
+{% block content %}
+
+<!-- FILTROS -->
+<div class="card border-0 shadow-sm mb-4" style="border-radius: 12px; background: var(--bg-light);">
+  <div class="card-body p-4">
+    <h6 class="fw-bold mb-4" style="color: var(--text-main); font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.5px;">
+      <i class="bi bi-funnel me-2"></i>Filtros de Búsqueda
+    </h6>
+    <div class="row g-3">
+      <div class="col-md-2">
+        <label class="form-label fw-semibold small" style="color: var(--text-secondary);">Desde</label>
+        <input type="date" class="form-control" style="border-radius: 8px; border: 1px solid var(--border-light); padding: 0.75rem 1rem;">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label fw-semibold small" style="color: var(--text-secondary);">Hasta</label>
+        <input type="date" class="form-control" style="border-radius: 8px; border: 1px solid var(--border-light); padding: 0.75rem 1rem;">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label fw-semibold small" style="color: var(--text-secondary);">Período</label>
+        <input type="text" class="form-control" placeholder="Ej: Enero 2024..." style="border-radius: 8px; border: 1px solid var(--border-light); padding: 0.75rem 1rem;">
+      </div>
+      <div class="col-md-3 d-flex align-items-end gap-2">
+        <button class="btn w-100" style="background: var(--orange-primary); color: white; border-radius: 8px; border: none; padding: 0.75rem 1rem; font-weight: 600; font-size: 0.9rem;">
+          <i class="bi bi-search me-1"></i>Buscar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ESTAD�?STICAS -->
+<div class="row row-cols-1 row-cols-md-3 g-3 mb-4">
+  <div class="col">
+    <div class="stat-card-white h-100">
+      <div>
+        <div class="small fw-semibold">Total Liquidaciones</div>
+        <div class="fs-4 fw-bold">{{ num_liquidaciones }}</div>
+        <div class="small">Períodos registrados</div>
+      </div>
+      <div class="stat-icon-wrapper">
+        <i class="bi bi-clipboard-data"></i>
+      </div>
+    </div>
+  </div>
+  <div class="col">
+    <div class="stat-card-white h-100">
+      <div>
+        <div class="small fw-semibold">Valor Total</div>
+        <div class="fs-4 fw-bold">${{ total_valor|default:0|floatformat:0 }}</div>
+        <div class="small">Suma de liquidaciones</div>
+      </div>
+      <div class="stat-icon-wrapper" style="background: rgba(76, 175, 80, 0.2); color: #4CAF50;">
+        <i class="bi bi-cash-coin"></i>
+      </div>
+    </div>
+  </div>
+  <div class="col">
+    <div class="stat-card-white h-100">
+      <div>
+        <div class="small fw-semibold">Valor Promedio</div>
+        <div class="fs-4 fw-bold">${{ valor_promedio|default:0|floatformat:0 }}</div>
+        <div class="small">Por liquidación</div>
+      </div>
+      <div class="stat-icon-wrapper" style="background: rgba(255, 107, 53, 0.2); color: var(--orange-primary);">
+        <i class="bi bi-graph-up"></i>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TABLA DE LIQUIDACIONES -->
+<div class="card border-0 shadow-sm" style="border-radius: 12px; overflow: hidden;">
+  <div class="card-header border-bottom-0 bg-white py-4 d-flex justify-content-between align-items-center">
+    <div class="d-flex align-items-center">
+      <div class="stat-icon-wrapper d-inline-flex me-3 shadow-sm" style="width: 40px; height: 40px; font-size: 1.2rem;">
+        <i class="bi bi-clipboard-data"></i>
+      </div>
+      <h5 class="mb-0 fw-bold" style="color: var(--text-main);">Liquidaciones</h5>
+    </div>
+    <a href="{% url 'inventario_create' %}" class="btn px-3 py-2 fw-semibold shadow-sm" style="background: var(--orange-primary); color: white; border: none; border-radius: 8px;">
+      <i class="bi bi-plus-lg me-1"></i> Nueva Liquidación
+    </a>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="bg-light">
+          <tr>
+            <th class="ps-4 fw-bold small" style="color: var(--text-secondary);">PER�?ODO</th>
+            <th class="fw-bold small" style="color: var(--text-secondary);">FECHA INICIO</th>
+            <th class="fw-bold small" style="color: var(--text-secondary);">FECHA FIN</th>
+            <th class="fw-bold small text-end pe-2" style="color: var(--text-secondary);">TOTAL VALOR</th>
+            <th class="fw-bold small text-end pe-2" style="color: var(--text-secondary);">CREADA</th>
+            <th class="text-end pe-4 fw-bold small" style="color: var(--text-secondary);">ACCIONES</th>
+          </tr>
+        </thead>
+        <tbody class="border-top-0">
+        {% for l in liquidaciones %}
+        <tr>
+          <td class="ps-4 fw-semibold" style="color: var(--text-main);">{{ l }}</td>
+          <td class="text-muted small"><i class="bi bi-calendar-event me-2" style="opacity: 0.5;"></i>{{ l.fecha_inicio|date:"d/m/Y" }}</td>
+          <td class="text-muted small"><i class="bi bi-calendar-check me-2" style="opacity: 0.5;"></i>{{ l.fecha_fin|date:"d/m/Y" }}</td>
+          <td class="text-end pe-2">
+            <span class="badge fw-bold px-2 py-1" style="background-color: rgba(255, 107, 53, 0.15); color: var(--orange-primary); border: 1px solid rgba(255, 107, 53, 0.3);">
+              ${{ l.total_valor|default:0|floatformat:0 }}
+            </span>
+          </td>
+          <td class="text-end pe-2 text-muted small"><i class="bi bi-clock me-1"></i>{{ l.fecha_creacion|date:"d/m/Y H:i" }}</td>
+          <td class="text-end pe-4">
+            <a href="{% url 'inventario_detail' l.pk %}" class="btn btn-sm" style="background-color: var(--bg-light); color: var(--orange-primary); border-radius: 6px; padding: 6px 10px; border: 1px solid var(--border-light);">
+              <i class="bi bi-eye"></i>
+            </a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" class="text-center py-5">
+            <div class="d-flex flex-column align-items-center justify-content-center" style="color: var(--text-secondary);">
+              <i class="bi bi-inbox fs-1 mb-3" style="opacity: 0.4;"></i>
+              <h6 class="fw-semibold mb-2">Sin liquidaciones registradas</h6>
+              <p class="small text-muted mb-4">Aún no has creado ninguna liquidación de inventario en el sistema.</p>
+              <a href="{% url 'inventario_create' %}" class="btn btn-sm px-4" style="background: var(--orange-primary); color: white; border-radius: 8px;">
+                <i class="bi bi-plus-lg me-1"></i>Crear tu primera liquidación
+              </a>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+
+
