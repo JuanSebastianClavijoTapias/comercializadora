@@ -274,23 +274,62 @@ def viaje_create(request):
 
 @login_required
 def viaje_detail(request, pk):
+    from decimal import Decimal, InvalidOperation
     viaje = get_object_or_404(Viaje, pk=pk)
     lotes = viaje.lotes.select_related('clasificacion').all()
-    pagos = viaje.pagos_proveedor.all()
-    lote_form = LoteClasificacionForm(request.POST or None)
-    # Filter clasificaciones by producto
-    lote_form.fields['clasificacion'].queryset = Clasificacion.objects.filter(
-        producto=viaje.producto, activo=True)
-    pago_form = PagoProveedorForm()
-    if 'lote_submit' in request.POST and lote_form.is_valid():
-        lote = lote_form.save(commit=False)
-        lote.viaje = viaje
-        lote.save()
-        messages.success(request, 'Lote agregado.')
+    lotes_dict = {lote.clasificacion_id: lote for lote in lotes}
+    
+    clasificaciones = Clasificacion.objects.filter(
+        producto=viaje.producto, activo=True
+    ).order_by('orden', 'nombre')
+    
+    if request.method == 'POST' and 'guardar_clasificaciones' in request.POST:
+        for c in clasificaciones:
+            kg_str = request.POST.get(f'kg_neto_{c.id}', '')
+            precio_str = request.POST.get(f'precio_por_kg_{c.id}', '')
+            
+            try:
+                kg_val = Decimal(kg_str) if kg_str.strip() else Decimal('0')
+            except InvalidOperation:
+                kg_val = Decimal('0')
+                
+            try:
+                pr_val = Decimal(precio_str) if precio_str.strip() else Decimal('0')
+            except InvalidOperation:
+                pr_val = Decimal('0')
+                
+            if kg_val > 0 or pr_val > 0:
+                lote, created = LoteClasificacion.objects.get_or_create(
+                    viaje=viaje, 
+                    clasificacion=c, 
+                    defaults={'kg_neto': kg_val, 'precio_por_kg': pr_val}
+                )
+                if not created:
+                    lote.kg_neto = kg_val
+                    lote.precio_por_kg = pr_val
+                    lote.save()
+            else:
+                if c.id in lotes_dict:
+                    lotes_dict[c.id].delete()
+                    
+        messages.success(request, 'Clasificaciones y precios guardados.')
         return redirect('viaje_detail', pk=pk)
+
+    # Pre-build data for the template
+    clases_data = []
+    for c in clasificaciones:
+        ext_lote = lotes_dict.get(c.id)
+        clases_data.append({
+            'clasificacion': c,
+            'kg_neto': float(ext_lote.kg_neto) if (ext_lote and ext_lote.kg_neto) else '',
+            'precio_por_kg': float(ext_lote.precio_por_kg) if (ext_lote and ext_lote.precio_por_kg) else ''
+        })
+
+    pagos = viaje.pagos_proveedor.all()
+    pago_form = PagoProveedorForm()
     ctx = {
-        'viaje': viaje, 'lotes': lotes, 'pagos': pagos,
-        'lote_form': lote_form, 'pago_form': pago_form,
+        'viaje': viaje, 'clases_data': clases_data, 'pagos': pagos,
+        'pago_form': pago_form,
     }
     return render(request, 'core/viaje_detail.html', ctx)
 

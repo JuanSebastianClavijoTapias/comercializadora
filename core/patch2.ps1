@@ -1,4 +1,10 @@
-ï»¿$final  <div class="col-md-8">
+$html = Get-Content 'C:\Users\samue\Downloads\PROYECTOS_GAMORA\django_comercializadora\comercializadora\fruta_system\fruta_system\core\templates\core\viaje_detail.html' -Raw
+$idxstart = $html.IndexOf('  <div class="col-md-8">')
+$idxend = $html.IndexOf('Pagos al Proveedor')
+$idxend = $html.LastIndexOf('<div class="card">', $idxend)
+Write-Host "Indices: $idxstart $idxend"
+$new_html = @"
+  <div class="col-md-8">
     <div class="card mb-3">
       <div class="card-header py-2 fw-semibold d-flex justify-content-between align-items-center">
         <span><i class="bi bi-list-check me-2 text-success"></i>Distribuir Neto en Clasificaciones</span>
@@ -11,7 +17,7 @@
           <table class="table table-hover mb-0">
             <thead>
               <tr>
-                <th>Clasificaci&oacute;n</th>
+                <th>Clasificación</th>
                 <th>Kg Neto</th>
                 <th>Precio / Kg</th>
                 <th>Total</th>
@@ -48,7 +54,7 @@
           </table>
           <div class="p-3 border-top d-flex justify-content-between align-items-center">
             <span class="text-danger small fw-bold" id="error_msg" style="display:none;">
-              <i class="bi bi-exclamation-triangle me-1"></i>&iexcl;Ha excedido los Kg Netos del viaje!
+              <i class="bi bi-exclamation-triangle me-1"></i>¡Ha excedido los Kg Netos del viaje!
             </span>
             <button type="submit" class="btn btn-success" id="btn_guardar_clas">
               <i class="bi bi-save me-1"></i>Guardar Clasificaciones
@@ -59,5 +65,4 @@
     </div>
   </div>
 </div>
-
 
