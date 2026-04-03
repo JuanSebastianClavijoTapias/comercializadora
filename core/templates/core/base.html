@@ -56,7 +56,7 @@
   /* ==================== SIDEBAR MEJORADA ==================== */
   .sidebar {
     width: var(--sidebar-width);
-    min-height: 100vh;
+    height: 100vh;
     background: var(--surface-color);
     border-right: 1px solid var(--border-light);
     position: fixed;
@@ -666,12 +666,49 @@
     background-clip: text;
   }
 
+  /* ==================== HAMBURGER BUTTON ==================== */
+  .hamburger-btn {
+    display: none;
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    border-radius: 10px;
+    color: #fff;
+    width: 42px;
+    height: 42px;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    flex-shrink: 0;
+  }
+
+  .hamburger-btn:hover {
+    background: rgba(255, 255, 255, 0.35);
+  }
+
+  /* ==================== SIDEBAR OVERLAY ==================== */
+  .sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+  }
+
+  .sidebar-overlay.show {
+    display: block;
+  }
+
   /* ==================== RESPONSIVE ==================== */
   @media (max-width: 992px) {
     .sidebar {
       transform: translateX(-100%);
       width: 260px;
       transition: transform 0.3s ease;
+      z-index: 1001;
     }
 
     .sidebar.show {
@@ -685,20 +722,40 @@
     .content-area {
       padding: 1.5rem 1.25rem;
     }
+
+    .hamburger-btn {
+      display: flex;
+    }
+
+    .topbar-brand-mobile {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: #fff;
+      font-family: 'Poppins', sans-serif;
+      font-weight: 700;
+      font-size: 1.1rem;
+    }
+  }
+
+  @media (min-width: 993px) {
+    .topbar-brand-mobile {
+      display: none;
+    }
   }
 
   @media (max-width: 768px) {
     .topbar {
-      padding: 1rem;
+      padding: 0.875rem 1rem;
       font-size: 0.9rem;
     }
 
     .page-title-text {
-      font-size: 1.15rem;
+      font-size: 1rem;
     }
 
     .content-area {
-      padding: 1.25rem;
+      padding: 1.25rem 0.875rem;
     }
 
     .card-header {
@@ -712,18 +769,50 @@
       gap: 1rem;
     }
 
+    .table-responsive {
+      border-radius: 10px;
+    }
+
     .table {
-      font-size: 0.85rem;
+      font-size: 0.82rem;
     }
 
     .table th, .table td {
-      padding: 0.75rem;
+      padding: 0.6rem 0.75rem;
+    }
+
+    .btn {
+      font-size: 0.85rem;
+      padding: 0.5rem 1rem;
+    }
+
+    .page-title-text .bi {
+      font-size: 1.1rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .topbar-user-badge {
+      display: none;
+    }
+
+    .content-area {
+      padding: 1rem 0.75rem;
+    }
+
+    .card-body {
+      padding: 1.25rem;
+    }
+
+    .panel-card {
+      padding: 1.25rem;
     }
   }
 </style>
 {% block extra_css %}{% endblock %}
 </head>
 <body>
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
 <div class="sidebar" id="sidebar">
   <div class="sidebar-brand">
     <h5><i class="bi bi-basket2-fill"></i>FrutaSystem</h5>
@@ -777,11 +866,17 @@
 
 <div class="main-content">
   <div class="topbar">
+    <button class="hamburger-btn" id="hamburgerBtn" aria-label="Abrir menú">
+      <i class="bi bi-list"></i>
+    </button>
+    <div class="topbar-brand-mobile">
+      <i class="bi bi-basket2-fill"></i> FrutaSystem
+    </div>
     <div class="flex-grow-1">
-      <h6 class="page-title-text">{% block page_title %}{% endblock %}</h6>
+      <h6 class="page-title-text d-none d-lg-flex">{% block page_title %}{% endblock %}</h6>
     </div>
     <div class="d-flex align-items-center gap-3">
-      <small style="color: var(--text-sec);"><i class="bi bi-person-circle me-1"></i>{{ request.user.username }}</small>
+      <small style="color: rgba(255,255,255,0.9);"><i class="bi bi-person-circle me-1"></i>{{ request.user.username }}</small>
     </div>
   </div>
   <div class="content-area">
@@ -799,13 +894,44 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('sidebarOverlay');
+  const hamburgerBtn = document.getElementById('hamburgerBtn');
+
+  function openSidebar() {
+    sidebar.classList.add('show');
+    overlay.classList.add('show');
+    hamburgerBtn.innerHTML = '<i class="bi bi-x-lg"></i>';
+  }
+
+  function closeSidebar() {
+    sidebar.classList.remove('show');
+    overlay.classList.remove('show');
+    hamburgerBtn.innerHTML = '<i class="bi bi-list"></i>';
+  }
+
+  hamburgerBtn.addEventListener('click', () => {
+    sidebar.classList.contains('show') ? closeSidebar() : openSidebar();
+  });
+
+  overlay.addEventListener('click', closeSidebar);
+
   // Cerrar sidebar en mobile al hacer click en enlace
   document.querySelectorAll('.nav-link').forEach(link => {
     link.addEventListener('click', () => {
-      if(window.innerWidth < 992) {
-        document.getElementById('sidebar').classList.remove('show');
+      if (window.innerWidth < 992) {
+        closeSidebar();
       }
     });
+  });
+
+  // Al redimensionar a desktop, limpiar estado mobile
+  window.addEventListener('resize', () => {
+    if (window.innerWidth >= 992) {
+      sidebar.classList.remove('show');
+      overlay.classList.remove('show');
+      hamburgerBtn.innerHTML = '<i class="bi bi-list"></i>';
+    }
   });
 </script>
 {% block extra_js %}{% endblock %}
