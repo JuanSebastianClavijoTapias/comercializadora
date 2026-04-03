@@ -59,24 +59,32 @@ class Viaje(models.Model):
     producto = models.ForeignKey(Producto, on_delete=models.PROTECT, related_name='viajes', verbose_name='Producto')
     fecha = models.DateField(verbose_name='Fecha')
     observaciones = models.TextField(blank=True, verbose_name='Observaciones')
-    
-    kg_bruto = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name='Kg Bruto Recibido')
     kg_podridos = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name='Kg Podridos / Rechazo')
-    cantidad_canastillas_negras = models.IntegerField(default=0, verbose_name='Canastillas Negras')
-    cantidad_canastillas_colores = models.IntegerField(default=0, verbose_name='Canastillas Colores')
     precio_total_acordado = models.DecimalField(max_digits=12, decimal_places=2, default=0, verbose_name='Precio Total Acordado')
-    
     created_at = models.DateTimeField(auto_now_add=True)
+
     def __str__(self): return f"Viaje {self.producto} - {self.fecha} ({self.proveedor})"
-    
+
+    @property
+    def kg_bruto(self):
+        return sum((p.kg_bruto for p in self.pesadas.all()), Decimal('0'))
+
+    @property
+    def cantidad_canastillas_negras(self):
+        return sum(p.num_canastillas_negras for p in self.pesadas.all())
+
+    @property
+    def cantidad_canastillas_colores(self):
+        return sum(p.num_canastillas_colores for p in self.pesadas.all())
+
     @property
     def peso_canastillas(self):
-        return (Decimal(str(self.cantidad_canastillas_negras)) * self.PESO_CANASTILLA_NEGRA +
-                Decimal(str(self.cantidad_canastillas_colores)) * self.PESO_CANASTILLA_COLOR)
+        return sum((p.peso_canastillas for p in self.pesadas.all()), Decimal('0'))
 
     @property
     def neto_a_pagar(self):
-        neto = self.kg_bruto - self.kg_podridos - self.peso_canastillas
+        kg_p = self.kg_podridos or Decimal('0')
+        neto = self.kg_bruto - kg_p - self.peso_canastillas
         if self.producto.tiene_descuento_gobierno and self.producto.porcentaje_descuento > 0:
             neto = neto - (neto * self.producto.porcentaje_descuento / 100)
         return max(neto, Decimal('0'))
@@ -91,6 +99,35 @@ class Viaje(models.Model):
     def saldo_pendiente(self): return self.total_valor - self.total_pagado
     class Meta:
         verbose_name = 'Viaje'; verbose_name_plural = 'Viajes'; ordering = ['-fecha', '-created_at']
+
+
+class PesadaViaje(models.Model):
+    viaje = models.ForeignKey(Viaje, on_delete=models.CASCADE, related_name='pesadas', verbose_name='Viaje')
+    num_canastillas_negras = models.PositiveIntegerField(default=0, verbose_name='Canastillas Negras (1.6 kg)')
+    num_canastillas_colores = models.PositiveIntegerField(default=0, verbose_name='Canastillas Color (2.2 kg)')
+    kg_bruto = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Kg Bruto')
+
+    @property
+    def total_canastillas(self):
+        return self.num_canastillas_negras + self.num_canastillas_colores
+
+    @property
+    def peso_canastillas(self):
+        return (Decimal(str(self.num_canastillas_negras)) * Decimal('1.6') +
+                Decimal(str(self.num_canastillas_colores)) * Decimal('2.2'))
+
+    @property
+    def kg_neto(self):
+        return max(self.kg_bruto - self.peso_canastillas, Decimal('0'))
+
+    def __str__(self):
+        partes = []
+        if self.num_canastillas_negras: partes.append(f"{self.num_canastillas_negras} neg.")
+        if self.num_canastillas_colores: partes.append(f"{self.num_canastillas_colores} col.")
+        return f"{' + '.join(partes) or '0 can.'} - {self.kg_bruto} kg bruto"
+
+    class Meta:
+        verbose_name = 'Pesada'; verbose_name_plural = 'Pesadas'; ordering = ['id']
 
 class LoteClasificacion(models.Model):
     viaje = models.ForeignKey(Viaje, on_delete=models.CASCADE, related_name='lotes', verbose_name='Viaje')

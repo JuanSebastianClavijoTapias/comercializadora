@@ -311,7 +311,7 @@ def viaje_create(request):
     form = ViajeForm(request.POST or None)
     if form.is_valid():
         viaje = form.save()
-        messages.success(request, 'Viaje registrado. Ahora ingrese los lotes por clasificación.')
+        messages.success(request, 'Viaje registrado. Ahora ingrese las pesadas del viaje.')
         return redirect('viaje_detail', pk=viaje.pk)
     return render(request, 'core/form_generic.html', {'form': form, 'titulo': 'Registrar Nuevo Viaje', 'back_url': 'viaje_list'})
 
@@ -321,25 +321,22 @@ def viaje_detail(request, pk):
     viaje = get_object_or_404(Viaje, pk=pk)
     lotes = viaje.lotes.select_related('clasificacion').all()
     lotes_dict = {lote.clasificacion_id: lote for lote in lotes}
-    
+    pesadas = viaje.pesadas.all()
+
     clasificaciones = Clasificacion.objects.filter(
         producto=viaje.producto, activo=True
     ).order_by('orden', 'nombre')
-    
+
     if request.method == 'POST' and 'guardar_clasificaciones' in request.POST:
         for c in clasificaciones:
             kg_str = request.POST.get(f'kg_neto_{c.id}', '')
-            
             try:
                 kg_val = Decimal(kg_str) if kg_str.strip() else Decimal('0')
             except InvalidOperation:
                 kg_val = Decimal('0')
-                
             if kg_val > 0:
                 lote, created = LoteClasificacion.objects.get_or_create(
-                    viaje=viaje, 
-                    clasificacion=c, 
-                    defaults={'kg_neto': kg_val}
+                    viaje=viaje, clasificacion=c, defaults={'kg_neto': kg_val}
                 )
                 if not created:
                     lote.kg_neto = kg_val
@@ -347,33 +344,22 @@ def viaje_detail(request, pk):
             else:
                 if c.id in lotes_dict:
                     lotes_dict[c.id].delete()
-        
+
         # Guardar automáticamente en inventario
-        from django.utils import timezone
         liq, _ = LiquidacionInventario.objects.get_or_create(
-            fecha_inicio=viaje.fecha,
-            fecha_fin=viaje.fecha,
+            fecha_inicio=viaje.fecha, fecha_fin=viaje.fecha,
             defaults={'observaciones': f'Entrada de viaje {viaje.id}'}
         )
-        
-        # Crear/actualizar detalles de inventario
         for lote in viaje.lotes.all():
-            DetalleInventario.objects.filter(
-                liquidacion=liq,
-                clasificacion=lote.clasificacion
-            ).delete()
+            DetalleInventario.objects.filter(liquidacion=liq, clasificacion=lote.clasificacion).delete()
             DetalleInventario.objects.create(
-                liquidacion=liq,
-                clasificacion=lote.clasificacion,
-                kg_ingresado=lote.kg_neto,
-                kg_vendido=Decimal('0'),
-                kg_restante=lote.kg_neto,
-                precio_por_kg=Decimal('0')
+                liquidacion=liq, clasificacion=lote.clasificacion,
+                kg_ingresado=lote.kg_neto, kg_vendido=Decimal('0'),
+                kg_restante=lote.kg_neto, precio_por_kg=Decimal('0')
             )
-        
         messages.success(request, 'Clasificaciones guardadas y registradas en inventario.')
         return redirect('viaje_detail', pk=pk)
-    
+
     # Pre-build data for the template
     clases_data = []
     for c in clasificaciones:
@@ -382,41 +368,71 @@ def viaje_detail(request, pk):
             'clasificacion': c,
             'kg_neto': float(ext_lote.kg_neto) if (ext_lote and ext_lote.kg_neto) else '',
         })
-    
+
     pagos = viaje.pagos_proveedor.all()
     pago_form = PagoProveedorForm()
-    
-    # Pasar los lotes al contexto
+    pesada_form = PesadaViajeForm()
     total_kg_neto = sum(lote.kg_neto for lote in lotes)
-    
-    # Cálculos de desglose de peso para mostrar paso a paso
-    kg_bruto = Decimal(str(viaje.kg_bruto)) if viaje.kg_bruto else Decimal('0')
-    kg_podrido = Decimal(str(viaje.kg_podridos)) if viaje.kg_podridos else Decimal('0')
-    cant_neg = viaje.cantidad_canastillas_negras or 0
-    cant_col = viaje.cantidad_canastillas_colores or 0
-    
-    peso_can_negras = Decimal(str(cant_neg)) * Decimal('1.6')
-    peso_can_colores = Decimal(str(cant_col)) * Decimal('2.2')
-    
-    after_podrido = kg_bruto - kg_podrido
-    after_negras = after_podrido - peso_can_negras
-    neto_final = after_negras - peso_can_colores
-    
+
+    # Cálculos de desglose de peso desde pesadas
+    kg_bruto_total = viaje.kg_bruto
+    peso_can_negras = sum((Decimal(str(p.num_canastillas_negras)) * Decimal('1.6') for p in pesadas), Decimal('0'))
+    peso_can_colores = sum((Decimal(str(p.num_canastillas_colores)) * Decimal('2.2') for p in pesadas), Decimal('0'))
+    cant_neg = sum(p.num_canastillas_negras for p in pesadas)
+    cant_col = sum(p.num_canastillas_colores for p in pesadas)
+    peso_total_canastillas = peso_can_negras + peso_can_colores
+    kg_podrido = viaje.kg_podridos or Decimal('0')
+    neto_final = max(kg_bruto_total - peso_total_canastillas - kg_podrido, Decimal('0'))
+
     ctx = {
-        'viaje': viaje, 'clases_data': clases_data, 'pagos': pagos,
-        'pago_form': pago_form, 'lotes': lotes, 'total_kg_neto': total_kg_neto,
+        'viaje': viaje,
+        'pesadas': pesadas,
+        'pesada_form': pesada_form,
+        'clases_data': clases_data,
+        'pagos': pagos,
+        'pago_form': pago_form,
+        'lotes': lotes,
+        'total_kg_neto': total_kg_neto,
         # Desglose de cálculos
-        'kg_bruto': float(kg_bruto),
+        'kg_bruto_total': float(kg_bruto_total),
         'kg_podrido': float(kg_podrido),
         'cant_neg': cant_neg,
         'cant_col': cant_col,
         'peso_can_negras': float(peso_can_negras),
         'peso_can_colores': float(peso_can_colores),
-        'after_podrido': float(after_podrido),
-        'after_negras': float(after_negras),
+        'peso_total_canastillas': float(peso_total_canastillas),
         'neto_final': float(neto_final),
     }
     return render(request, 'core/viaje_detail.html', ctx)
+
+@login_required
+def pesada_add(request, pk):
+    """Agrega una pesada (remesa de canastillas) al viaje."""
+    viaje = get_object_or_404(Viaje, pk=pk)
+    if request.method == 'POST':
+        form = PesadaViajeForm(request.POST)
+        if form.is_valid():
+            pesada = form.save(commit=False)
+            pesada.viaje = viaje
+            pesada.save()
+            partes = []
+            if pesada.num_canastillas_negras: partes.append(f'{pesada.num_canastillas_negras} negras')
+            if pesada.num_canastillas_colores: partes.append(f'{pesada.num_canastillas_colores} colores')
+            messages.success(request, f'Pesada registrada: {", ".join(partes) or "0 canastillas"} — {pesada.kg_bruto} kg bruto.')
+        else:
+            messages.error(request, 'Error al registrar la pesada. Verifique los datos.')
+    return redirect('viaje_detail', pk=pk)
+
+
+@login_required
+def pesada_delete(request, pk):
+    """Elimina una pesada."""
+    pesada = get_object_or_404(PesadaViaje, pk=pk)
+    viaje_pk = pesada.viaje_id
+    pesada.delete()
+    messages.success(request, 'Pesada eliminada.')
+    return redirect('viaje_detail', pk=viaje_pk)
+
 
 @login_required
 def viaje_pago_add(request, pk):

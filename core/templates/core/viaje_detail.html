@@ -1,232 +1,327 @@
-﻿{% extends 'core/base.html' %}
+{% extends 'core/base.html' %}
 {% block title %}Detalle Viaje{% endblock %}
-{% block page_title %}Detalle del Viaje{% endblock %}
+{% block page_title %}<i class="bi bi-truck me-2"></i>Detalle del Viaje{% endblock %}
 {% block content %}
-<div class="mb-3"><a href="{% url 'viaje_list' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i>Volver</a></div>
+<div class="mb-3 d-flex align-items-center gap-2">
+  <a href="{% url 'viaje_list' %}" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-arrow-left me-1"></i>Volver
+  </a>
+  <a href="{% url 'viaje_detalles_edit' viaje.pk %}" class="btn btn-sm btn-primary">
+    <i class="bi bi-pencil me-1"></i>Editar (kg podrido / precio)
+  </a>
+  <a href="{% url 'viaje_delete' viaje.pk %}" class="btn btn-sm btn-danger ms-auto"
+     onclick="return confirm('Eliminar este viaje?')">
+    <i class="bi bi-trash3 me-1"></i>Eliminar
+  </a>
+</div>
 
-<!-- SECCIÓN DE DETALLES DEL VIAJE (EDITABLES) -->
-<div class="card mb-3">
-  <div class="card-header py-2 d-flex justify-content-between align-items-center fw-semibold">
-    <span><i class="bi bi-info-circle me-2"></i>Detalles del Viaje - Información Adicional</span>
-    <a href="{% url 'viaje_detalles_edit' viaje.pk %}" class="btn btn-sm btn-primary">
-      <i class="bi bi-pencil me-1"></i>Editar Detalles
-    </a>
+<!-- INFO CABECERA -->
+<div class="row g-3 mb-3">
+  <div class="col-md-6 col-lg-3">
+    <div class="stat-card-white h-100">
+      <div>
+        <div class="small text-muted mb-1">Producto</div>
+        <div class="fw-bold fs-5">{{ viaje.producto }}</div>
+      </div>
+      <div class="stat-icon-wrapper"><i class="bi bi-box"></i></div>
+    </div>
   </div>
-  <div class="card-body">
-    <!-- DESGLOSE DE CÁLCULOS DE PESO -->
-    <div class="row">
-      <div class="col-md-8">
-        <h6 class="text-muted mb-3"><i class="bi bi-calculator me-1"></i>Desglose de Cálculo de Peso Neto</h6>
-        
-        <!-- Tabla de desglose -->
-        <div style="border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
-          <div style="background-color: #f5f5f5; padding: 12px 15px; border-bottom: 2px solid #ddd;">
-            <p style="margin: 0; font-weight: 600; font-size: 0.95rem;">📊 Cálculo Progresivo</p>
-          </div>
-          
-          <!-- Kg Bruto -->
-          <div style="padding: 12px 15px; border-bottom: 1px solid #eee; background-color: #fff;">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-              <span>1. Kg Bruto Recibido</span>
-              <span style="font-weight: 700; color: var(--orange-primary); font-size: 1.1rem;">
-                {{ kg_bruto|floatformat:2 }} kg
-              </span>
-            </div>
-          </div>
-
-          <!-- Kg Podridos -->
-          <div style="padding: 12px 15px; border-bottom: 1px solid #eee; background-color: #fff;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-              <span>2. Menos: Kg Podrido / Rechazo</span>
-              <span style="color: #d32f2f; font-weight: 600;">-{{ kg_podrido|floatformat:2 }} kg</span>
-            </div>
-            <div style="display: flex; justify-content: space-between; align-items: center; padding-left: 20px; font-style: italic; color: #666; font-size: 0.9rem;">
-              <span>=</span>
-              <span style="font-weight: 600;">{{ after_podrido|floatformat:2 }} kg</span>
-            </div>
-          </div>
-
-          <!-- Canastillas Negras -->
-          <div style="padding: 12px 15px; border-bottom: 1px solid #eee; background-color: #fff;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-              <span>3. Menos: Canastillas Negras</span>
-              <span style="color: #ff9800; font-weight: 600;">
-                -{{ cant_neg }} × 1.6 kg = -{{ peso_can_negras|floatformat:2 }} kg
-              </span>
-            </div>
-            <div style="display: flex; justify-content: space-between; align-items: center; padding-left: 20px; font-style: italic; color: #666; font-size: 0.9rem;">
-              <span>=</span>
-              <span style="font-weight: 600;">{{ after_negras|floatformat:2 }} kg</span>
-            </div>
-          </div>
-
-          <!-- Canastillas de Colores -->
-          <div style="padding: 12px 15px; border-bottom: 2px solid #ff6b35; background-color: #fff;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-              <span>4. Menos: Canastillas Colores</span>
-              <span style="color: #1976d2; font-weight: 600;">
-                -{{ cant_col }} × 2.2 kg = -{{ peso_can_colores|floatformat:2 }} kg
-              </span>
-            </div>
-            <div style="display: flex; justify-content: space-between; align-items: center; padding-left: 20px; font-style: italic; color: #666; font-size: 0.9rem;">
-              <span>=</span>
-              <span style="font-weight: 600; color: var(--orange-primary);">{{ neto_final|floatformat:2 }} kg</span>
-            </div>
-          </div>
-
-          <!-- Neto Final -->
-          <div style="padding: 15px; background: linear-gradient(135deg, var(--orange-primary) 0%, var(--orange-secondary) 100%); color: white; font-weight: 700; font-size: 1.1rem;">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-              <span>✓ Neto Final a Pagar (Proveedor):</span>
-              <span style="font-size: 1.3rem;">{{ neto_final|floatformat:2 }} kg</span>
-            </div>
-          </div>
-        </div>
+  <div class="col-md-6 col-lg-3">
+    <div class="stat-card-white h-100">
+      <div>
+        <div class="small text-muted mb-1">Proveedor</div>
+        <div class="fw-bold fs-5">{{ viaje.proveedor }}</div>
       </div>
-
-      <!-- Resumen de detalles editables -->
-      <div class="col-md-4">
-        <h6 class="text-muted mb-3"><i class="bi bi-sliders me-1"></i>Parámetros</h6>
-        <div style="background-color: #f9f9f9; padding: 12px; border-radius: 8px; border: 1px solid #e0e0e0;">
-          <p class="mb-2">
-            <strong>Kg Podrido:</strong><br>
-            <span class="text-danger" style="font-size: 1.1rem; font-weight: 600;">{{ kg_podrido|floatformat:2 }} kg</span>
-          </p>
-          <hr style="margin: 10px 0;">
-          <p class="mb-2">
-            <strong>Canastillas Negras:</strong><br>
-            <span style="font-size: 1.1rem; font-weight: 600;">{{ cant_neg }}</span>
-            <small style="color: #666; display: block;">@ 1.6 kg c/u = {{ peso_can_negras|floatformat:2 }} kg</small>
-          </p>
-          <hr style="margin: 10px 0;">
-          <p class="mb-2">
-            <strong>Canastillas Colores:</strong><br>
-            <span style="font-size: 1.1rem; font-weight: 600;">{{ cant_col }}</span>
-            <small style="color: #666; display: block;">@ 2.2 kg c/u = {{ peso_can_colores|floatformat:2 }} kg</small>
-          </p>
-          <hr style="margin: 10px 0;">
-          <p class="mb-0">
-            <strong>Precio Total Acordado:</strong><br>
-            <span class="text-success" style="font-size: 1.1rem; font-weight: 600;">${{ viaje.precio_total_acordado|default:0|floatformat:2 }}</span>
-          </p>
-        </div>
+      <div class="stat-icon-wrapper"><i class="bi bi-shop"></i></div>
+    </div>
+  </div>
+  <div class="col-md-6 col-lg-3">
+    <div class="stat-card-white h-100">
+      <div>
+        <div class="small text-muted mb-1">Fecha</div>
+        <div class="fw-bold fs-5">{{ viaje.fecha }}</div>
       </div>
+      <div class="stat-icon-wrapper"><i class="bi bi-calendar3"></i></div>
+    </div>
+  </div>
+  <div class="col-md-6 col-lg-3">
+    <div class="stat-card-white h-100">
+      <div>
+        <div class="small text-muted mb-1">Saldo Proveedor</div>
+        <div class="fw-bold fs-5 {% if viaje.saldo_pendiente > 0 %}text-danger{% else %}text-success{% endif %}">
+          ${{ viaje.saldo_pendiente|floatformat:0 }}
+        </div>
+        <div class="small text-muted">de ${{ viaje.total_valor|floatformat:0 }}</div>
+      </div>
+      <div class="stat-icon-wrapper"><i class="bi bi-cash-stack"></i></div>
     </div>
   </div>
 </div>
 
+<!-- PESADAS + RESUMEN -->
 <div class="row g-3 mb-3">
-  <div class="col-md-4">
+
+  <!-- COLUMNA PESADAS -->
+  <div class="col-lg-7">
     <div class="card h-100">
-      <div class="card-body">
-        <h6 class="text-muted mb-3">Información del Viaje</h6>
-        <p class="mb-1"><strong>Producto:</strong> {{ viaje.producto }}</p>
-        <p class="mb-1"><strong>Proveedor:</strong> {{ viaje.proveedor }}</p>
-        <p class="mb-1"><strong>Fecha:</strong> {{ viaje.fecha }}</p>
-        {% if viaje.observaciones %}<p class="mb-1"><strong>Obs:</strong> {{ viaje.observaciones }}</p>{% endif %}
-        <hr>
-        <p class="mb-1" style="font-size: 0.9rem;"><strong>Kg Bruto Recibido:</strong> {{ viaje.kg_bruto|default:0|floatformat:2 }} kg</p>
-        <hr>
-        <div class="p-2 border rounded" style="background: rgba(76, 175, 80, 0.05); border-color: rgba(76, 175, 80, 0.2);">
-          <p class="mb-1"><strong>Neto a Pagar (Proveedor):</strong> <span class="text-success fw-bold">{{ viaje.neto_a_pagar|default:0|floatformat:2 }} kg</span></p>
-          <p class="mb-1"><strong>Neto Distribuido (Lotes):</strong> <span class="text-primary fw-bold">{{ viaje.total_kg_neto|default:0|floatformat:2 }} kg</span></p>
-        </div>
-        <hr>
-        <p class="mb-1"><strong>Total Valor:</strong> <span class="text-success fw-bold">${{ viaje.total_valor|default:0|floatformat:0 }}</span></p>
-        <p class="mb-1"><strong>Total Pagado:</strong> <span class="text-primary">${{ viaje.total_pagado|default:0|floatformat:0 }}</span></p>
-        <p class="mb-0"><strong>Saldo Pendiente:</strong> <span class="{% if viaje.saldo_pendiente > 0 %}text-danger fw-bold{% else %}text-success{% endif %}">${{ viaje.saldo_pendiente|default:0|floatformat:0 }}</span></p>
-      </div>
-    </div>
-  </div>
-  <div class="col-md-8">
-    <div class="card mb-3">
-      <div class="card-header py-2 fw-semibold d-flex justify-content-between align-items-center">
-        <span><i class="bi bi-list-check me-2 text-success"></i>Distribuir Neto en Clasificaciones</span>
-        <span class="badge bg-primary" id="kilos_restantes_badge">Calculando...</span>
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-speedometer2 me-2"></i>Pesadas del Viaje</span>
+        <span class="badge" style="background:rgba(255,255,255,0.25); font-size:0.8rem;">
+          {{ pesadas|length }} pesada{{ pesadas|length|pluralize:"s" }}
+        </span>
       </div>
       <div class="card-body p-0">
-        {% if lotes|length > 0 %}
-          <!-- Mostrar estado "Clasificaciones agregadas" -->
-          <div style="background-color: rgba(76, 175, 80, 0.1); padding: 60px 20px; text-align: center; opacity: 0.85;">
-            <i class="bi bi-check-circle" style="font-size: 3rem; color: #4CAF50;"></i>
-            <p style="margin-top: 15px; font-size: 1.1rem; color: #4CAF50; font-weight: bold;">
-              Clasificaciones agregadas
-            </p>
-            <small style="color: #666;">Los datos están registrados en inventario</small>
-          </div>
-          
-          <!-- Mostrar tabla de clasificaciones guardadas en modo lectura -->
-          <table class="table table-hover mb-0" style="opacity: 0.7; margin-top: 0;">
+
+        {% if pesadas %}
+        <div class="table-responsive">
+          <table class="table table-hover mb-0" style="font-size:0.87rem;">
             <thead>
               <tr>
-                <th>Clasificación</th>
+                <th>#</th>
+                <th><span class="badge" style="background:#333;">Negras</span></th>
+                <th><span class="badge" style="background:#1976D2;">Colores</span></th>
+                <th>Kg Bruto</th>
+                <th>Peso Can.</th>
                 <th>Kg Neto</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
-              {% for lote in lotes %}
+              {% for p in pesadas %}
               <tr>
-                <td class="align-middle fw-medium">{{ lote.clasificacion.nombre }}</td>
-                <td class="align-middle">{{ lote.kg_neto|floatformat:2 }} kg</td>
-              </tr>
-              {% endfor %}
-            </tbody>
-            <tfoot>
-              <tr>
-                <th class="text-end">Total Distribuido:</th>
-                <th id="total_kg_distribuido" class="fs-6">{{ total_kg_neto|floatformat:2 }} kg</th>
-              </tr>
-            </tfoot>
-          </table>
-        {% else %}
-        <!-- Formulario para agregar clasificaciones -->
-        <form method="post" id="clasificaciones_form">
-          {% csrf_token %}
-          <input type="hidden" name="guardar_clasificaciones" value="1">
-          <table class="table table-hover mb-0">
-            <thead>
-              <tr>
-                <th>Clasificaci&oacute;n</th>
-                <th>Kg Neto</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for cd in clases_data %}
-              <tr>
-                <td class="align-middle fw-medium">{{ cd.clasificacion.nombre }}</td>
+                <td class="text-muted small">{{ forloop.counter }}</td>
+                <td class="fw-bold">
+                  {% if p.num_canastillas_negras %}
+                    {{ p.num_canastillas_negras }}
+                  {% else %}
+                    <span class="text-muted">-</span>
+                  {% endif %}
+                </td>
+                <td class="fw-bold">
+                  {% if p.num_canastillas_colores %}
+                    {{ p.num_canastillas_colores }}
+                  {% else %}
+                    <span class="text-muted">-</span>
+                  {% endif %}
+                </td>
+                <td class="fw-semibold text-orange">{{ p.kg_bruto|floatformat:2 }} kg</td>
+                <td class="text-danger small">-{{ p.peso_canastillas|floatformat:2 }} kg</td>
+                <td class="fw-bold text-success">{{ p.kg_neto|floatformat:2 }} kg</td>
                 <td>
-                  <input type="number" step="0.01" name="kg_neto_{{ cd.clasificacion.id }}" 
-                         class="form-control form-control-sm neto-input" 
-                         value="{{ cd.kg_neto }}">
+                  <a href="{% url 'pesada_delete' p.pk %}"
+                     class="btn btn-sm btn-outline-danger"
+                     onclick="return confirm('Eliminar esta pesada?')">
+                    <i class="bi bi-trash3"></i>
+                  </a>
                 </td>
               </tr>
-              {% empty %}
-              <tr><td colspan="2" class="text-center text-muted">No hay clasificaciones activas.</td></tr>
               {% endfor %}
             </tbody>
             <tfoot>
               <tr>
-                <th class="text-end">Total Distribuido:</th>
-                <th id="total_kg_distribuido" class="fs-6">0.00 kg</th>
+                <th class="text-end">Tot.:</th>
+                <th>{{ cant_neg }}</th>
+                <th>{{ cant_col }}</th>
+                <th class="text-orange">{{ kg_bruto_total|floatformat:2 }} kg</th>
+                <th class="text-danger">-{{ peso_total_canastillas|floatformat:2 }} kg</th>
+                <th class="text-success" colspan="2">
+                  {{ neto_final|floatformat:2 }} kg
+                  <span class="d-block text-muted" style="font-size:0.7rem;font-weight:400;">(sin podrido)</span>
+                </th>
               </tr>
             </tfoot>
           </table>
-          <div class="p-3 border-top d-flex justify-content-between align-items-center">
-            <span class="text-danger small fw-bold" id="error_msg" style="display:none;">
-              <i class="bi bi-exclamation-triangle me-1"></i>&iexcl;Ha excedido los Kg Netos del viaje!
-            </span>
-            <button type="submit" class="btn btn-success" id="btn_guardar_clas">
-              <i class="bi bi-save me-1"></i>Guardar Clasificaciones
-            </button>
-          </div>
-        </form>
+        </div>
+        {% else %}
+        <div class="text-center py-4 text-muted">
+          <i class="bi bi-inbox" style="font-size:2.5rem; opacity:0.3;"></i>
+          <p class="mt-2 mb-0">Sin pesadas aun. Ingrese la primera remesa de canastillas.</p>
+        </div>
         {% endif %}
+
+        <!-- Formulario agregar pesada -->
+        <div class="p-3 border-top" style="background:var(--bg-light);">
+          <p class="fw-semibold mb-2 small text-muted text-uppercase">
+            <i class="bi bi-plus-circle me-1" style="color:var(--orange-primary);"></i>Agregar pesada
+          </p>
+          <form method="post" action="{% url 'pesada_add' viaje.pk %}" class="row g-2 align-items-end">
+            {% csrf_token %}
+            <div class="col-3">
+              <label class="form-label mb-1" style="font-size:0.75rem;">
+                <span class="badge me-1" style="background:#333;">N</span>Can. Negras
+              </label>
+              {{ pesada_form.num_canastillas_negras }}
+            </div>
+            <div class="col-3">
+              <label class="form-label mb-1" style="font-size:0.75rem;">
+                <span class="badge me-1" style="background:#1976D2;">C</span>Can. Colores
+              </label>
+              {{ pesada_form.num_canastillas_colores }}
+            </div>
+            <div class="col-6">
+              <label class="form-label mb-1" style="font-size:0.75rem;">Kg Bruto pesada</label>
+              {{ pesada_form.kg_bruto }}
+            </div>
+            <div class="col-12 d-grid">
+              <button type="submit" class="btn btn-primary btn-sm">
+                <i class="bi bi-plus-lg me-1"></i>Registrar Pesada
+              </button>
+            </div>
+          </form>
+        </div>
+
+      </div>
     </div>
+  </div>
+
+  <!-- RESUMEN CALCULO -->
+  <div class="col-lg-5">
+    <div class="card h-100">
+      <div class="card-header">
+        <span><i class="bi bi-calculator me-2"></i>Resumen de Kg Neto</span>
+      </div>
+      <div class="card-body p-0" style="font-size:0.93rem;">
+
+        <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
+          <span><i class="bi bi-box me-2 text-orange"></i>Kg Bruto Total (pesadas)</span>
+          <span class="fw-bold text-orange">{{ kg_bruto_total|floatformat:2 }} kg</span>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom" style="background:#fafafa;">
+          <span class="text-muted">
+            <i class="bi bi-dash me-1"></i>Canastillas Negras ({{ cant_neg }} x 1.6 kg)
+          </span>
+          <span class="text-danger fw-semibold">-{{ peso_can_negras|floatformat:2 }} kg</span>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom" style="background:#fafafa;">
+          <span class="text-muted">
+            <i class="bi bi-dash me-1"></i>Canastillas Color ({{ cant_col }} x 2.2 kg)
+          </span>
+          <span class="text-danger fw-semibold">-{{ peso_can_colores|floatformat:2 }} kg</span>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
+          <span class="text-muted">
+            <i class="bi bi-dash me-1"></i>Kg Podrido / Rechazo
+          </span>
+          <span class="text-danger fw-semibold">-{{ kg_podrido|floatformat:2 }} kg</span>
+        </div>
+
+        <div class="px-3 py-3" style="background: linear-gradient(135deg, var(--orange-primary), var(--orange-secondary)); color:#fff;">
+          <div class="d-flex justify-content-between align-items-center">
+            <span class="fw-bold"><i class="bi bi-check-circle me-2"></i>Kg Neto a Pagar</span>
+            <span class="fw-bold" style="font-size:1.4rem;">{{ neto_final|floatformat:2 }} kg</span>
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
+          <span class="text-muted small">Precio total acordado</span>
+          <span class="fw-bold text-success">${{ viaje.precio_total_acordado|floatformat:0 }}</span>
+        </div>
+        <div class="d-flex justify-content-between align-items-center px-3 py-2">
+          <span class="text-muted small">Total pagado</span>
+          <span class="fw-bold text-primary">${{ viaje.total_pagado|floatformat:0 }}</span>
+        </div>
+
+        {% if viaje.observaciones %}
+        <div class="px-3 py-2 border-top">
+          <span class="text-muted small"><i class="bi bi-chat-text me-1"></i>{{ viaje.observaciones }}</span>
+        </div>
+        {% endif %}
+
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- CLASIFICAR KG NETO -->
+<div class="card mb-3">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span><i class="bi bi-list-check me-2"></i>Clasificar Kg Neto por Calidad</span>
+    <span class="badge bg-primary" id="kilos_restantes_badge">Calculando...</span>
+  </div>
+  <div class="card-body p-0">
+    {% if lotes|length > 0 %}
+      <div class="text-center py-4" style="background:rgba(76,175,80,0.06);">
+        <i class="bi bi-check-circle" style="font-size:2.5rem; color:#4CAF50;"></i>
+        <p class="mt-2 mb-0 fw-bold text-success">Clasificaciones guardadas en inventario</p>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead><tr><th>Clasificacion</th><th>Kg Neto</th></tr></thead>
+          <tbody>
+            {% for lote in lotes %}
+            <tr>
+              <td class="fw-medium">{{ lote.clasificacion.nombre }}</td>
+              <td>{{ lote.kg_neto|floatformat:2 }} kg</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+          <tfoot>
+            <tr>
+              <th class="text-end">Total Distribuido:</th>
+              <th>{{ total_kg_neto|floatformat:2 }} kg</th>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    {% else %}
+    <form method="post" id="clasificaciones_form">
+      {% csrf_token %}
+      <input type="hidden" name="guardar_clasificaciones" value="1">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead>
+            <tr>
+              <th>Clasificacion</th>
+              <th style="width:200px;">Kg Neto Clasificado</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for cd in clases_data %}
+            <tr>
+              <td class="align-middle fw-medium">{{ cd.clasificacion.nombre }}</td>
+              <td>
+                <input type="number" step="0.01" min="0"
+                       name="kg_neto_{{ cd.clasificacion.id }}"
+                       class="form-control form-control-sm neto-input"
+                       value="{{ cd.kg_neto }}"
+                       placeholder="0.00">
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="2" class="text-center text-muted py-3">No hay clasificaciones activas para este producto.</td></tr>
+            {% endfor %}
+          </tbody>
+          <tfoot>
+            <tr>
+              <th class="text-end">Total Distribuido:</th>
+              <th id="total_kg_distribuido">0.00 kg</th>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      <div class="p-3 border-top d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <span class="text-muted small">
+          Neto disponible: <strong>{{ neto_final|floatformat:2 }} kg</strong>
+        </span>
+        <span class="text-danger small fw-bold" id="error_msg" style="display:none;">
+          <i class="bi bi-exclamation-triangle me-1"></i>Ha excedido los Kg Neto disponibles!
+        </span>
+        <button type="submit" class="btn btn-success" id="btn_guardar_clas">
+          <i class="bi bi-save me-1"></i>Guardar Clasificaciones
+        </button>
+      </div>
+    </form>
+    {% endif %}
   </div>
 </div>
 
+<!-- PAGOS AL PROVEEDOR -->
 <div class="card">
-  <div class="card-header py-2 d-flex justify-content-between align-items-center fw-semibold">
+  <div class="card-header">
     <span><i class="bi bi-cash me-2"></i>Pagos al Proveedor</span>
   </div>
   <div class="card-body">
@@ -235,104 +330,82 @@
       <div class="col-md-3">{{ pago_form.monto.label_tag }}<br>{{ pago_form.monto }}</div>
       <div class="col-md-3">{{ pago_form.medio_pago.label_tag }}<br>{{ pago_form.medio_pago }}</div>
       <div class="col-md-3">{{ pago_form.fecha.label_tag }}<br>{{ pago_form.fecha }}</div>
-      <div class="col-md-3"><button type="submit" class="btn btn-primary w-100"><i class="bi bi-plus me-1"></i>Registrar Pago</button></div>
+      <div class="col-md-3">
+        <button type="submit" class="btn btn-primary w-100">
+          <i class="bi bi-plus me-1"></i>Registrar Pago
+        </button>
+      </div>
     </form>
-    <table class="table table-sm">
-      <thead><tr><th>Fecha</th><th>Monto</th><th>Medio</th><th>Observaciones</th><th></th></tr></thead>
-      <tbody>
-      {% for p in pagos %}
-      <tr>
-        <td>{{ p.fecha }}</td>
-        <td class="fw-bold">${{ p.monto|default:0|floatformat:0 }}</td>
-        <td><span class="badge bg-secondary">{{ p.get_medio_pago_display }}</span></td>
-        <td>{{ p.observaciones|default:"-" }}</td>
-        <td><a href="{% url 'pago_proveedor_delete' p.pk %}" class="btn btn-sm btn-outline-danger" onclick="return confirm('┬┐Eliminar pago?')"><i class="bi bi-trash3"></i></a></td>
-      </tr>
-      {% empty %}
-      <tr><td colspan="5" class="text-center text-muted py-2">Sin pagos registrados</td></tr>
-      {% endfor %}
-      </tbody>
-    </table>
+    <div class="table-responsive">
+      <table class="table table-sm">
+        <thead><tr><th>Fecha</th><th>Monto</th><th>Medio</th><th>Observaciones</th><th></th></tr></thead>
+        <tbody>
+        {% for p in pagos %}
+        <tr>
+          <td>{{ p.fecha }}</td>
+          <td class="fw-bold">${{ p.monto|floatformat:0 }}</td>
+          <td><span class="badge bg-secondary">{{ p.get_medio_pago_display }}</span></td>
+          <td>{{ p.observaciones|default:"-" }}</td>
+          <td>
+            <a href="{% url 'pago_proveedor_delete' p.pk %}"
+               class="btn btn-sm btn-outline-danger"
+               onclick="return confirm('Eliminar pago?')">
+              <i class="bi bi-trash3"></i>
+            </a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="text-center text-muted py-2">Sin pagos registrados</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
   </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
-<style>
-  /* Algunos estilos para mejorar la tabla de distribucion */
-  #clasificaciones_form .table th, 
-  #clasificaciones_form .table td {
-    vertical-align: middle;
-  }
-  .neto-input {
-    text-align: center;
-    max-width: 120px;
-    margin: 0 auto;
-  }
-</style>
-
 <script>
   document.addEventListener('DOMContentLoaded', function() {
-    const inputsNeto = document.querySelectorAll('.neto-input');
-    const badgeRestante = document.getElementById('kilos_restantes_badge');
-    
-    // Obtenemos el total de Kilos netos reales a pagar del viaje (reemplazando comas por puntos en caso de coma decimal)
-    const netoPagableStr = '{{ viaje.neto_a_pagar|stringformat:"f" }}';
-    const netoPagable = parseFloat(netoPagableStr.replace(',', '.')) || 0;
-    
-    // Si ya hay lotes guardados, mostrar que está completo
+    var inputsNeto = document.querySelectorAll('.neto-input');
+    var badgeRestante = document.getElementById('kilos_restantes_badge');
+    if (!badgeRestante) return;
+
+    var netoPagable = {{ neto_final }};
+
     if (inputsNeto.length === 0) {
       badgeRestante.className = 'badge bg-success';
-      badgeRestante.innerText = 'Distribución completa';
+      badgeRestante.innerText = 'Distribucion completa';
       return;
     }
-    
+
     function calcularTotales() {
-      let sumaKg = 0;
-      
-      inputsNeto.forEach((input) => {
-        const kg = parseFloat(input.value) || 0;
-        sumaKg += kg;
-      });
-      
-      // Actualizar los totales globales (footer de la tabla)
-      document.getElementById('total_kg_distribuido').innerText = sumaKg.toFixed(2) + ' kg';
-      
-      // Validacion frente al total a pagar
-      const faltan = netoPagable - sumaKg;
-      const errMsg = document.getElementById('error_msg');
-      const btnSubmit = document.getElementById('btn_guardar_clas');
-      
+      var suma = 0;
+      inputsNeto.forEach(function(inp) { suma += parseFloat(inp.value) || 0; });
+      document.getElementById('total_kg_distribuido').innerText = suma.toFixed(2) + ' kg';
+      var faltan = netoPagable - suma;
+      var errMsg = document.getElementById('error_msg');
+      var btn = document.getElementById('btn_guardar_clas');
       if (faltan < -0.1) {
-        // Excedido
         badgeRestante.className = 'badge bg-danger';
-        badgeRestante.innerText = 'Excedido por: ' + Math.abs(faltan).toFixed(2) + ' kg';
+        badgeRestante.innerText = 'Excedido: ' + Math.abs(faltan).toFixed(2) + ' kg';
         errMsg.style.display = 'block';
-        btnSubmit.disabled = true;
+        btn.disabled = true;
       } else if (faltan > 0.1) {
-        // Faltan kilos
         badgeRestante.className = 'badge bg-warning text-dark';
         badgeRestante.innerText = 'Faltan: ' + faltan.toFixed(2) + ' kg';
         errMsg.style.display = 'none';
-        btnSubmit.disabled = false;
+        btn.disabled = false;
       } else {
-        // Exacto
         badgeRestante.className = 'badge bg-success';
-        badgeRestante.innerText = 'Distribución completa';
+        badgeRestante.innerText = 'Distribucion completa';
         errMsg.style.display = 'none';
-        btnSubmit.disabled = false;
+        btn.disabled = false;
       }
     }
-    
-    inputsNeto.forEach(el => el.addEventListener('input', calcularTotales));
-    
-    // Correr cálculo inicial al cargar la página
+
+    inputsNeto.forEach(function(el) { el.addEventListener('input', calcularTotales); });
     calcularTotales();
   });
 </script>
 {% endblock %}
-
-
-
-
-

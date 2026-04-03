@@ -54,24 +54,32 @@ class ViajeForm(forms.ModelForm):
     """Formulario simplificado para registrar nuevo viaje - solo datos básicos"""
     class Meta:
         model = Viaje
-        fields = ['proveedor', 'producto', 'fecha', 'kg_bruto']
+        fields = ['proveedor', 'producto', 'fecha', 'observaciones']
         widgets = {
             'proveedor': forms.Select(attrs={'class': 'form-select'}),
             'producto': forms.Select(attrs={'class': 'form-select'}),
             'fecha': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'kg_bruto': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'observaciones': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Observaciones opcionales...'}),
         }
 
 class ViajeDetallesForm(forms.ModelForm):
     """Formulario para editar detalles del viaje después de su creación"""
     class Meta:
         model = Viaje
-        fields = ['kg_podridos', 'cantidad_canastillas_negras', 'cantidad_canastillas_colores', 'precio_total_acordado']
+        fields = ['kg_podridos', 'precio_total_acordado']
         widgets = {
             'kg_podridos': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
-            'cantidad_canastillas_negras': forms.NumberInput(attrs={'class': 'form-control', 'min': '0'}),
-            'cantidad_canastillas_colores': forms.NumberInput(attrs={'class': 'form-control', 'min': '0'}),
             'precio_total_acordado': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+        }
+
+class PesadaViajeForm(forms.ModelForm):
+    class Meta:
+        model = PesadaViaje
+        fields = ['num_canastillas_negras', 'num_canastillas_colores', 'kg_bruto']
+        widgets = {
+            'num_canastillas_negras': forms.NumberInput(attrs={'class': 'form-control', 'min': '0', 'placeholder': '0'}),
+            'num_canastillas_colores': forms.NumberInput(attrs={'class': 'form-control', 'min': '0', 'placeholder': '0'}),
+            'kg_bruto': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': 'Ej: 180.00'}),
         }
 
 class LoteClasificacionForm(forms.ModelForm):
