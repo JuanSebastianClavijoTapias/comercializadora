@@ -37,10 +37,11 @@ class ProductoForm(forms.ModelForm):
 class ClasificacionForm(forms.ModelForm):
     class Meta:
         model = Clasificacion
-        fields = ['nombre', 'orden', 'activo']
+        fields = ['nombre', 'orden', 'stock_kg', 'activo']
         widgets = {
             'nombre': forms.TextInput(attrs={'class': 'form-control'}),
             'orden': forms.NumberInput(attrs={'class': 'form-control'}),
+            'stock_kg': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0'}),
             'activo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 

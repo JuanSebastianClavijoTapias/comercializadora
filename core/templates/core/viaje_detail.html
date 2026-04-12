@@ -139,36 +139,98 @@
         </div>
         {% endif %}
 
-        <!-- Formulario agregar pesada -->
+        <!-- Formulario agregar pesadas (múltiples filas) -->
         <div class="p-3 border-top" style="background:var(--bg-light);">
-          <p class="fw-semibold mb-2 small text-muted text-uppercase">
-            <i class="bi bi-plus-circle me-1" style="color:var(--orange-primary);"></i>Agregar pesada
-          </p>
-          <form method="post" action="{% url 'pesada_add' viaje.pk %}" class="row g-2 align-items-end">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <p class="fw-semibold mb-0 small text-muted text-uppercase">
+              <i class="bi bi-plus-circle me-1" style="color:var(--orange-primary);"></i>Agregar pesadas
+            </p>
+            <button type="button" id="btn_add_row" class="btn btn-outline-secondary btn-sm">
+              <i class="bi bi-plus-lg me-1"></i>Agregar fila
+            </button>
+          </div>
+          <form method="post" action="{% url 'pesada_add' viaje.pk %}" id="form_pesadas_multi">
             {% csrf_token %}
-            <div class="col-3">
-              <label class="form-label mb-1" style="font-size:0.75rem;">
-                <span class="badge me-1" style="background:#333;">N</span>Can. Negras
-              </label>
-              {{ pesada_form.num_canastillas_negras }}
+            <div class="table-responsive">
+              <table class="table table-sm mb-2" style="font-size:0.85rem;">
+                <thead>
+                  <tr>
+                    <th><span class="badge" style="background:#333;">N</span> Can. Negras</th>
+                    <th><span class="badge" style="background:#1976D2;">C</span> Can. Colores</th>
+                    <th>Kg Bruto <span class="text-danger">*</span></th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="pesadas_rows">
+                  <tr class="pesada-row">
+                    <td><input type="number" min="0" name="num_canastillas_negras_0" class="form-control form-control-sm" placeholder="0"></td>
+                    <td><input type="number" min="0" name="num_canastillas_colores_0" class="form-control form-control-sm" placeholder="0"></td>
+                    <td><input type="number" min="0" step="0.01" name="kg_bruto_0" class="form-control form-control-sm" placeholder="0.00" required></td>
+                    <td><button type="button" class="btn btn-sm btn-outline-danger btn-rm-row" title="Eliminar fila"><i class="bi bi-x"></i></button></td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
-            <div class="col-3">
-              <label class="form-label mb-1" style="font-size:0.75rem;">
-                <span class="badge me-1" style="background:#1976D2;">C</span>Can. Colores
-              </label>
-              {{ pesada_form.num_canastillas_colores }}
-            </div>
-            <div class="col-6">
-              <label class="form-label mb-1" style="font-size:0.75rem;">Kg Bruto pesada</label>
-              {{ pesada_form.kg_bruto }}
-            </div>
-            <div class="col-12 d-grid">
+            <div class="d-grid">
               <button type="submit" class="btn btn-primary btn-sm">
-                <i class="bi bi-plus-lg me-1"></i>Registrar Pesada
+                <i class="bi bi-save me-1"></i>Registrar Pesadas
               </button>
             </div>
           </form>
         </div>
+
+        <script>
+        (function() {
+          let rowIndex = 1;
+          const tbody = document.getElementById('pesadas_rows');
+          const btnAdd = document.getElementById('btn_add_row');
+
+          btnAdd.addEventListener('click', function() {
+            const tr = document.createElement('tr');
+            tr.className = 'pesada-row';
+            tr.innerHTML = `
+              <td><input type="number" min="0" name="num_canastillas_negras_${rowIndex}" class="form-control form-control-sm" placeholder="0"></td>
+              <td><input type="number" min="0" name="num_canastillas_colores_${rowIndex}" class="form-control form-control-sm" placeholder="0"></td>
+              <td><input type="number" min="0" step="0.01" name="kg_bruto_${rowIndex}" class="form-control form-control-sm" placeholder="0.00" required></td>
+              <td><button type="button" class="btn btn-sm btn-outline-danger btn-rm-row" title="Eliminar fila"><i class="bi bi-x"></i></button></td>
+            `;
+            tbody.appendChild(tr);
+            rowIndex++;
+            updateRemoveButtons();
+          });
+
+          tbody.addEventListener('click', function(e) {
+            const btn = e.target.closest('.btn-rm-row');
+            if (btn) {
+              const rows = tbody.querySelectorAll('.pesada-row');
+              if (rows.length > 1) {
+                btn.closest('tr').remove();
+                renumberRows();
+                updateRemoveButtons();
+              }
+            }
+          });
+
+          function renumberRows() {
+            const rows = tbody.querySelectorAll('.pesada-row');
+            rows.forEach(function(row, idx) {
+              row.querySelectorAll('input').forEach(function(inp) {
+                inp.name = inp.name.replace(/_\d+$/, '_' + idx);
+              });
+            });
+            rowIndex = rows.length;
+          }
+
+          function updateRemoveButtons() {
+            const rows = tbody.querySelectorAll('.pesada-row');
+            rows.forEach(function(row) {
+              row.querySelector('.btn-rm-row').disabled = rows.length === 1;
+            });
+          }
+
+          updateRemoveButtons();
+        })();
+        </script>
 
       </div>
     </div>
@@ -277,6 +339,7 @@
             <tr>
               <th>Clasificacion</th>
               <th style="width:200px;">Kg Neto Clasificado</th>
+              <th style="width:120px;" class="text-muted text-end small">% del total</th>
             </tr>
           </thead>
           <tbody>
@@ -290,27 +353,38 @@
                        value="{{ cd.kg_neto }}"
                        placeholder="0.00">
               </td>
+              <td class="text-end align-middle">
+                <span class="pct-label text-muted small">—</span>
+              </td>
             </tr>
             {% empty %}
-            <tr><td colspan="2" class="text-center text-muted py-3">No hay clasificaciones activas para este producto.</td></tr>
+            <tr><td colspan="3" class="text-center text-muted py-3">No hay clasificaciones activas para este producto.</td></tr>
             {% endfor %}
           </tbody>
-          <tfoot>
-            <tr>
-              <th class="text-end">Total Distribuido:</th>
-              <th id="total_kg_distribuido">0.00 kg</th>
-            </tr>
-          </tfoot>
         </table>
       </div>
-      <div class="p-3 border-top d-flex justify-content-between align-items-center flex-wrap gap-2">
-        <span class="text-muted small">
-          Neto disponible: <strong>{{ neto_final|floatformat:2 }} kg</strong>
-        </span>
+
+      <!-- Barra de progreso en tiempo real -->
+      <div class="px-3 pt-3 pb-1">
+        <div class="d-flex justify-content-between align-items-center mb-1" style="font-size:0.83rem;">
+          <span class="text-muted">Distribuido: <strong id="total_kg_distribuido" class="text-dark">0.00 kg</strong></span>
+          <span class="text-muted">Disponible: <strong>{{ neto_final|floatformat:2 }} kg</strong></span>
+          <span id="restante_label" class="fw-bold">—</span>
+        </div>
+        <div class="progress" style="height:10px; border-radius:6px;">
+          <div id="barra_progreso" class="progress-bar" role="progressbar"
+               style="width:0%; border-radius:6px; transition:width 0.2s;"></div>
+        </div>
+      </div>
+
+      <div class="p-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
         <span class="text-danger small fw-bold" id="error_msg" style="display:none;">
           <i class="bi bi-exclamation-triangle me-1"></i>Ha excedido los Kg Neto disponibles!
         </span>
-        <button type="submit" class="btn btn-success" id="btn_guardar_clas">
+        <span class="text-success small fw-bold" id="ok_msg" style="display:none;">
+          <i class="bi bi-check-circle me-1"></i>Distribución completa
+        </span>
+        <button type="submit" class="btn btn-success ms-auto" id="btn_guardar_clas">
           <i class="bi bi-save me-1"></i>Guardar Clasificaciones
         </button>
       </div>
@@ -321,10 +395,41 @@
 
 <!-- PAGOS AL PROVEEDOR -->
 <div class="card">
-  <div class="card-header">
+  <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
     <span><i class="bi bi-cash me-2"></i>Pagos al Proveedor</span>
+    <div class="d-flex gap-3 align-items-center flex-wrap" style="font-size:0.88rem;">
+      <span>
+        <span class="text-muted">Total pagado:</span>
+        <strong class="ms-1 text-primary">${{ viaje.total_pagado|floatformat:0 }}</strong>
+      </span>
+      <span>
+        <span class="text-muted">Saldo:</span>
+        <strong class="ms-1 {% if viaje.saldo_pendiente > 0 %}text-danger{% else %}text-success{% endif %}">
+          ${{ viaje.saldo_pendiente|floatformat:0 }}
+        </strong>
+      </span>
+    </div>
   </div>
   <div class="card-body">
+    <!-- Precio acordado editable -->
+    <form method="post" action="{% url 'viaje_precio_update' viaje.pk %}" class="row g-2 align-items-end mb-4 pb-3 border-bottom">
+      {% csrf_token %}
+      <div class="col-auto">
+        <label class="form-label fw-semibold mb-1" style="font-size:0.85rem;">
+          <i class="bi bi-tag me-1 text-muted"></i>Precio Total Acordado
+        </label>
+        <div class="input-group input-group-sm" style="max-width:220px;">
+          <span class="input-group-text">$</span>
+          <input type="number" step="0.01" min="0" name="precio_total_acordado"
+                 class="form-control"
+                 value="{{ viaje.precio_total_acordado|floatformat:2 }}"
+                 placeholder="0.00">
+          <button type="submit" class="btn btn-outline-primary">
+            <i class="bi bi-save"></i>
+          </button>
+        </div>
+      </div>
+    </form>
     <form method="post" action="{% url 'viaje_pago_add' viaje.pk %}" class="row g-2 mb-3 align-items-end">
       {% csrf_token %}
       <div class="col-md-3">{{ pago_form.monto.label_tag }}<br>{{ pago_form.monto }}</div>
@@ -369,38 +474,73 @@
   document.addEventListener('DOMContentLoaded', function() {
     var inputsNeto = document.querySelectorAll('.neto-input');
     var badgeRestante = document.getElementById('kilos_restantes_badge');
-    if (!badgeRestante) return;
-
-    var netoPagable = {{ neto_final }};
+    var netoPagable = parseFloat("{{ neto_final }}".replace(',', '.'));
 
     if (inputsNeto.length === 0) {
-      badgeRestante.className = 'badge bg-success';
-      badgeRestante.innerText = 'Distribucion completa';
+      if (badgeRestante) {
+        badgeRestante.className = 'badge bg-success';
+        badgeRestante.innerText = 'Distribucion completa';
+      }
       return;
     }
 
     function calcularTotales() {
       var suma = 0;
       inputsNeto.forEach(function(inp) { suma += parseFloat(inp.value) || 0; });
-      document.getElementById('total_kg_distribuido').innerText = suma.toFixed(2) + ' kg';
+
+      // Total distribuido
+      var elTotal = document.getElementById('total_kg_distribuido');
+      if (elTotal) elTotal.innerText = suma.toFixed(2) + ' kg';
+
+      // % por fila
+      var pctLabels = document.querySelectorAll('.pct-label');
+      inputsNeto.forEach(function(inp, i) {
+        var val = parseFloat(inp.value) || 0;
+        var pct = netoPagable > 0 ? (val / netoPagable * 100) : 0;
+        if (pctLabels[i]) {
+          pctLabels[i].innerText = pct > 0 ? pct.toFixed(1) + '%' : '—';
+        }
+      });
+
+      // Barra de progreso
+      var barra = document.getElementById('barra_progreso');
+      var pctTotal = netoPagable > 0 ? Math.min(suma / netoPagable * 100, 100) : 0;
+      if (barra) {
+        barra.style.width = pctTotal + '%';
+        if (suma > netoPagable + 0.1) {
+          barra.className = 'progress-bar bg-danger';
+        } else if (Math.abs(suma - netoPagable) <= 0.1) {
+          barra.className = 'progress-bar bg-success';
+        } else {
+          barra.className = 'progress-bar bg-warning';
+        }
+      }
+
+      // Restante label
+      var restanteLabel = document.getElementById('restante_label');
       var faltan = netoPagable - suma;
       var errMsg = document.getElementById('error_msg');
+      var okMsg = document.getElementById('ok_msg');
       var btn = document.getElementById('btn_guardar_clas');
+
       if (faltan < -0.1) {
-        badgeRestante.className = 'badge bg-danger';
-        badgeRestante.innerText = 'Excedido: ' + Math.abs(faltan).toFixed(2) + ' kg';
-        errMsg.style.display = 'block';
-        btn.disabled = true;
+        if (badgeRestante) { badgeRestante.className = 'badge bg-danger'; badgeRestante.innerText = 'Excedido: ' + Math.abs(faltan).toFixed(2) + ' kg'; }
+        if (restanteLabel) { restanteLabel.className = 'fw-bold text-danger'; restanteLabel.innerText = 'Excedido ' + Math.abs(faltan).toFixed(2) + ' kg'; }
+        if (errMsg) errMsg.style.display = 'block';
+        if (okMsg) okMsg.style.display = 'none';
+        if (btn) btn.disabled = true;
       } else if (faltan > 0.1) {
-        badgeRestante.className = 'badge bg-warning text-dark';
-        badgeRestante.innerText = 'Faltan: ' + faltan.toFixed(2) + ' kg';
-        errMsg.style.display = 'none';
-        btn.disabled = false;
+        if (badgeRestante) { badgeRestante.className = 'badge bg-warning text-dark'; badgeRestante.innerText = 'Faltan: ' + faltan.toFixed(2) + ' kg'; }
+        if (restanteLabel) { restanteLabel.className = 'fw-bold text-warning'; restanteLabel.innerText = 'Faltan ' + faltan.toFixed(2) + ' kg'; }
+        if (errMsg) errMsg.style.display = 'none';
+        if (okMsg) okMsg.style.display = 'none';
+        if (btn) btn.disabled = false;
       } else {
-        badgeRestante.className = 'badge bg-success';
-        badgeRestante.innerText = 'Distribucion completa';
-        errMsg.style.display = 'none';
-        btn.disabled = false;
+        if (badgeRestante) { badgeRestante.className = 'badge bg-success'; badgeRestante.innerText = 'Distribucion completa'; }
+        if (restanteLabel) { restanteLabel.className = 'fw-bold text-success'; restanteLabel.innerText = '✓ Completo'; }
+        if (errMsg) errMsg.style.display = 'none';
+        if (okMsg) okMsg.style.display = 'block';
+        if (btn) btn.disabled = false;
       }
     }
 

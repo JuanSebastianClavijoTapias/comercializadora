@@ -253,6 +253,26 @@ def producto_clasificaciones(request, pk):
     return render(request, 'core/producto_clasificaciones.html', {'producto': producto, 'clasificaciones': clasificaciones})
 
 @login_required
+def producto_stock_update(request, pk):
+    """Actualiza el stock_kg de todas las clasificaciones de un producto de forma masiva."""
+    producto = get_object_or_404(Producto, pk=pk)
+    if request.method == 'POST':
+        clasificaciones = producto.clasificaciones.all()
+        actualizadas = 0
+        for clas in clasificaciones:
+            key = f'stock_{clas.pk}'
+            if key in request.POST:
+                val = request.POST[key].strip()
+                try:
+                    clas.stock_kg = Decimal(val) if val else Decimal('0')
+                    clas.save(update_fields=['stock_kg'])
+                    actualizadas += 1
+                except Exception:
+                    pass
+        messages.success(request, f'Stock actualizado para {actualizadas} clasificación(es).')
+    return redirect('producto_clasificaciones', pk=pk)
+
+@login_required
 def clasificacion_edit(request, pk):
     obj = get_object_or_404(Clasificacion, pk=pk)
     form = ClasificacionForm(request.POST or None, instance=obj)
@@ -407,20 +427,44 @@ def viaje_detail(request, pk):
 
 @login_required
 def pesada_add(request, pk):
-    """Agrega una pesada (remesa de canastillas) al viaje."""
+    """Agrega una o varias pesadas (remesas de canastillas) al viaje."""
     viaje = get_object_or_404(Viaje, pk=pk)
     if request.method == 'POST':
-        form = PesadaViajeForm(request.POST)
-        if form.is_valid():
-            pesada = form.save(commit=False)
-            pesada.viaje = viaje
-            pesada.save()
-            partes = []
-            if pesada.num_canastillas_negras: partes.append(f'{pesada.num_canastillas_negras} negras')
-            if pesada.num_canastillas_colores: partes.append(f'{pesada.num_canastillas_colores} colores')
-            messages.success(request, f'Pesada registrada: {", ".join(partes) or "0 canastillas"} — {pesada.kg_bruto} kg bruto.')
+        # Detectar si vienen filas múltiples (campo kg_bruto_0 existe) o formulario simple
+        if 'kg_bruto_0' in request.POST:
+            guardadas = 0
+            i = 0
+            while f'kg_bruto_{i}' in request.POST:
+                kg_bruto_val = request.POST.get(f'kg_bruto_{i}', '').strip()
+                if kg_bruto_val:
+                    data = {
+                        'num_canastillas_negras': request.POST.get(f'num_canastillas_negras_{i}', '') or None,
+                        'num_canastillas_colores': request.POST.get(f'num_canastillas_colores_{i}', '') or None,
+                        'kg_bruto': kg_bruto_val,
+                    }
+                    form = PesadaViajeForm(data)
+                    if form.is_valid():
+                        pesada = form.save(commit=False)
+                        pesada.viaje = viaje
+                        pesada.save()
+                        guardadas += 1
+                i += 1
+            if guardadas:
+                messages.success(request, f'{guardadas} pesada{"s" if guardadas > 1 else ""} registrada{"s" if guardadas > 1 else ""} correctamente.')
+            else:
+                messages.warning(request, 'No se ingresó ningún Kg Bruto válido.')
         else:
-            messages.error(request, 'Error al registrar la pesada. Verifique los datos.')
+            form = PesadaViajeForm(request.POST)
+            if form.is_valid():
+                pesada = form.save(commit=False)
+                pesada.viaje = viaje
+                pesada.save()
+                partes = []
+                if pesada.num_canastillas_negras: partes.append(f'{pesada.num_canastillas_negras} negras')
+                if pesada.num_canastillas_colores: partes.append(f'{pesada.num_canastillas_colores} colores')
+                messages.success(request, f'Pesada registrada: {", ".join(partes) or "0 canastillas"} — {pesada.kg_bruto} kg bruto.')
+            else:
+                messages.error(request, 'Error al registrar la pesada. Verifique los datos.')
     return redirect('viaje_detail', pk=pk)
 
 
@@ -508,6 +552,20 @@ def viaje_detalles_edit(request, pk):
         'back_url': 'viaje_detail',
         'back_url_args': [pk]
     })
+
+@login_required
+def viaje_precio_update(request, pk):
+    """Actualiza solo el precio total acordado del viaje desde el detalle."""
+    viaje = get_object_or_404(Viaje, pk=pk)
+    if request.method == 'POST':
+        val = request.POST.get('precio_total_acordado', '').strip().replace(',', '.')
+        try:
+            viaje.precio_total_acordado = Decimal(val)
+            viaje.save(update_fields=['precio_total_acordado'])
+            messages.success(request, 'Precio acordado actualizado.')
+        except Exception:
+            messages.error(request, 'Valor inválido para el precio acordado.')
+    return redirect('viaje_detail', pk=pk)
 
 @login_required
 def lote_delete(request, pk):

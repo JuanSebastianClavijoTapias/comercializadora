@@ -19,6 +19,7 @@ urlpatterns = [
     path('productos/<int:pk>/editar/', views.producto_edit, name='producto_edit'),
     path('productos/<int:pk>/eliminar/', views.producto_delete, name='producto_delete'),
     path('productos/<int:pk>/clasificaciones/', views.producto_clasificaciones, name='producto_clasificaciones'),
+    path('productos/<int:pk>/stock/', views.producto_stock_update, name='producto_stock_update'),
     path('clasificaciones/<int:pk>/editar/', views.clasificacion_edit, name='clasificacion_edit'),
     # Categorias Gasto
     path('categorias-gasto/', views.categoria_gasto_list, name='categoria_gasto_list'),
@@ -29,6 +30,7 @@ urlpatterns = [
     path('viajes/nuevo/', views.viaje_create, name='viaje_create'),
     path('viajes/<int:pk>/', views.viaje_detail, name='viaje_detail'),
     path('viajes/<int:pk>/detalles/', views.viaje_detalles_edit, name='viaje_detalles_edit'),
+    path('viajes/<int:pk>/precio/', views.viaje_precio_update, name='viaje_precio_update'),
     path('viajes/<int:pk>/eliminar/', views.viaje_delete, name='viaje_delete'),
     path('viajes/<int:pk>/pago/', views.viaje_pago_add, name='viaje_pago_add'),
     path('viajes/<int:pk>/pesada/', views.pesada_add, name='pesada_add'),
