@@ -1,5 +1,6 @@
 from django.db import models
 from decimal import Decimal
+from datetime import timedelta
 
 MEDIO_PAGO_CHOICES = [
     ('efectivo', 'Efectivo'),
@@ -55,8 +56,8 @@ class Viaje(models.Model):
     PESO_CANASTILLA_NEGRA = Decimal('1.6')
     PESO_CANASTILLA_COLOR = Decimal('2.2')
 
-    proveedor = models.ForeignKey(Proveedor, on_delete=models.PROTECT, related_name='viajes', verbose_name='Proveedor')
-    producto = models.ForeignKey(Producto, on_delete=models.PROTECT, related_name='viajes', verbose_name='Producto')
+    proveedor = models.ForeignKey(Proveedor, on_delete=models.CASCADE, related_name='viajes', verbose_name='Proveedor')
+    producto = models.ForeignKey(Producto, on_delete=models.CASCADE, related_name='viajes', verbose_name='Producto')
     fecha = models.DateField(verbose_name='Fecha')
     observaciones = models.TextField(blank=True, verbose_name='Observaciones')
     kg_podridos = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name='Kg Podridos / Rechazo')
@@ -131,7 +132,7 @@ class PesadaViaje(models.Model):
 
 class LoteClasificacion(models.Model):
     viaje = models.ForeignKey(Viaje, on_delete=models.CASCADE, related_name='lotes', verbose_name='Viaje')
-    clasificacion = models.ForeignKey(Clasificacion, on_delete=models.PROTECT, verbose_name='Clasificación')
+    clasificacion = models.ForeignKey(Clasificacion, on_delete=models.CASCADE, verbose_name='Clasificación')
     kg_neto = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name='Kg Neto Clasificado')
     
     def __str__(self): return f"{self.clasificacion.nombre} - {self.kg_neto:.2f} kg neto"
@@ -149,7 +150,7 @@ class PagoProveedor(models.Model):
         verbose_name = 'Pago a Proveedor'; verbose_name_plural = 'Pagos a Proveedores'; ordering = ['-fecha']
 
 class Gasto(models.Model):
-    categoria = models.ForeignKey(CategoriaGasto, on_delete=models.PROTECT, verbose_name='Categoría')
+    categoria = models.ForeignKey(CategoriaGasto, on_delete=models.CASCADE, verbose_name='Categoría')
     descripcion = models.CharField(max_length=300, verbose_name='Descripción')
     monto = models.DecimalField(max_digits=12, decimal_places=2, verbose_name='Monto')
     fecha = models.DateField(verbose_name='Fecha')
@@ -158,23 +159,72 @@ class Gasto(models.Model):
     class Meta:
         verbose_name = 'Gasto'; verbose_name_plural = 'Gastos'; ordering = ['-fecha']
 
+class WeeklyInventory(models.Model):
+    """Tracks weekly inventory snapshots for Monday reset mechanism"""
+    week_start = models.DateField(verbose_name='Inicio de Semana (Lunes)', unique=True)
+    initial_inventory_kg = models.DecimalField(max_digits=12, decimal_places=2, default=0, verbose_name='Inventario Inicial (kg)')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Creado')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='Actualizado')
+    
+    def __str__(self):
+        week_end = self.week_start + timedelta(days=6)
+        return f"Semana {self.week_start.strftime('%d/%m')} - {week_end.strftime('%d/%m/%Y')}"
+    
+    @property
+    def total_inventory_kg(self):
+        """Calcula el inventario total: inicial + compras de la semana"""
+        from datetime import timedelta
+        week_end = self.week_start + timedelta(days=6)
+        # Obtener todos los lotes clasificados de viajes de esta semana
+        lotes_semana = LoteClasificacion.objects.filter(viaje__fecha__range=[self.week_start, week_end])
+        compras_semana = sum(lote.kg_neto for lote in lotes_semana) or Decimal('0')
+        return self.initial_inventory_kg + compras_semana
+    
+    class Meta:
+        verbose_name = 'Inventario Semanal'
+        verbose_name_plural = 'Inventarios Semanales'
+        ordering = ['-week_start']
+        indexes = [models.Index(fields=['week_start'])]
+
 class VentaEfectivo(models.Model):
     fecha = models.DateField(verbose_name='Fecha')
-    producto = models.ForeignKey(Producto, on_delete=models.PROTECT, related_name='ventas_efectivo', verbose_name='Producto', null=True, blank=True)
-    cliente = models.ForeignKey(Cliente, on_delete=models.PROTECT, related_name='ventas_efectivo', verbose_name='Cliente', null=True, blank=True)
-    clasificacion = models.ForeignKey(Clasificacion, on_delete=models.PROTECT, related_name='ventas_efectivo', verbose_name='Clasificación', null=True, blank=True)
-    kg_vendido = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name='Kg vendido')
-    precio_por_kg = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name='Precio por kg')
+    cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, related_name='ventas_efectivo', verbose_name='Cliente', null=True, blank=True)
     descripcion = models.CharField(max_length=300, blank=True, verbose_name='Descripción')
-    monto = models.DecimalField(max_digits=12, decimal_places=2, verbose_name='Monto')
     observaciones = models.TextField(blank=True, verbose_name='Observaciones')
-    def __str__(self): return f"Efectivo {self.fecha} - ${self.monto}"
+    
+    @property
+    def total(self):
+        return sum(d.total for d in self.detalles.all())
+    
+    def __str__(self):
+        cliente_str = self.cliente.nombre if self.cliente else 'General'
+        return f"Venta Efectivo {self.fecha} - {cliente_str} - ${self.total}"
+    
     class Meta:
-        verbose_name = 'Venta en Efectivo'; verbose_name_plural = 'Ventas en Efectivo'; ordering = ['-fecha']
+        verbose_name = 'Venta en Efectivo'
+        verbose_name_plural = 'Ventas en Efectivo'
+        ordering = ['-fecha']
+
+class DetalleVentaEfectivo(models.Model):
+    venta = models.ForeignKey(VentaEfectivo, on_delete=models.CASCADE, related_name='detalles', verbose_name='Venta')
+    clasificacion = models.ForeignKey(Clasificacion, on_delete=models.CASCADE, verbose_name='Clasificación')
+    kg_vendido = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Kg vendido')
+    precio_por_kg = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Precio por kg')
+    
+    @property
+    def total(self):
+        return self.kg_vendido * self.precio_por_kg
+    
+    def __str__(self):
+        return f"{self.clasificacion} - {self.kg_vendido} kg @ ${self.precio_por_kg}/kg"
+    
+    class Meta:
+        verbose_name = 'Detalle de Venta Efectivo'
+        verbose_name_plural = 'Detalles de Ventas Efectivo'
 
 class VentaCredito(models.Model):
-    cliente = models.ForeignKey(Cliente, on_delete=models.PROTECT, related_name='ventas', verbose_name='Cliente')
-    producto = models.ForeignKey(Producto, on_delete=models.PROTECT, related_name='ventas_credito', verbose_name='Producto', null=True, blank=True)
+    cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, related_name='ventas', verbose_name='Cliente')
+    producto = models.ForeignKey(Producto, on_delete=models.CASCADE, related_name='ventas_credito', verbose_name='Producto', null=True, blank=True)
     fecha = models.DateField(verbose_name='Fecha de venta')
     fecha_vencimiento = models.DateField(verbose_name='Fecha de vencimiento', null=True, blank=True)
     observaciones = models.TextField(blank=True, verbose_name='Observaciones')
@@ -191,7 +241,7 @@ class VentaCredito(models.Model):
 
 class DetalleVentaCredito(models.Model):
     venta = models.ForeignKey(VentaCredito, on_delete=models.CASCADE, related_name='detalles', verbose_name='Venta')
-    clasificacion = models.ForeignKey(Clasificacion, on_delete=models.PROTECT, verbose_name='Clasificación')
+    clasificacion = models.ForeignKey(Clasificacion, on_delete=models.CASCADE, verbose_name='Clasificación')
     kg_vendido = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Kg vendido')
     precio_por_kg = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Precio por kg')
     @property
@@ -210,31 +260,7 @@ class PagoVentaCredito(models.Model):
     class Meta:
         verbose_name = 'Pago de Venta'; verbose_name_plural = 'Pagos de Ventas'; ordering = ['-fecha']
 
-class LiquidacionInventario(models.Model):
-    fecha_inicio = models.DateField(verbose_name='Fecha inicio')
-    fecha_fin = models.DateField(verbose_name='Fecha fin')
-    fecha_creacion = models.DateTimeField(auto_now_add=True)
-    observaciones = models.TextField(blank=True, verbose_name='Observaciones')
-    @property
-    def total_valor(self): return sum(d.total for d in self.detalles.all())
-    def __str__(self): return f"Liquidación {self.fecha_inicio} al {self.fecha_fin}"
-    class Meta:
-        verbose_name = 'Liquidación de Inventario'; verbose_name_plural = 'Liquidaciones de Inventario'; ordering = ['-fecha_fin']
-
-class DetalleInventario(models.Model):
-    liquidacion = models.ForeignKey(LiquidacionInventario, on_delete=models.CASCADE, related_name='detalles', verbose_name='Liquidación')
-    clasificacion = models.ForeignKey(Clasificacion, on_delete=models.PROTECT, verbose_name='Clasificación')
-    kg_ingresado = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name='Kg ingresado')
-    kg_vendido = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name='Kg vendido')
-    kg_restante = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Kg restante')
-    precio_por_kg = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Precio por kg')
-    @property
-    def total(self): return self.kg_restante * self.precio_por_kg
-    def __str__(self): return f"{self.clasificacion} - {self.kg_restante} kg restante"
-    class Meta:
-        verbose_name = 'Detalle de Inventario'; verbose_name_plural = 'Detalles de Inventario'
-
-# ------------- SEÑALES PARA INVENTARIO (STOCK) -------------
+# ------------- SEÑALES PARA ACTUALIZAR STOCK -------------
 from django.db.models.signals import pre_save, post_save, post_delete
 from django.dispatch import receiver
 from django.db.models import F
@@ -266,57 +292,66 @@ def captura_anterior_venta_efectivo(sender, instance, **kwargs):
     if instance.pk:
         orig = VentaEfectivo.objects.get(pk=instance.pk)
         instance._old_kg_vendido = orig.kg_vendido
-        instance._old_clasificacion = orig.clasificacion
     else:
         instance._old_kg_vendido = Decimal('0')
-        instance._old_clasificacion = None
 
-@receiver(post_save, sender=VentaEfectivo)
-def actualiza_stock_venta_efectivo_save(sender, instance, created, **kwargs):
-    # Venta RESTA al stock
-    if instance._old_clasificacion and instance._old_clasificacion != instance.clasificacion:
-        # Devolvió stock al anterior
-        instance._old_clasificacion.stock_kg = F('stock_kg') + instance._old_kg_vendido
-        instance._old_clasificacion.save(update_fields=['stock_kg'])
-        # Resta todo al nuevo
-        if instance.clasificacion:
-            instance.clasificacion.stock_kg = F('stock_kg') - instance.kg_vendido
-            instance.clasificacion.save(update_fields=['stock_kg'])
+@receiver(pre_save, sender=DetalleVentaEfectivo)
+def captura_anterior_detalle_venta_efectivo(sender, instance, **kwargs):
+    if instance.pk:
+        orig = DetalleVentaEfectivo.objects.get(pk=instance.pk)
+        instance._old_kg_vendido = orig.kg_vendido
     else:
-        diff = instance.kg_vendido - getattr(instance, '_old_kg_vendido', Decimal('0'))
-        if diff != 0 and instance.clasificacion:
-            instance.clasificacion.stock_kg = F('stock_kg') - diff
-            instance.clasificacion.save(update_fields=['stock_kg'])
+        instance._old_kg_vendido = Decimal('0')
 
-@receiver(post_delete, sender=VentaEfectivo)
-def actualiza_stock_venta_efectivo_delete(sender, instance, **kwargs):
+@receiver(post_save, sender=DetalleVentaEfectivo)
+def actualiza_stock_detalle_venta_efectivo_save(sender, instance, created, **kwargs):
+    # Cuando se crea o actualiza un detalle, restar/actualizar el stock
+    if instance.clasificacion:
+        if created:
+            # Venta nueva: restar kg del stock
+            instance.clasificacion.stock_kg = F('stock_kg') - instance.kg_vendido
+        else:
+            # Actualización: calcular la diferencia
+            diff = instance.kg_vendido - getattr(instance, '_old_kg_vendido', instance.kg_vendido)
+            if diff != 0:
+                instance.clasificacion.stock_kg = F('stock_kg') - diff
+        instance.clasificacion.save(update_fields=['stock_kg'])
+
+@receiver(post_delete, sender=DetalleVentaEfectivo)
+def actualiza_stock_detalle_venta_efectivo_delete(sender, instance, **kwargs):
+    # Cuando se elimina un detalle, devolver los kg al stock
     if instance.clasificacion:
         instance.clasificacion.stock_kg = F('stock_kg') + instance.kg_vendido
         instance.clasificacion.save(update_fields=['stock_kg'])
+
+@receiver(post_save, sender=VentaEfectivo)
+def actualiza_stock_venta_efectivo_save(sender, instance, created, **kwargs):
+    # La lógica de stock se maneja en DetalleVentaEfectivo
+    pass
 
 @receiver(pre_save, sender=DetalleVentaCredito)
 def captura_anterior_venta_credito(sender, instance, **kwargs):
     if instance.pk:
         orig = DetalleVentaCredito.objects.get(pk=instance.pk)
         instance._old_kg_vendido = orig.kg_vendido
-        instance._old_clasificacion = orig.clasificacion
     else:
         instance._old_kg_vendido = Decimal('0')
-        instance._old_clasificacion = None
 
 @receiver(post_save, sender=DetalleVentaCredito)
 def actualiza_stock_venta_credito_save(sender, instance, created, **kwargs):
-    if instance._old_clasificacion and instance._old_clasificacion != instance.clasificacion:
-        instance._old_clasificacion.stock_kg = F('stock_kg') + instance._old_kg_vendido
-        instance._old_clasificacion.save(update_fields=['stock_kg'])
-        if instance.clasificacion:
+    # Cuando se crea o actualiza un detalle, restar/actualizar el stock
+    if instance.clasificacion:
+        if created:
+            # Venta nueva: restar kg del stock
             instance.clasificacion.stock_kg = F('stock_kg') - instance.kg_vendido
             instance.clasificacion.save(update_fields=['stock_kg'])
-    else:
-        diff = instance.kg_vendido - getattr(instance, '_old_kg_vendido', Decimal('0'))
-        if diff != 0 and instance.clasificacion:
-            instance.clasificacion.stock_kg = F('stock_kg') - diff
-            instance.clasificacion.save(update_fields=['stock_kg'])
+        else:
+            # Actualización: calcular la diferencia
+            old_kg = getattr(instance, '_old_kg_vendido', Decimal('0'))
+            diff = instance.kg_vendido - old_kg
+            if diff != 0:
+                instance.clasificacion.stock_kg = F('stock_kg') - diff
+                instance.clasificacion.save(update_fields=['stock_kg'])
 
 @receiver(post_delete, sender=DetalleVentaCredito)
 def actualiza_stock_venta_credito_delete(sender, instance, **kwargs):

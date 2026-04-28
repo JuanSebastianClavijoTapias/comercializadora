@@ -21,7 +21,7 @@
           </div>
           <div>
             <h6 class="text-uppercase fw-bold mb-0" style="color: var(--text-sec); font-size: 0.75rem; letter-spacing: 0.5px;">Resumen de la Venta</h6>
-            <h5 class="fw-bold mb-0" style="color: var(--text-main);">{{ venta.cliente }}</h5>
+            <h5 class="fw-bold mb-0" style="color: white;">{{ venta.cliente }}</h5>
           </div>
         </div>
 
@@ -63,50 +63,71 @@
   </div>
 
   <div class="col-lg-8 d-flex flex-column gap-4">
-    <!-- Agregar Producto (Opcional extra) -->
-    <div class="card border-0 shadow-sm" style="border-radius: 12px; overflow: hidden;">
-      <div class="card-header bg-white py-3 border-bottom-0 d-flex align-items-center">
-        <i class="bi bi-cart-plus me-2 fs-5" style="color: var(--orange-primary);"></i>
-        <h6 class="mb-0 fw-bold" style="color: var(--text-main);">Agregar Producto a la Venta</h6>
-      </div>
-      <div class="card-body px-4 pb-4 pt-0">
-        <form method="post" class="row g-3 align-items-end">
-          {% csrf_token %}
-          <div class="col-md-5">
-            <label class="form-label form-control-sm text-uppercase fw-semibold mb-1" style="color: var(--text-sec); letter-spacing: 0.5px;">{{ detalle_form.clasificacion.label }}</label>
-            {{ detalle_form.clasificacion }}
+      <div class="card border-0 shadow-sm" style="border-radius: 12px; overflow: hidden;">
+        <div class="card-header bg-white py-3 border-bottom-0 d-flex align-items-center">
+          <i class="bi bi-cart-plus me-2 fs-5" style="color: var(--orange-primary);"></i>
+          <h6 class="mb-0 fw-bold" style="color: white;">Agregar Producto a la Venta</h6>
+        </div>
+        <div class="card-body px-4 pb-4 pt-3">
+          <form id="detalle-form" class="row g-3 align-items-end">
+            {% csrf_token %}
+            <!-- Clasificación -->
+            <div class="col-md-4 position-relative">
+              <label class="form-label form-control-sm text-uppercase fw-semibold mb-2" style="color: var(--text-sec); letter-spacing: 0.5px; font-size: 0.8rem;">
+                <i class="bi bi-boxes me-1"></i>{{ detalle_form.clasificacion.label }}
+              </label>
+              {{ detalle_form.clasificacion }}
+              <small class="d-block mt-5 text-info" id="stock_info" style="display: none; position: absolute; bottom: -30px; left: 0; width: 100%;">
+                <i class="bi bi-info-circle me-1"></i><span id="stock_available">-</span> kg disponibles
+              </small>
+            </div>
+            
+            <!-- Kg Vendido con indicador de restante -->
+            <div class="col-md-3 position-relative">
+              <label class="form-label form-control-sm text-uppercase fw-semibold mb-2" style="color: var(--text-sec); letter-spacing: 0.5px; font-size: 0.8rem;">
+                <i class="bi bi-weight me-1"></i>{{ detalle_form.kg_vendido.label }}
+              </label>
+              {{ detalle_form.kg_vendido }}
+              <small class="d-block mt-5 text-warning" id="kg_restante_info" style="display: none; position: absolute; bottom: -30px; left: 0; width: 100%;">
+                <i class="bi bi-arrow-down-circle me-1"></i>Quedan: <span id="kg_restante">-</span> kg
+              </small>
+            </div>
+            
+            <!-- Precio por Kg -->
+            <div class="col-md-3">
+              <label class="form-label form-control-sm text-uppercase fw-semibold mb-2" style="color: var(--text-sec); letter-spacing: 0.5px; font-size: 0.8rem;">
+                <i class="bi bi-cash-coin me-1"></i>{{ detalle_form.precio_por_kg.label }}
+              </label>
+              {{ detalle_form.precio_por_kg }}
+            </div>
+            
+            <!-- Botón Agregar -->
+            <div class="col-md-2">
+              <button type="button" id="detalle-submit-btn" class="btn btn-primary w-100 fw-bold py-2" title="Agregar producto" style="border-radius: 8px;">
+                <i class="bi bi-plus-lg me-1"></i>Agregar
+              </button>
+            </div>
+          </form>
+          
+          <!-- Total Preview -->
+          <div class="mt-6 p-3 bg-light rounded border border-success border-opacity-25" id="total_preview_container" style="display: none; border-radius: 8px; margin-top: 50px;">
+            <div class="d-flex justify-content-between align-items-center">
+              <span class="text-uppercase fw-bold text-success" style="font-size: 0.85rem; letter-spacing: 0.5px;">Subtotal</span>
+              <span class="fs-5 fw-bold text-success" id="total_preview_val">$0</span>
+            </div>
           </div>
-          <div class="col-md-3">
-            <label class="form-label form-control-sm text-uppercase fw-semibold mb-1" style="color: var(--text-sec); letter-spacing: 0.5px;">{{ detalle_form.kg_vendido.label }}</label>
-            {{ detalle_form.kg_vendido }}
-          </div>
-          <div class="col-md-3">
-            <label class="form-label form-control-sm text-uppercase fw-semibold mb-1" style="color: var(--text-sec); letter-spacing: 0.5px;">{{ detalle_form.precio_por_kg.label }}</label>
-            {{ detalle_form.precio_por_kg }}
-          </div>
-          <div class="col-md-1">
-            <button type="submit" name="detalle_submit" class="btn btn-primary w-100 py-2 d-flex justify-content-center" title="Agregar producto">
-              <i class="bi bi-plus-lg"></i>
-            </button>
-          </div>
-        </form>
-        
-        <!-- Total Preview -->
-        <div class="mt-3 p-2 bg-light rounded border border-success border-opacity-25" id="total_preview_container" style="display: none;">
-          <div class="d-flex justify-content-between align-items-center">
-            <span class="text-uppercase fw-bold text-success" style="font-size: 0.8rem; letter-spacing: 0.5px;">Subtotal</span>
-            <span class="fs-5 fw-bold text-success" id="total_preview_val">$0</span>
-          </div>
+
+          <!-- Mensajes de estado -->
+          <div id="form-messages" class="mt-3"></div>
         </div>
       </div>
-    </div>
 
     <!-- Grid Layout para Tablas -->
     <div class="row g-4">
-      <div class="col-md-6">
+      <div class="col-md-12">
         <div class="card border-0 shadow-sm h-100" style="border-radius: 12px; overflow: hidden;">
           <div class="card-header bg-white py-3 border-bottom-0">
-            <h6 class="mb-0 fw-bold" style="color: var(--text-main);"><i class="bi bi-box-seam me-2 opacity-50"></i>Productos Vendidos</h6>
+            <h6 class="mb-0 fw-bold" style="color: white;"><i class="bi bi-box-seam me-2 opacity-50"></i>Productos Vendidos</h6>
           </div>
           <div class="card-body p-0">
             <div class="table-responsive">
@@ -139,42 +160,74 @@
         </div>
       </div>
 
-      <div class="col-md-6">
+      <div class="col-md-12">
         <div class="card border-0 shadow-sm h-100" style="border-radius: 12px; overflow: hidden;">
-          <div class="card-header bg-white py-3 border-bottom-0 d-flex justify-content-between align-items-center">
-            <h6 class="mb-0 fw-bold" style="color: var(--text-main);"><i class="bi bi-cash-stack me-2 opacity-50"></i>Pagos Recibidos</h6>
+          <div class="card-header bg-white py-3 border-bottom-0">
+            <h6 class="mb-0 fw-bold" style="color: white;"><i class="bi bi-cash-stack me-2 opacity-50"></i>Control de Pagos</h6>
           </div>
-          <div class="card-body px-3 pb-3 pt-0">
-            <form method="post" action="{% url 'venta_credito_pago_add' venta.pk %}" class="row g-2 mb-3 align-items-end p-2 rounded" style="background-color: var(--bg-base);">
-              {% csrf_token %}
-              <div class="col-12 mb-1">
-                <span class="text-uppercase fw-bold text-success" style="font-size: 0.7rem; letter-spacing: 0.5px;">Registrar Abono</span>
-              </div>
-              <div class="col-4">{{ pago_form.monto }}</div>
-              <div class="col-4">{{ pago_form.fecha }}</div>
-              <div class="col-4">
-                <button type="submit" class="btn btn-success w-100 h-100 py-1" style="background: linear-gradient(135deg, #43a047 0%, #2e7d32 100%); border: none;">
-                  <i class="bi bi-check-lg"></i>
-                </button>
-              </div>
-              <!-- Medio de pago oculto o compacto si hace falta -->
-              <div class="col-12 mt-1">
-                {{ pago_form.medio_pago }}
-              </div>
-            </form>
+          <div class="card-body px-4 pb-4 pt-3">
+            <!-- Sección: ¿Desea abonar en este momento? -->
+            <div class="mb-4 p-3 rounded" style="background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); border-left: 4px solid #4CAF50;">
+              <h6 class="mb-3 fw-bold" style="color: #1b5e20; font-size: 0.95rem;">
+                <i class="bi bi-question-circle me-1"></i>¿Desea abonar en este momento?
+              </h6>
+              <form method="post" action="{% url 'venta_credito_pago_add' venta.pk %}" class="row g-3">
+                {% csrf_token %}
+                <div class="col-md-5">
+                  <label class="form-label form-control-sm text-uppercase fw-semibold mb-2" style="color: #2e7d32; font-size: 0.75rem;">
+                    <i class="bi bi-cash-coin me-1"></i>{{ pago_form.monto.label }}
+                  </label>
+                  {{ pago_form.monto }}
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label form-control-sm text-uppercase fw-semibold mb-2" style="color: #2e7d32; font-size: 0.75rem;">
+                    <i class="bi bi-credit-card me-1"></i>{{ pago_form.medio_pago.label }}
+                  </label>
+                  {{ pago_form.medio_pago }}
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label form-control-sm text-uppercase fw-semibold mb-2" style="color: #2e7d32; font-size: 0.75rem;">
+                    <i class="bi bi-calendar me-1"></i>{{ pago_form.fecha.label }}
+                  </label>
+                  {{ pago_form.fecha }}
+                </div>
+                <div class="col-12">
+                  <button type="submit" class="btn btn-success w-100 fw-bold py-2" style="background: linear-gradient(135deg, #43a047 0%, #2e7d32 100%); border: none; border-radius: 8px; font-size: 0.95rem;">
+                    <i class="bi bi-check-lg me-2"></i>Registrar Abono
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            <!-- Resumen de Saldo -->
+            <div class="p-3 mb-4 rounded text-center" style="background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%); border-left: 4px solid #9c27b0; border-radius: 8px;">
+              <div class="small text-muted mb-2" style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px;">Saldo Pendiente</div>
+              <div class="fw-bold fs-4" style="color: {% if venta.saldo_pendiente > 0 %}#d32f2f{% else %}#4CAF50{% endif %};">${{ venta.saldo_pendiente|default:0|floatformat:0 }}</div>
+            </div>
             
+            <!-- Tabla de Abonos -->
+            <h6 class="fw-bold mb-2" style="font-size: 0.9rem; color: var(--text-main);">
+              <i class="bi bi-clock-history me-2 opacity-50"></i>Historial de Abonos
+            </h6>
             <div class="table-responsive">
-              <table class="table table-hover align-middle mb-0">
+              <table class="table table-hover align-middle mb-0 table-sm">
                 <thead class="bg-light">
-                  <tr><th class="ps-3">Fecha</th><th>Monto/Medio</th><th class="text-end pe-3"></th></tr>
+                  <tr>
+                    <th class="ps-3" style="font-size: 0.8rem;">Fecha</th>
+                    <th style="font-size: 0.8rem;">Monto</th>
+                    <th style="font-size: 0.8rem;">Medio</th>
+                    <th class="text-end pe-3" style="font-size: 0.8rem;"></th>
+                  </tr>
                 </thead>
                 <tbody class="border-top-0">
                 {% for p in pagos %}
                 <tr>
-                  <td class="ps-3 text-muted small">{{ p.fecha|date:"d/m/Y" }}</td>
-                  <td>
-                    <div class="text-success fw-bold">${{ p.monto|default:0|floatformat:0 }}</div>
-                    <span class="badge bg-light text-dark border px-2 py-0 mt-1" style="font-size: 0.65rem;">{{ p.get_medio_pago_display }}</span>
+                  <td class="ps-3 text-muted" style="font-size: 0.9rem;">{{ p.fecha|date:"d/m/Y" }}</td>
+                  <td style="font-size: 0.9rem;">
+                    <span class="text-success fw-bold">${{ p.monto|default:0|floatformat:0 }}</span>
+                  </td>
+                  <td style="font-size: 0.85rem;">
+                    <span class="badge bg-light text-dark border px-2 py-1">{{ p.get_medio_pago_display }}</span>
                   </td>
                   <td class="text-end pe-3">
                     <a href="{% url 'pago_venta_delete' p.pk %}" class="btn btn-sm btn-link text-danger p-0" onclick="return confirm('¿Eliminar pago?')" title="Eliminar pago">
@@ -183,7 +236,12 @@
                   </td>
                 </tr>
                 {% empty %}
-                <tr><td colspan="3" class="text-center text-muted py-4"><i class="bi bi-wallet2 fs-4 d-block mb-2 opacity-25"></i>Sin abonos</td></tr>
+                <tr>
+                  <td colspan="4" class="text-center text-muted py-4">
+                    <i class="bi bi-wallet2 fs-5 d-block mb-2 opacity-25"></i>
+                    <small>Sin abonos registrados</small>
+                  </td>
+                </tr>
                 {% endfor %}
                 </tbody>
               </table>
@@ -196,12 +254,86 @@
 </div>
 
 <script>
+  const VENTA_ID = {{ venta.pk }};
+  
+  // Data de clasificaciones y su stock disponible
+  const clasificacionesData = {
+    {% for d in detalle_form.clasificacion.field.queryset %}
+      "{{ d.pk }}": {
+        "nombre": "{{ d.nombre }}",
+        "stock": {{ d.stock_kg|safe }},
+        "producto": "{{ d.producto.nombre }}"
+      }{{ forloop.last|yesno:''|add:','|slice:"-1" }}{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  };
+
   document.addEventListener('DOMContentLoaded', function() {
+    const detalleForm = document.getElementById('detalle-form');
+    const detalleSubmitBtn = document.getElementById('detalle-submit-btn');
+    const selectClasificacion = document.getElementById('id_clasificacion');
     const inputKg = document.getElementById('id_kg_vendido');
     const inputPrecio = document.getElementById('id_precio_por_kg');
+    const stockInfo = document.getElementById('stock_info');
+    const stockAvailable = document.getElementById('stock_available');
+    const kgRestanteInfo = document.getElementById('kg_restante_info');
+    const kgRestante = document.getElementById('kg_restante');
     const previewContainer = document.getElementById('total_preview_container');
     const previewVal = document.getElementById('total_preview_val');
+    const detallesTable = document.querySelector('table tbody');
+    const formMessages = document.getElementById('form-messages');
 
+    // Cuando cambia la clasificación
+    if (selectClasificacion) {
+      selectClasificacion.addEventListener('change', function() {
+        const clasificacionId = this.value;
+        if (clasificacionId && clasificacionesData[clasificacionId]) {
+          const stock = clasificacionesData[clasificacionId].stock;
+          stockAvailable.textContent = stock.toFixed(2);
+          stockInfo.style.display = 'block';
+          inputKg.value = '';
+          kgRestanteInfo.style.display = 'none';
+          previewContainer.style.display = 'none';
+        } else {
+          stockInfo.style.display = 'none';
+          kgRestanteInfo.style.display = 'none';
+          previewContainer.style.display = 'none';
+        }
+      });
+    }
+
+    // Cuando ingresa kg vendido
+    if (inputKg) {
+      inputKg.addEventListener('input', function() {
+        const clasificacionId = selectClasificacion.value;
+        const kg = parseFloat(this.value) || 0;
+
+        if (clasificacionId && clasificacionesData[clasificacionId]) {
+          const stock = clasificacionesData[clasificacionId].stock;
+          const restante = stock - kg;
+          
+          if (kg > 0) {
+            kgRestante.textContent = restante.toFixed(2);
+            kgRestanteInfo.style.display = 'block';
+            
+            if (restante < 0) {
+              kgRestanteInfo.classList.remove('text-warning');
+              kgRestanteInfo.classList.add('text-danger');
+              kgRestanteInfo.innerHTML = '<i class="bi bi-exclamation-circle me-1"></i>⚠️ Excede stock! Quedan: <span id="kg_restante">' + restante.toFixed(2) + '</span> kg';
+            } else {
+              kgRestanteInfo.classList.remove('text-danger');
+              kgRestanteInfo.classList.add('text-warning');
+              kgRestanteInfo.innerHTML = '<i class="bi bi-arrow-down-circle me-1"></i>Quedan: <span id="kg_restante">' + restante.toFixed(2) + '</span> kg';
+            }
+          } else {
+            kgRestanteInfo.style.display = 'none';
+          }
+        }
+        
+        updateTotal();
+      });
+    }
+
+    // Actualizar total preview
     function updateTotal() {
       if (!inputKg || !inputPrecio) return;
       const kg = parseFloat(inputKg.value) || 0;
@@ -210,17 +342,125 @@
       
       if (total > 0) {
         previewContainer.style.display = 'block';
-        previewVal.innerText = '$' + total.toFixed(2);
+        previewVal.innerText = '$' + total.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
       } else {
         previewContainer.style.display = 'none';
       }
     }
 
-    if (inputKg && inputPrecio && previewContainer) {
-      inputKg.addEventListener('input', updateTotal);
+    if (inputPrecio) {
       inputPrecio.addEventListener('input', updateTotal);
-      updateTotal(); // evaluate initially
     }
+
+    // AJAX Form Submission
+    if (detalleSubmitBtn) {
+      detalleSubmitBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(detalleForm);
+        
+        // Validar campos vacíos
+        if (!selectClasificacion.value || !inputKg.value || !inputPrecio.value) {
+          showMessage('Por favor completa todos los campos', 'warning');
+          return;
+        }
+
+        // Deshabilitar botón mientras se envía
+        detalleSubmitBtn.disabled = true;
+        detalleSubmitBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Agregando...';
+
+        fetch(`/ventas/credito/${VENTA_ID}/detalle-ajax/`, {
+          method: 'POST',
+          headers: {
+            'X-CSRFToken': formData.get('csrfmiddlewaretoken'),
+          },
+          body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            // Agregar fila a la tabla
+            addDetailRow(data.detalle);
+            
+            // Limpiar formulario
+            detalleForm.reset();
+            selectClasificacion.dispatchEvent(new Event('change'));
+            inputKg.value = '';
+            inputPrecio.value = '';
+            previewContainer.style.display = 'none';
+            
+            // Mostrar mensaje de éxito
+            showMessage('✓ Producto agregado exitosamente', 'success');
+            
+            // Actualizar contador de productos
+            updateProductCount();
+          } else {
+            showMessage('Error al agregar producto: ' + JSON.stringify(data.errors), 'danger');
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          showMessage('Error de conexión: ' + error.message, 'danger');
+        })
+        .finally(() => {
+          detalleSubmitBtn.disabled = false;
+          detalleSubmitBtn.innerHTML = '<i class="bi bi-plus-lg me-1"></i>Agregar';
+        });
+      });
+    }
+
+    // Función para agregar fila a la tabla
+    function addDetailRow(detalle) {
+      const emptyRow = detallesTable.querySelector('tr:has(td.text-center)');
+      if (emptyRow) {
+        emptyRow.remove();
+      }
+
+      const newRow = document.createElement('tr');
+      newRow.innerHTML = `
+        <td class="ps-3">
+          <span class="badge bg-light text-dark px-2 py-1">${detalle.clasificacion}</span>
+        </td>
+        <td class="text-muted">${detalle.kg_vendido.toFixed(2)} kg</td>
+        <td>
+          <span class="fw-bold text-info">${detalle.total_display}</span>
+        </td>
+        <td class="text-end pe-3">
+          <a href="/detalles-venta/${detalle.pk}/eliminar/" class="btn btn-sm btn-link text-danger p-0" onclick="return confirm('¿Eliminar producto?')" title="Eliminar producto">
+            <i class="bi bi-trash3"></i>
+          </a>
+        </td>
+      `;
+      detallesTable.appendChild(newRow);
+    }
+
+    // Función para mostrar mensajes
+    function showMessage(message, type) {
+      formMessages.innerHTML = `
+        <div class="alert alert-${type} alert-dismissible fade show" role="alert" style="border-radius: 8px;">
+          ${message}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      `;
+      
+      // Auto-dismiss después de 3 segundos
+      setTimeout(() => {
+        const alert = formMessages.querySelector('.alert');
+        if (alert) {
+          alert.remove();
+        }
+      }, 3000);
+    }
+
+    // Contar y actualizar productos vendidos dinámicamente
+    function updateProductCount() {
+      const rows = detallesTable.querySelectorAll('tr');
+      const count = rows.length;
+      // Actualizar el contador si existe
+      console.log(`Total de productos: ${count}`);
+    }
+
+    updateProductCount();
   });
 </script>
 {% endblock %}

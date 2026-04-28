@@ -227,6 +227,19 @@
   }
 
   /* ==================== CARDS & CONTAINERS ==================== */
+
+  .kpi-stat{
+    background-color: var(--orange-primary);
+     border-radius: 14.2px;
+     margin: 1em 0 2em 0;
+  }
+
+  .kpi-stat h1{
+    color: white;
+    margin-bottom: 0.5em;
+
+  }
+  }
   .card {
     border: none;
     background: var(--surface-color);
@@ -830,12 +843,8 @@
     <a href="{% url 'venta_credito_list' %}" class="nav-link {% if 'credito' in request.path %}active{% endif %}">
       <i class="bi bi-credit-card"></i> Ventas Crédito
     </a>
-    <div class="nav-section">Inventario</div>
     <a href="{% url 'viaje_list' %}" class="nav-link {% if 'viajes' in request.path %}active{% endif %}">
       <i class="bi bi-truck"></i> Viajes / Entradas
-    </a>
-    <a href="{% url 'inventario_list' %}" class="nav-link {% if 'inventario' in request.path %}active{% endif %}">
-      <i class="bi bi-clipboard-data"></i> Inventario
     </a>
     <div class="nav-section">Gastos</div>
     <a href="{% url 'gasto_list' %}" class="nav-link {% if 'gastos' in request.path and 'categorias' not in request.path %}active{% endif %}">
@@ -844,6 +853,9 @@
     <div class="nav-section">Reportes & Datos</div>
     <a href="{% url 'reporte_diario' %}" class="nav-link {% if 'diario' in request.path %}active{% endif %}">
       <i class="bi bi-bar-chart-line"></i> Reporte Diario
+    </a>
+    <a href="{% url 'inventario_weekly_summary' %}" class="nav-link {% if 'semanal' in request.path %}active{% endif %}">
+      <i class="bi bi-graph-up"></i> Resumen Semanal
     </a>
     <a href="{% url 'reporte_cartera' %}" class="nav-link {% if 'cartera' in request.path %}active{% endif %}">
       <i class="bi bi-file-earmark-text"></i> Cartera

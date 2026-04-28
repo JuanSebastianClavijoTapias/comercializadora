@@ -43,24 +43,23 @@ urlpatterns = [
     path('gastos/<int:pk>/eliminar/', views.gasto_delete, name='gasto_delete'),
     # Ventas Efectivo
     path('ventas/efectivo/', views.venta_efectivo_list, name='venta_efectivo_list'),
+    path('ventas/efectivo/nueva/', views.venta_efectivo_create, name='venta_efectivo_create'),
+    path('ventas/efectivo/<int:pk>/', views.venta_efectivo_detail, name='venta_efectivo_detail'),
     path('ventas/efectivo/<int:pk>/eliminar/', views.venta_efectivo_delete, name='venta_efectivo_delete'),
+    path('ventas/efectivo/detalle/<int:pk>/eliminar/', views.detalle_venta_efectivo_delete, name='detalle_venta_efectivo_delete'),
     # Ventas Credito
     path('ventas/credito/', views.venta_credito_list, name='venta_credito_list'),
     path('ventas/credito/nueva/', views.venta_credito_create, name='venta_credito_create'),
     path('ventas/credito/<int:pk>/', views.venta_credito_detail, name='venta_credito_detail'),
+    path('ventas/credito/<int:pk>/detalle-ajax/', views.venta_credito_add_detalle_ajax, name='venta_credito_add_detalle_ajax'),
     path('ventas/credito/<int:pk>/eliminar/', views.venta_credito_delete, name='venta_credito_delete'),
     path('ventas/credito/<int:pk>/pago/', views.venta_credito_pago_add, name='venta_credito_pago_add'),
     path('detalles-venta/<int:pk>/eliminar/', views.detalle_venta_delete, name='detalle_venta_delete'),
     path('pagos-venta/<int:pk>/eliminar/', views.pago_venta_delete, name='pago_venta_delete'),
-    # Inventario
-    path('inventario/', views.inventario_list, name='inventario_list'),
-    path('inventario/nuevo/', views.inventario_create, name='inventario_create'),
-    path('inventario/<int:pk>/', views.inventario_detail, name='inventario_detail'),
-    path('inventario/<int:pk>/eliminar/', views.inventario_delete, name='inventario_delete'),
-    path('inventario/detalle/<int:pk>/editar/', views.detalle_inventario_edit, name='detalle_inventario_edit'),
-    path('inventario/detalle/<int:pk>/eliminar/', views.detalle_inventario_delete, name='detalle_inventario_delete'),
     # Reportes
     path('reportes/diario/', views.reporte_diario, name='reporte_diario'),
     path('reportes/cartera/', views.reporte_cartera, name='reporte_cartera'),
     path('reportes/proveedores/', views.reporte_proveedor, name='reporte_proveedor'),
+    # Resumen Semanal
+    path('inventario/semanal/', views.inventario_weekly_summary, name='inventario_weekly_summary'),
 ]

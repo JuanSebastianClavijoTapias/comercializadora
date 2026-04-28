@@ -1,0 +1,368 @@
+{% extends 'core/base.html' %}
+{% block title %}Venta Efectivo - {{ venta.cliente }}{% endblock %}
+{% block page_title %}Venta en Efectivo: {{ venta.cliente.nombre|default:"General" }}{% endblock %}
+{% block content %}
+
+<div class="mb-3 d-flex justify-content-between align-items-center">
+  <a href="{% url 'venta_efectivo_list' %}" class="btn btn-outline-secondary py-2 border-0 fw-semibold" style="color: var(--text-sec); font-size: 0.9rem;">
+    <i class="bi bi-arrow-left me-1"></i> Volver
+  </a>
+  <a href="{% url 'venta_efectivo_delete' venta.pk %}" class="btn btn-danger py-2 fw-semibold px-3" style="border-radius: 8px; font-size: 0.9rem;">
+    <i class="bi bi-trash3 me-1"></i> Eliminar
+  </a>
+</div>
+
+<div class="row g-3 mb-3">
+  <!-- Resumen de Venta -->
+  <div class="col-lg-4">
+    <div class="card border-0 shadow-sm h-100" style="border-radius: 10px; overflow: hidden; background: linear-gradient(135deg, #ffffff 0%, var(--bg-base) 100%);">
+      <div class="card-body p-3">
+        <div class="d-flex align-items-center mb-3">
+          <div class="stat-icon-wrapper d-inline-flex me-2 shadow-sm" style="width: 40px; height: 40px; font-size: 1.2rem; background: var(--orange-primary); color: white; border-radius: 8px;">
+            <i class="bi bi-cash-coin"></i>
+          </div>
+          <div>
+            <h6 class="text-uppercase fw-bold mb-0" style="color: var(--text-sec); font-size: 0.7rem; letter-spacing: 0.5px;">Venta</h6>
+            <h5 class="fw-bold mb-0" style="color: white; font-size: 1rem;">{{ venta.cliente.nombre|default:"General" }}</h5>
+          </div>
+        </div>
+
+        <div class="d-flex flex-column gap-2 mb-3" style="font-size: 0.9rem;">
+          <div class="d-flex justify-content-between">
+            <span class="text-muted"><i class="bi bi-calendar3 me-1 opacity-50"></i>Fecha:</span>
+            <span class="fw-semibold">{{ venta.fecha|date:"d/m/Y" }}</span>
+          </div>
+          {% if venta.descripcion %}
+          <div class="d-flex justify-content-between">
+            <span class="text-muted"><i class="bi bi-file-text me-1 opacity-50"></i>Desc.:</span>
+            <span class="fw-semibold small">{{ venta.descripcion|truncatewords:3 }}</span>
+          </div>
+          {% endif %}
+        </div>
+
+        <div class="p-3 rounded-2 text-center" style="background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); border: 1px solid #4CAF50;">
+          <div class="text-uppercase fw-bold small mb-1" style="color: #1b5e20; font-size: 0.75rem; letter-spacing: 0.5px;">Total Venta</div>
+          <div class="fw-bold" style="color: #2e7d32; font-size: 1.4rem;">${{ venta.total|default:0|floatformat:0 }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Formulario Agregar Producto -->
+  <div class="col-lg-8">
+    <div class="card border-0 shadow-sm" style="border-radius: 10px; overflow: hidden;">
+      <div class="card-header bg-white py-2 px-3 border-bottom-0" style="background: linear-gradient(135deg, var(--orange-primary) 0%, #e65100 100%);">
+        <h6 class="mb-0 fw-bold small" style="color: white; letter-spacing: 0.5px; font-size: 0.9rem;"><i class="bi bi-plus-circle me-2"></i>AGREGAR PRODUCTO</h6>
+      </div>
+      
+      <div class="card-body p-3">
+        <form method="post" class="row g-2 align-items-end">
+          {% csrf_token %}
+          
+          <!-- Clasificación -->
+          <div class="col-md-4">
+            <label class="form-label form-control-sm text-uppercase fw-semibold" style="color: var(--text-sec); letter-spacing: 0.5px; font-size: 0.7rem; margin-bottom: 0.35rem;">Clasificación</label>
+            {{ detalle_form.clasificacion }}
+          </div>
+          
+          <!-- Stock Disponible -->
+          <div class="col-md-3">
+            <div class="p-8 rounded-2 text-center d-flex flex-column justify-content-center" style="background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%); border: 1px solid var(--orange-primary); min-height: 38px;">
+              <div class="text-uppercase fw-bold" style="color: #e65100; font-size: 0.65rem; letter-spacing: 0.5px; margin-bottom: 0.2rem;">Stock Dispo.</div>
+              <div class="fw-bold" style="color: #d84315; font-size: 1rem;" id="stock_disponible">-</div>
+            </div>
+          </div>
+          
+          <!-- Stock Restante -->
+          <div class="col-md-3">
+            <div class="p-8 rounded-2 text-center d-flex flex-column justify-content-center" style="background: linear-gradient(135deg, #ffe0b2 0%, #ffb74d 100%); border: 1px solid #ff9800; min-height: 38px;">
+              <div class="text-uppercase fw-bold" style="color: #e65100; font-size: 0.65rem; letter-spacing: 0.5px; margin-bottom: 0.2rem;">Restante</div>
+              <div class="fw-bold" style="color: #d84315; font-size: 1rem;" id="stock_restante">-</div>
+            </div>
+          </div>
+          
+          <!-- Botón Agregar -->
+          <div class="col-md-1">
+            <button type="submit" name="detalle_submit" class="btn w-100 py-2 d-flex justify-content-center fw-semibold" style="background: linear-gradient(135deg, var(--orange-primary) 0%, #e65100 100%); color: white; border: none; border-radius: 6px; font-size: 1rem;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+              <i class="bi bi-plus-lg"></i>
+            </button>
+          </div>
+          
+          <!-- Kg a Vender -->
+          <div class="col-md-3">
+            <label class="form-label form-control-sm text-uppercase fw-semibold" style="color: var(--text-sec); letter-spacing: 0.5px; font-size: 0.7rem; margin-bottom: 0.35rem;">Kg</label>
+            {{ detalle_form.kg_vendido }}
+          </div>
+          
+          <!-- Precio por Kg -->
+          <div class="col-md-3">
+            <label class="form-label form-control-sm text-uppercase fw-semibold" style="color: var(--text-sec); letter-spacing: 0.5px; font-size: 0.7rem; margin-bottom: 0.35rem;">Precio /kg</label>
+            {{ detalle_form.precio_por_kg }}
+          </div>
+          
+          <!-- Total Producto -->
+          <div class="col-md-3">
+            <div class="p-2 rounded-2 text-center" style="background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); border: 1px solid #4CAF50;">
+              <div class="text-uppercase fw-bold" style="color: #1b5e20; font-size: 0.65rem; letter-spacing: 0.5px; margin-bottom: 0.25rem;">Total Prod.</div>
+              <div class="fw-bold" style="color: #2e7d32; font-size: 1rem;">$<span id="total_producto">0</span></div>
+            </div>
+          </div>
+        </form>
+        
+        <!-- Validaciones -->
+        <div id="stock_info" style="display: none; margin-top: 0.5rem;">
+          <div class="alert mb-0 py-2 px-2 rounded-2 small" style="border-left: 2px solid var(--orange-primary); font-size: 0.8rem;" id="info_alert">
+            <i class="bi me-1"></i><span id="info_text"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Tabla de Productos Agregados -->
+<div class="card border-0 shadow-sm mb-3" style="border-radius: 10px; overflow: hidden;">
+  <div class="card-header bg-white py-2 px-3 border-bottom-0" style="background: linear-gradient(135deg, #f5f5f5 0%, #eeeeee 100%);">
+    <h6 class="mb-0 fw-bold small" style="color: #333; letter-spacing: 0.5px; font-size: 0.9rem;"><i class="bi bi-box-seam me-2 opacity-75"></i>PRODUCTOS ({{ detalles|length }})</h6>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-sm table-hover align-middle mb-0" style="font-size: 0.85rem;">
+        <thead class="bg-light">
+          <tr style="background: #f9f9f9;">
+            <th class="ps-3 fw-bold" style="font-size: 0.75rem; color: #666;">Clasificación</th>
+            <th class="fw-bold text-center" style="font-size: 0.75rem; color: #666;">Kg</th>
+            <th class="fw-bold text-center" style="font-size: 0.75rem; color: #666;">$/Kg</th>
+            <th class="fw-bold text-end pe-2" style="font-size: 0.75rem; color: #666;">Subtotal</th>
+            <th class="text-end pe-3 fw-bold" style="font-size: 0.75rem; color: #666;">Acc.</th>
+          </tr>
+        </thead>
+        <tbody class="border-top">
+        {% for d in detalles %}
+        <tr style="border-bottom: 1px solid #f0f0f0;">
+          <td class="ps-3 py-2">
+            <div class="fw-semibold" style="font-size: 0.9rem;">{{ d.clasificacion.nombre }}</div>
+            <div class="small text-muted" style="font-size: 0.75rem;">{{ d.clasificacion.producto.nombre }}</div>
+          </td>
+          <td class="text-center py-2 fw-semibold">{{ d.kg_vendido }}</td>
+          <td class="text-center py-2 text-muted small">${{ d.precio_por_kg|floatformat:0 }}</td>
+          <td class="text-end pe-2 py-2">
+            <span class="badge" style="background-color: rgba(76, 175, 80, 0.15); color: #2e7d32; font-weight: 600; font-size: 0.8rem;">
+              ${{ d.total|default:0|floatformat:0 }}
+            </span>
+          </td>
+          <td class="text-end pe-3 py-2">
+            <a href="{% url 'detalle_venta_efectivo_delete' d.pk %}" class="btn btn-sm btn-link text-danger p-0" onclick="return confirm('¿Eliminar?')" style="font-size: 0.9rem;">
+              <i class="bi bi-trash3"></i>
+            </a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" class="text-center text-muted py-3">
+            <i class="bi bi-inbox opacity-50" style="font-size: 1.5rem; display: block; margin-bottom: 0.5rem;"></i>
+            <small>Sin productos agregados</small>
+          </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- SECCIÓN DE PAGO -->
+<div class="card border-0 shadow-sm" style="border-radius: 10px; overflow: hidden;">
+  <div class="card-header py-2 px-3 border-bottom-0" style="background: linear-gradient(135deg, var(--orange-primary) 0%, #e65100 100%);">
+    <h6 class="mb-0 fw-bold small" style="color: white; letter-spacing: 0.5px; font-size: 0.9rem;"><i class="bi bi-credit-card me-2"></i>PROCESAMIENTO DE PAGO</h6>
+  </div>
+  
+  <div class="card-body p-3">
+    <!-- Fila 1: Resumen de Totales -->
+    <div class="row g-2 mb-4">
+      <div class="col-6">
+        <div class="p-3 rounded-2 text-center" style="background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%); border: 1px solid #ef5350;">
+          <div class="text-uppercase fw-bold small" style="color: #c62828; font-size: 0.7rem; letter-spacing: 0.5px; margin-bottom: 0.2rem;">Total Venta</div>
+          <div class="fw-bold" style="color: #d84315; font-size: 1.4rem;">
+            ${{ venta.total|default:0|floatformat:0 }}
+          </div>
+        </div>
+      </div>
+      
+      <div class="col-6">
+        <div class="p-3 rounded-2 text-center" style="background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%); border: 1px solid #ff9800;">
+          <div class="text-uppercase fw-bold small" style="color: #e65100; font-size: 0.7rem; letter-spacing: 0.5px; margin-bottom: 0.2rem;">Pagado</div>
+          <div class="fw-bold" style="color: #d84315; font-size: 1.4rem;">
+            $<span id="resumen_pagado">0</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Fila 2: Entrada de Datos -->
+    <div class="row g-2 mb-4">
+      <div class="col-md-6">
+        <label class="form-label form-control-sm text-uppercase fw-semibold" style="color: var(--text-sec); letter-spacing: 0.5px; font-size: 0.7rem; margin-bottom: 0.35rem;">Medio de Pago</label>
+        <select class="form-select form-select-sm fw-semibold" id="medio_pago" style="border: 1px solid var(--orange-primary); border-radius: 6px; background-color: white; color: #d84315; font-size: 0.9rem;">
+          <option value="efectivo">💵 Efectivo</option>
+          <option value="transferencia">💳 Transferencia</option>
+        </select>
+      </div>
+      
+      <div class="col-md-6">
+        <label class="form-label form-control-sm text-uppercase fw-semibold" style="color: var(--text-sec); letter-spacing: 0.5px; font-size: 0.7rem; margin-bottom: 0.35rem;">Monto Pagado</label>
+        <div class="input-group" style="border: 1px solid var(--orange-primary); border-radius: 6px; overflow: hidden;">
+          <span class="input-group-text fw-bold" style="background: var(--orange-primary); color: white; border: none; padding: 0.4rem 0.6rem; font-size: 0.85rem;">$</span>
+          <input type="number" id="monto_pagado" class="form-control form-control-sm fw-semibold" placeholder="Ingresa monto" min="0" step="0.01" style="border: none; font-size: 0.9rem; color: #d84315;">
+        </div>
+      </div>
+    </div>
+    
+    <!-- Fila 3: Estado de Pago -->
+    <div id="payment_status" class="mb-3" style="display: none;">
+      <div class="alert mb-0 py-2 px-3 rounded-2 small" style="border-left: 3px solid var(--orange-primary); font-size: 0.8rem;">
+        <i class="bi me-1" id="payment_icon"></i><span id="payment_message"></span>
+      </div>
+    </div>
+
+    <!-- Fila 4: Botón Registrar Venta -->
+    <div class="d-grid gap-2 pt-2 border-top" style="border-top-color: #e0e0e0 !important;">
+      <form method="post" id="finalizar_venta_form">
+        {% csrf_token %}
+        <input type="hidden" name="finalizar_venta" value="1">
+        <input type="hidden" id="hidden_medio_pago" name="medio_pago">
+        <input type="hidden" id="hidden_monto_pagado" name="monto_pagado">
+        <button type="submit" class="btn fw-bold py-3" id="btn_registrar" style="background: linear-gradient(135deg, #4CAF50 0%, #2e7d32 100%); color: white; border: none; border-radius: 8px; font-size: 1rem; transition: all 0.3s; box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);" onmouseover="this.style.opacity='0.95'; this.style.boxShadow='0 6px 16px rgba(76, 175, 80, 0.4)'" onmouseout="this.style.opacity='1'; this.style.boxShadow='0 4px 12px rgba(76, 175, 80, 0.3)'">
+          <i class="bi bi-check-circle me-2"></i> Registrar Venta
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- JavaScript para Cálculos Dinámicos -->
+<script>
+  const clasificacionesStock = {
+    {% for d in detalle_form.clasificacion.field.queryset %}
+      "{{ d.pk }}": {
+        "nombre": "{{ d.nombre }}",
+        "stock": {{ d.stock_kg|safe }},
+        "producto": "{{ d.producto.nombre }}"
+      }{{ forloop.last|yesno:''|add:','|slice:"-1" }}{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  };
+
+  const kgInput = document.getElementById('id_kg_vendido');
+  const precioInput = document.getElementById('id_precio_por_kg');
+  const clasificacionSelect = document.getElementById('id_clasificacion');
+  const montoPagadoInput = document.getElementById('monto_pagado');
+  const medioPagoSelect = document.getElementById('medio_pago');
+  const btnRegistrar = document.getElementById('btn_registrar');
+  const formFinalizarVenta = document.getElementById('finalizar_venta_form');
+
+  clasificacionSelect.addEventListener('change', function() {
+    const clasificacionId = this.value;
+    const stockElement = document.getElementById('stock_disponible');
+    const stockRestanteElement = document.getElementById('stock_restante');
+    const infoElement = document.getElementById('stock_info');
+
+    if (clasificacionId && clasificacionesStock[clasificacionId]) {
+      const stock = clasificacionesStock[clasificacionId].stock;
+      stockElement.textContent = stock.toLocaleString('es-AR', {minimumFractionDigits: 2});
+      kgInput.value = '';
+      precioInput.value = '';
+      updateCalculations();
+      infoElement.style.display = 'none';
+    } else {
+      stockElement.textContent = '-';
+      stockRestanteElement.textContent = '-';
+      infoElement.style.display = 'none';
+    }
+  });
+
+  function updateCalculations() {
+    const clasificacionId = clasificacionSelect.value;
+    const kg = parseFloat(kgInput.value) || 0;
+    const precio = parseFloat(precioInput.value) || 0;
+
+    if (clasificacionId && clasificacionesStock[clasificacionId]) {
+      const stock = clasificacionesStock[clasificacionId].stock;
+      const stockRestante = stock - kg;
+      const totalProducto = (kg * precio).toFixed(2);
+
+      document.getElementById('stock_restante').textContent = stockRestante.toLocaleString('es-AR', {minimumFractionDigits: 2});
+      document.getElementById('total_producto').textContent = parseFloat(totalProducto).toLocaleString('es-AR', {minimumFractionDigits: 0});
+
+      const infoElement = document.getElementById('stock_info');
+      const infoText = document.getElementById('info_text');
+      const infoAlert = document.getElementById('info_alert');
+      
+      if (stockRestante < 0) {
+        infoElement.style.display = 'block';
+        infoText.textContent = '⚠️ La cantidad vendida supera el stock disponible';
+        infoAlert.style.borderLeftColor = '#d32f2f';
+        infoAlert.style.backgroundColor = '#ffebee';
+        infoAlert.style.color = '#c62828';
+      } else if (kg > 0 && stockRestante < (stock * 0.1)) {
+        infoElement.style.display = 'block';
+        infoText.textContent = '⚠️ Stock bajo - Quedarán ' + stockRestante.toLocaleString('es-AR', {minimumFractionDigits: 1}) + ' kg';
+        infoAlert.style.borderLeftColor = 'var(--orange-primary)';
+        infoAlert.style.backgroundColor = '#fff3e0';
+        infoAlert.style.color = '#e65100';
+      } else {
+        infoElement.style.display = 'none';
+      }
+    }
+
+    updatePaymentCalculations();
+  }
+
+  function updatePaymentCalculations() {
+    const total = parseFloat('{{ venta.total|default:0|floatformat:2 }}');
+    const pagado = parseFloat(montoPagadoInput.value) || 0;
+    const cambio = Math.max(0, pagado - total);
+
+    document.getElementById('resumen_pagado').textContent = pagado.toLocaleString('es-AR', {minimumFractionDigits: 0});
+    document.getElementById('resumen_cambio').textContent = cambio.toLocaleString('es-AR', {minimumFractionDigits: 0});
+
+    const paymentStatus = document.getElementById('payment_status');
+    const paymentMessage = document.getElementById('payment_message');
+    const paymentIcon = document.getElementById('payment_icon');
+    const infoAlert = paymentStatus.querySelector('.alert');
+
+    if (pagado > 0) {
+      paymentStatus.style.display = 'block';
+      if (pagado >= total) {
+        infoAlert.style.borderLeftColor = '#4CAF50';
+        infoAlert.style.backgroundColor = '#e8f5e9';
+        infoAlert.style.color = '#1b5e20';
+        paymentIcon.className = 'bi bi-check-circle-fill';
+        paymentMessage.innerHTML = 'Pago completo ✓';
+      } else {
+        const falta = (total - pagado).toLocaleString('es-AR', {minimumFractionDigits: 0});
+        infoAlert.style.borderLeftColor = 'var(--orange-primary)';
+        infoAlert.style.backgroundColor = '#fff3e0';
+        infoAlert.style.color = '#e65100';
+        paymentIcon.className = 'bi bi-exclamation-circle-fill';
+        paymentMessage.innerHTML = 'Falta $' + falta + ' para completar el pago';
+      }
+    } else {
+      paymentStatus.style.display = 'none';
+    }
+  }
+
+  // Llenar campos ocultos al enviar el formulario
+  formFinalizarVenta.addEventListener('submit', function(e) {
+    document.getElementById('hidden_medio_pago').value = medioPagoSelect.value || 'efectivo';
+    document.getElementById('hidden_monto_pagado').value = montoPagadoInput.value || '0';
+  });
+
+  kgInput.addEventListener('input', updateCalculations);
+  precioInput.addEventListener('input', updateCalculations);
+  montoPagadoInput.addEventListener('input', updatePaymentCalculations);
+  medioPagoSelect.addEventListener('change', updatePaymentCalculations);
+
+  updateCalculations();
+</script>
+
+{% endblock %}

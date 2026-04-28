@@ -308,7 +308,7 @@
     {% if lotes|length > 0 %}
       <div class="text-center py-4" style="background:rgba(76,175,80,0.06);">
         <i class="bi bi-check-circle" style="font-size:2.5rem; color:#4CAF50;"></i>
-        <p class="mt-2 mb-0 fw-bold text-success">Clasificaciones guardadas en inventario</p>
+        <p class="mt-2 mb-0 fw-bold text-success">Clasificaciones guardadas exitosamente</p>
       </div>
       <div class="table-responsive">
         <table class="table table-hover mb-0">
@@ -404,7 +404,7 @@
       </span>
       <span>
         <span class="text-muted">Saldo:</span>
-        <strong class="ms-1 {% if viaje.saldo_pendiente > 0 %}text-danger{% else %}text-success{% endif %}">
+        <strong class="ms-1" style="color: #FFC107;">
           ${{ viaje.saldo_pendiente|floatformat:0 }}
         </strong>
       </span>
@@ -418,16 +418,18 @@
         <label class="form-label fw-semibold mb-1" style="font-size:0.85rem;">
           <i class="bi bi-tag me-1 text-muted"></i>Precio Total Acordado
         </label>
-        <div class="input-group input-group-sm" style="max-width:220px;">
+        <div class="input-group input-group-sm" style="max-width:280px;">
           <span class="input-group-text">$</span>
-          <input type="number" step="0.01" min="0" name="precio_total_acordado"
+          <input type="text" step="0.01" min="0" name="precio_total_acordado" id="input_precio_acordado"
                  class="form-control"
                  value="{{ viaje.precio_total_acordado|floatformat:2 }}"
-                 placeholder="0.00">
-          <button type="submit" class="btn btn-outline-primary">
-            <i class="bi bi-save"></i>
+                 placeholder="0.00"
+                 required>
+          <button type="submit" class="btn btn-warning" title="Guardar precio">
+            <i class="bi bi-save me-1"></i>Guardar
           </button>
         </div>
+        <small class="text-muted d-block mt-1">💡 Ingresa el monto y haz clic en "Guardar"</small>
       </div>
     </form>
     <form method="post" action="{% url 'viaje_pago_add' viaje.pk %}" class="row g-2 mb-3 align-items-end">
@@ -547,5 +549,50 @@
     inputsNeto.forEach(function(el) { el.addEventListener('input', calcularTotales); });
     calcularTotales();
   });
+
+  // Función genérica para formatear campos de moneda con separador de miles
+  function inicializarFormateador(inputId) {
+    const inputPrecio = document.getElementById(inputId);
+    if (!inputPrecio) return;
+
+    const form = inputPrecio.closest('form');
+
+    // Función para formatear con separadores de miles
+    function formatearNumero(valor) {
+      // Obtener solo números
+      const soloNumeros = valor.replace(/[^\d]/g, '');
+      // Formatear con separadores de miles
+      return soloNumeros.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    }
+
+    // Evento de input para formatear en tiempo real
+    inputPrecio.addEventListener('input', function(e) {
+      const posicionCursor = this.selectionStart;
+      const valorAnterior = this.value;
+      const valorFormateado = formatearNumero(this.value);
+      
+      this.value = valorFormateado;
+      
+      // Mantener cursor en posición aproximada
+      setTimeout(() => {
+        const diferencia = valorFormateado.length - valorAnterior.length;
+        this.selectionStart = this.selectionEnd = posicionCursor + diferencia;
+      }, 0);
+    });
+
+    // Cuando se envía el formulario, remover puntos para que se envíe limpio
+    if (form) {
+      form.addEventListener('submit', function(e) {
+        // Remover puntos antes de enviar
+        inputPrecio.value = inputPrecio.value.replace(/\./g, '');
+      });
+    }
+  }
+
+  // Formateo de Precio Total Acordado
+  inicializarFormateador('input_precio_acordado');
+
+  // Formateo de Monto de Pago
+  inicializarFormateador('input_monto_proveedor');
 </script>
 {% endblock %}

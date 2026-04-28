@@ -3,8 +3,23 @@
 {% block page_title %}Dashboard{% endblock %}
 {% block content %}
 
+<!-- ALERTA DE NÓMINA -->
+{% if tiene_nomina_hoy %}
+<div class="alert alert-warning border-0 mb-4 d-flex align-items-center" style="background: linear-gradient(135deg, #FFF3E0 0%, #FFE0B2 100%); border-left: 5px solid #F57C00;">
+  <i class="bi bi-exclamation-triangle-fill me-3" style="font-size: 1.5rem;"></i>
+  <div>
+    <strong>¡ATENCIÓN! Hoy es Nómina (Día {{ hoy.day }})</strong>
+    <p class="mb-0 small">Recordatorio: pagos de empleados programados para hoy</p>
+  </div>
+</div>
+{% endif %} 
+
+
+
 <!-- KPI STAT CARDS -->
-<div class="row row-cols-1 row-cols-md-2 row-cols-xl-5 g-3 mb-4">
+<div class="kpi-stat p-4">
+  <h1 class="d-flex justify-content-start mr-6">¡Lo que llevas hoy&nbsp<span style="color: rgb(252, 252, 121); font-weight: bold;">{{ hoy }}!</span></h1>
+  <div class="row row-cols-1 row-cols-md-2 row-cols-xl-5 g-3 mb-4">
   <div class="col">
     <div class="stat-card-white h-100" style="background: linear-gradient(135deg, var(--orange-primary) 0%, var(--orange-secondary) 100%);">
       <div>
@@ -69,7 +84,65 @@
       </div>
     </div>
   </div>
+  </div>
 </div>
+ 
+<!-- TARJETAS DE INVENTARIO DE MANDARINA -->
+ <div class="kpi-stat p-4">
+ <h1 class="d-flex justify-content-start m-0">Inventario</h1>
+<div class="row row-cols-1 row-cols-md-2 row-cols-xl-4 g-3 mb-4 mt-2">
+ 
+  <div class="col">
+    <div class="stat-card-white h-100" style="background: linear-gradient(135deg, #00897B 0%, #00695C 100%); cursor: pointer;" data-bs-toggle="modal" data-bs-target="#modalInventarioInicial">
+      <div>
+        <div class="small fw-semibold" style="color: white;">Inventario Inicial</div>
+        <div class="fs-4 fw-bold" style="color: white;">{{ inventario_inicial_kg|floatformat:0|default:0 }} kg</div>
+        <div class="small" style="color: rgba(255,255,255,0.9);">Disponible al inicio del día</div>
+      </div>
+      <div class="stat-icon-wrapper" style="background: rgba(255,255,255,0.25); color: white;">
+        <i class="bi bi-box-seam"></i>
+      </div>
+    </div>
+  </div>
+  <div class="col">
+    <div class="stat-card-white h-100" style="background: linear-gradient(135deg, #0288D1 0%, #01579B 100%); cursor: pointer;" data-bs-toggle="modal" data-bs-target="#modalComprasHoy">
+      <div>
+        <div class="small fw-semibold" style="color: white;">Compras del Día</div>
+        <div class="fs-4 fw-bold" style="color: white;">{{ compras_hoy_kg|floatformat:0 }} kg</div>
+        <div class="small" style="color: rgba(255,255,255,0.9);">Ingreso de proveedores</div>
+      </div>
+      <div class="stat-icon-wrapper" style="background: rgba(255,255,255,0.25); color: white;">
+        <i class="bi bi-truck"></i>
+      </div>
+    </div>
+  </div>
+  <div class="col">
+    <div class="stat-card-white h-100" style="background: linear-gradient(135deg, #7B1FA2 0%, #4A148C 100%); cursor: pointer;" data-bs-toggle="modal" data-bs-target="#modalVendido">
+      <div>
+        <div class="small fw-semibold" style="color: white;">Vendido</div>
+        <div class="fs-4 fw-bold" style="color: white;">{{ vendido_kg|floatformat:0 }} kg</div>
+        <div class="small" style="color: rgba(255,255,255,0.9);">Egreso de ventas del día</div>
+      </div>
+      <div class="stat-icon-wrapper" style="background: rgba(255,255,255,0.25); color: white;">
+        <i class="bi bi-bag-check"></i>
+      </div>
+    </div>
+  </div>
+  <div class="col">
+    <div class="stat-card-white h-100" style="background: linear-gradient(135deg, #E64A19 0%, #B71C1C 100%); cursor: pointer;" data-bs-toggle="modal" data-bs-target="#modalDesechos">
+      <div>
+        <div class="small fw-semibold" style="color: white;">Desechos</div>
+        <div class="fs-4 fw-bold" style="color: white;">{{ desechos_kg|floatformat:0 }} kg</div>
+        <div class="small" style="color: rgba(255,255,255,0.9);">Pérdida por rechazo/podrido</div>
+      </div>
+      <div class="stat-icon-wrapper" style="background: rgba(255,255,255,0.25); color: white;">
+        <i class="bi bi-exclamation-triangle"></i>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
 <div class="row g-3 mt-1">
   <!-- GRÁFICO: Ventas vs Gastos -->
   <div class="col-lg-8">
@@ -213,14 +286,13 @@
   <div class="col-12">
     <div class="card border-0 shadow-sm" style="border-radius: 12px;">
       <div class="card-body p-4">
-        <h6 class="fw-bold mb-3" style="color: var(--text-main);">Accesos Rápidos</h6>
+        <h6 class="fw-bold mb-3" style="color: white;">Accesos Rápidos</h6>
         <div class="d-flex flex-wrap gap-2">
           <a href="{% url 'venta_efectivo_list' %}" class="btn px-4 shadow-sm" style="background-color: white; border: 1px solid var(--border-light); color: var(--text-main); font-weight: 500; border-radius: 8px;"><i class="bi bi-cash me-2 text-success"></i>Venta Efectivo</a>
           <a href="{% url 'venta_credito_create' %}" class="btn px-4 shadow-sm" style="background-color: white; border: 1px solid var(--border-light); color: var(--text-main); font-weight: 500; border-radius: 8px;"><i class="bi bi-credit-card me-2" style="color: var(--orange-primary);"></i>Venta Crédito</a>
           <a href="{% url 'viaje_create' %}" class="btn px-4 shadow-sm" style="background-color: white; border: 1px solid var(--border-light); color: var(--text-main); font-weight: 500; border-radius: 8px;"><i class="bi bi-truck me-2 text-primary"></i>Nuevo Viaje</a>
           <a href="{% url 'gasto_list' %}" class="btn px-4 shadow-sm" style="background-color: white; border: 1px solid var(--border-light); color: var(--text-main); font-weight: 500; border-radius: 8px;"><i class="bi bi-receipt me-2 text-danger"></i>Registrar Gasto</a>
           <a href="{% url 'reporte_diario' %}" class="btn px-4 shadow-sm" style="background-color: white; border: 1px solid var(--border-light); color: var(--text-main); font-weight: 500; border-radius: 8px;"><i class="bi bi-bar-chart me-2 text-info"></i>Reporte del Día</a>
-          <a href="{% url 'inventario_create' %}" class="btn px-4 shadow-sm" style="background-color: white; border: 1px solid var(--border-light); color: var(--text-main); font-weight: 500; border-radius: 8px;"><i class="bi bi-clipboard-check me-2 text-warning"></i>Liquidar Inventario</a>
         </div>
       </div>
     </div>
@@ -237,7 +309,7 @@
             <i class="bi bi-wallet-fill"></i>
           </div>
           <div>
-            <h5 class="modal-title fw-bold" id="modalPorCobrarLabel" style="color: var(--text-main);">Cuentas por Cobrar</h5>
+            <h5 class="modal-title fw-bold" id="modalPorCobrarLabel" style="color: white;">Cuentas por Cobrar</h5>
             <span class="text-muted small">Total pendiente: <strong class="text-danger">${{ total_por_cobrar|default:0|floatformat:0 }}</strong></span>
           </div>
         </div>
@@ -469,5 +541,184 @@
     }
   });
 </script>
+
+<!-- MODALES DE INVENTARIO -->
+
+<!-- Modal: Inventario Inicial -->
+<div class="modal fade" id="modalInventarioInicial" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content border-0">
+      <div class="modal-header" style="background: linear-gradient(135deg, #00897B 0%, #00695C 100%); color: white; border: none;">
+        <h5 class="modal-title fw-bold"><i class="bi bi-box-seam me-2"></i>Inventario Inicial</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-info" role="alert">
+          <i class="bi bi-info-circle me-2"></i> <strong>Total:</strong> {{ inventario_inicial_kg|floatformat:0|default:0 }} kg
+        </div>
+        {% if detalles_inventario_inicial %}
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead class="bg-light">
+              <tr>
+                <th>Clasificación</th>
+                <th class="text-end">Kg</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for detalle in detalles_inventario_inicial %}
+              <tr>
+                <td>{{ detalle.nombre }}</td>
+                <td class="text-end"><strong>{{ detalle.stock_kg|floatformat:0 }}</strong></td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="alert alert-warning">No hay clasificaciones de inventario registradas.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Compras del Día -->
+<div class="modal fade" id="modalComprasHoy" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content border-0">
+      <div class="modal-header" style="background: linear-gradient(135deg, #0288D1 0%, #01579B 100%); color: white; border: none;">
+        <h5 class="modal-title fw-bold"><i class="bi bi-truck me-2"></i>Compras del Día</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-info" role="alert">
+          <i class="bi bi-info-circle me-2"></i> <strong>Total:</strong> {{ compras_hoy_toneladas|floatformat:2 }} Toneladas
+        </div>
+        {% if detalles_compras %}
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead class="bg-light">
+              <tr>
+                <th>Proveedor</th>
+                <th>Clasificación</th>
+                <th class="text-end">Kg Neto</th>
+                <th class="text-end">Fecha</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for compra in detalles_compras %}
+              <tr>
+                <td><strong>{{ compra.proveedor }}</strong></td>
+                <td>{{ compra.clasificacion }}</td>
+                <td class="text-end">{{ compra.kg_neto|floatformat:2 }}</td>
+                <td class="text-end text-muted small">{{ compra.fecha|date:"d/m/Y" }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="alert alert-warning">No hay compras registradas para el día de hoy.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Vendido -->
+<div class="modal fade" id="modalVendido" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content border-0">
+      <div class="modal-header" style="background: linear-gradient(135deg, #7B1FA2 0%, #4A148C 100%); color: white; border: none;">
+        <h5 class="modal-title fw-bold"><i class="bi bi-bag-check me-2"></i>Vendido del Día</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-info" role="alert">
+          <i class="bi bi-info-circle me-2"></i> <strong>Total:</strong> {{ vendido_toneladas|floatformat:2 }} Toneladas
+        </div>
+        {% if detalles_ventas %}
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead class="bg-light">
+              <tr>
+                <th>Tipo</th>
+                <th>Cliente</th>
+                <th>Clasificación</th>
+                <th class="text-end">Kg Vendido</th>
+                <th class="text-end">Monto</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for venta in detalles_ventas %}
+              <tr>
+                <td>
+                  {% if venta.tipo == 'Efectivo' %}
+                    <span class="badge bg-success">Efectivo</span>
+                  {% else %}
+                    <span class="badge bg-primary">Crédito</span>
+                  {% endif %}
+                </td>
+                <td><strong>{{ venta.cliente }}</strong></td>
+                <td>{{ venta.clasificacion }}</td>
+                <td class="text-end">{{ venta.kg_vendido|floatformat:2 }}</td>
+                <td class="text-end text-success fw-bold">${{ venta.monto|floatformat:0 }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="alert alert-warning">No hay ventas registradas para el día de hoy.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Desechos -->
+<div class="modal fade" id="modalDesechos" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content border-0">
+      <div class="modal-header" style="background: linear-gradient(135deg, #E64A19 0%, #B71C1C 100%); color: white; border: none;">
+        <h5 class="modal-title fw-bold"><i class="bi bi-exclamation-triangle me-2"></i>Desechos del Día</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-info" role="alert">
+          <i class="bi bi-info-circle me-2"></i> <strong>Total:</strong> {{ desechos_toneladas|floatformat:2 }} Toneladas
+        </div>
+        {% if detalles_desechos %}
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead class="bg-light">
+              <tr>
+                <th>Proveedor</th>
+                <th class="text-end">Kg Podridos</th>
+                <th class="text-end">Fecha</th>
+                <th>Observaciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for desecho in detalles_desechos %}
+              <tr>
+                <td><strong>{{ desecho.proveedor }}</strong></td>
+                <td class="text-end text-danger fw-bold">{{ desecho.kg_podridos|floatformat:2 }}</td>
+                <td class="text-end text-muted small">{{ desecho.fecha|date:"d/m/Y" }}</td>
+                <td class="text-muted small">{{ desecho.observaciones|truncatewords:10 }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="alert alert-warning">No hay desechos registrados para el día de hoy.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
 {% endblock %}
 

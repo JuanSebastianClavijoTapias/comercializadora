@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Environments
 .env
 .venv
@@ -17,3 +18,10 @@ db.sqlite3-journal
 
 # Editor
 .vscode/
+=======
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.env
+>>>>>>> a0795b7 ('Cambios en la estetica y funcionalidad de ventas a credito, cambios en las views'.)
