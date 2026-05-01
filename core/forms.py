@@ -96,7 +96,7 @@ class PagoProveedorForm(forms.ModelForm):
         model = PagoProveedor
         fields = ['monto', 'medio_pago', 'fecha', 'observaciones']
         widgets = {
-            'monto': forms.TextInput(attrs={'class': 'form-control', 'step': '0.01', 'id': 'input_monto_proveedor'}),
+            'monto': forms.TextInput(attrs={'class': 'form-control price-cop', 'inputmode': 'numeric', 'autocomplete': 'off', 'step': '0.01', 'id': 'input_monto_proveedor'}),
             'medio_pago': forms.Select(attrs={'class': 'form-select'}),
             'fecha': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'observaciones': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
@@ -109,7 +109,7 @@ class GastoForm(forms.ModelForm):
         widgets = {
             'categoria': forms.Select(attrs={'class': 'form-select'}),
             'descripcion': forms.TextInput(attrs={'class': 'form-control'}),
-            'monto': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'monto': forms.TextInput(attrs={'class': 'form-control price-cop', 'inputmode': 'numeric', 'autocomplete': 'off'}),
             'fecha': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
         }
 
@@ -131,7 +131,7 @@ class DetalleVentaEfectivoForm(forms.ModelForm):
         widgets = {
             'clasificacion': forms.Select(attrs={'class': 'form-select'}),
             'kg_vendido': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': 'Kg a vender'}),
-            'precio_por_kg': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': 'Precio por kg'}),
+            'precio_por_kg': forms.TextInput(attrs={'class': 'form-control price-cop', 'inputmode': 'numeric', 'autocomplete': 'off', 'placeholder': 'Precio por kg'}),
         }
     
     def __init__(self, *args, **kwargs):
@@ -158,7 +158,7 @@ class DetalleVentaCreditoForm(forms.ModelForm):
         widgets = {
             'clasificacion': forms.Select(attrs={'class': 'form-select'}),
             'kg_vendido': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
-            'precio_por_kg': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'precio_por_kg': forms.TextInput(attrs={'class': 'form-control price-cop', 'inputmode': 'numeric', 'autocomplete': 'off'}),
         }
 
 class PagoVentaCreditoForm(forms.ModelForm):
@@ -166,7 +166,7 @@ class PagoVentaCreditoForm(forms.ModelForm):
         model = PagoVentaCredito
         fields = ['monto', 'medio_pago', 'fecha', 'observaciones']
         widgets = {
-            'monto': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'monto': forms.TextInput(attrs={'class': 'form-control price-cop', 'inputmode': 'numeric', 'autocomplete': 'off'}),
             'medio_pago': forms.Select(attrs={'class': 'form-select'}),
             'fecha': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'observaciones': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),

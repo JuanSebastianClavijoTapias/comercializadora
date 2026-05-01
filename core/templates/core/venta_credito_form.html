@@ -60,7 +60,7 @@
                 <label class="form-label text-muted small">Monto a abonar</label>
                 <div class="input-group">
                   <span class="input-group-text">$</span>
-                  <input type="number" step="0.01" min="0" class="form-control" name="monto_abono_inicial" id="monto_abono_inicial" placeholder="Ej: 30000">
+                  <input type="text" inputmode="numeric" autocomplete="off" class="form-control price-cop" name="monto_abono_inicial" id="monto_abono_inicial" placeholder="Ej: 30000">
                 </div>
               </div>
               <div class="col-md-6">
@@ -124,21 +124,21 @@
 
     function updateTotal() {
       const kg = parseFloat(inputKg?.value) || 0;
-      const precio = parseFloat(inputPrecio?.value) || 0;
+      const precio = parseCOP(inputPrecio?.value);
       const total = kg * precio;
       let saldo = total;
       
       if (total > 0) {
         previewContainer.style.display = 'block';
-        previewVal.innerText = '$' + total.toFixed(2);
+        previewVal.innerText = '$' + Math.round(total).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
       } else {
         previewContainer.style.display = 'none';
       }
 
       if (checkAbono.checked) {
-        const abono = parseFloat(inputMontoAbono.value) || 0;
+        const abono = parseCOP(inputMontoAbono?.value);
         saldo = total - abono;
-        valSaldoProyectado.innerText = '$' + Math.max(0, saldo).toFixed(2);
+        valSaldoProyectado.innerText = '$' + Math.max(0, Math.round(saldo)).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
       }
     }
 

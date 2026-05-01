@@ -49,9 +49,9 @@
       <div>
         <div class="small text-muted mb-1">Saldo Proveedor</div>
         <div class="fw-bold fs-5 {% if viaje.saldo_pendiente > 0 %}text-danger{% else %}text-success{% endif %}">
-          ${{ viaje.saldo_pendiente|floatformat:0 }}
+          ${{ viaje.saldo_pendiente|cop }}
         </div>
-        <div class="small text-muted">de ${{ viaje.total_valor|floatformat:0 }}</div>
+        <div class="small text-muted">de ${{ viaje.total_valor|cop }}</div>
       </div>
       <div class="stat-icon-wrapper"><i class="bi bi-cash-stack"></i></div>
     </div>
@@ -279,11 +279,11 @@
 
         <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
           <span class="text-muted small">Precio total acordado</span>
-          <span class="fw-bold text-success">${{ viaje.precio_total_acordado|floatformat:0 }}</span>
+          <span class="fw-bold text-success">${{ viaje.precio_total_acordado|cop }}</span>
         </div>
         <div class="d-flex justify-content-between align-items-center px-3 py-2">
           <span class="text-muted small">Total pagado</span>
-          <span class="fw-bold text-primary">${{ viaje.total_pagado|floatformat:0 }}</span>
+          <span class="fw-bold text-primary">${{ viaje.total_pagado|cop }}</span>
         </div>
 
         {% if viaje.observaciones %}
@@ -400,12 +400,12 @@
     <div class="d-flex gap-3 align-items-center flex-wrap" style="font-size:0.88rem;">
       <span>
         <span class="text-muted">Total pagado:</span>
-        <strong class="ms-1 text-primary">${{ viaje.total_pagado|floatformat:0 }}</strong>
+        <strong class="ms-1 text-primary">${{ viaje.total_pagado|cop }}</strong>
       </span>
       <span>
         <span class="text-muted">Saldo:</span>
         <strong class="ms-1" style="color: #FFC107;">
-          ${{ viaje.saldo_pendiente|floatformat:0 }}
+          ${{ viaje.saldo_pendiente|cop }}
         </strong>
       </span>
     </div>
@@ -450,7 +450,7 @@
         {% for p in pagos %}
         <tr>
           <td>{{ p.fecha }}</td>
-          <td class="fw-bold">${{ p.monto|floatformat:0 }}</td>
+          <td class="fw-bold">${{ p.monto|cop }}</td>
           <td><span class="badge bg-secondary">{{ p.get_medio_pago_display }}</span></td>
           <td>{{ p.observaciones|default:"-" }}</td>
           <td>

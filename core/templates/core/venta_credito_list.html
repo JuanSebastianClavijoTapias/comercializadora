@@ -48,7 +48,7 @@
     <div class="stat-card-white h-100">
       <div>
         <div class="small fw-semibold">Total a Crédito</div>
-        <div class="fs-4 fw-bold">${{ total_credito|default:0|floatformat:0 }}</div>
+        <div class="fs-4 fw-bold">${{ total_credito|default:0|cop }}</div>
         <div class="small">{{ num_ventas|default:0 }} Ventas</div>
       </div>
       <div class="stat-icon-wrapper">
@@ -118,12 +118,12 @@
           <td><span class="small text-muted">{{ v.fecha_vencimiento|date:"d/m/Y"|default:"-" }}</span></td>
           <td class="fw-semibold" style="color: var(--orange-primary);">{{ v.cliente }}</td>
           <td class="text-muted small">{{ v.producto|default:"Varios" }}</td>
-          <td class="text-end pe-2 fw-bold" style="color: var(--text-main);">${{ v.total|default:0|floatformat:0 }}</td>
-          <td class="text-end pe-2 fw-semibold" style="color: #4CAF50;">${{ v.total_pagado|default:0|floatformat:0 }}</td>
+          <td class="text-end pe-2 fw-bold" style="color: var(--text-main);">${{ v.total|default:0|cop }}</td>
+          <td class="text-end pe-2 fw-semibold" style="color: #4CAF50;">${{ v.total_pagado|default:0|cop }}</td>
           <td class="text-end pe-2">
             {% if v.saldo_pendiente > 0 %}
               <span class="badge fw-bold px-2 py-1" style="background-color: rgba(211, 47, 47, 0.15); color: #d32f2f; border: 1px solid rgba(211, 47, 47, 0.3);">
-                ${{ v.saldo_pendiente|default:0|floatformat:0 }}
+                ${{ v.saldo_pendiente|default:0|cop }}
               </span>
             {% else %}
               <span class="badge fw-bold px-2 py-1" style="background-color: rgba(76, 175, 80, 0.15); color: #4CAF50; border: 1px solid rgba(76, 175, 80, 0.3);">

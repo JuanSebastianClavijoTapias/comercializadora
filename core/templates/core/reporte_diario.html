@@ -30,12 +30,12 @@
 </div>
 
 <!-- TARJETAS DE RESUMEN -->
-<div class="row row-cols-1 row-cols-md-4 g-3 mb-4">
+<div class="row row-cols-1 row-cols-md-3 row-cols-xl-5 g-3 mb-4">
   <div class="col">
     <div class="stat-card-white h-100">
       <div>
         <div class="small fw-semibold">Ventas Efectivo</div>
-        <div class="fs-4 fw-bold">${{ total_efectivo|default:0|floatformat:0 }}</div>
+        <div class="fs-4 fw-bold">${{ total_efectivo|default:0|cop }}</div>
         <div class="small">Cobrado en caja</div>
       </div>
       <div class="stat-icon-wrapper" style="background: rgba(76, 175, 80, 0.2); color: #4CAF50;">
@@ -46,8 +46,20 @@
   <div class="col">
     <div class="stat-card-white h-100">
       <div>
+        <div class="small fw-semibold">Cobros Crédito</div>
+        <div class="fs-4 fw-bold" style="color: #00897B;">${{ total_abonos|default:0|cop }}</div>
+        <div class="small">Abonos recibidos</div>
+      </div>
+      <div class="stat-icon-wrapper" style="background: rgba(0, 137, 123, 0.2); color: #00897B;">
+        <i class="bi bi-arrow-down-circle"></i>
+      </div>
+    </div>
+  </div>
+  <div class="col">
+    <div class="stat-card-white h-100">
+      <div>
         <div class="small fw-semibold">Ventas Crédito</div>
-        <div class="fs-4 fw-bold">${{ total_credito|default:0|floatformat:0 }}</div>
+        <div class="fs-4 fw-bold">${{ total_credito|default:0|cop }}</div>
         <div class="small">Emitidas hoy</div>
       </div>
       <div class="stat-icon-wrapper" style="background: rgba(63, 81, 181, 0.2); color: #3f51b5;">
@@ -59,7 +71,7 @@
     <div class="stat-card-white h-100">
       <div>
         <div class="small fw-semibold">Gastos</div>
-        <div class="fs-4 fw-bold text-danger" style="color: #d32f2f;">${{ total_gastos|default:0|floatformat:0 }}</div>
+        <div class="fs-4 fw-bold text-danger" style="color: #d32f2f;">${{ total_gastos|default:0|cop }}</div>
         <div class="small">Egresos del día</div>
       </div>
       <div class="stat-icon-wrapper" style="background: rgba(211, 47, 47, 0.2); color: #d32f2f;">
@@ -71,8 +83,8 @@
     <div class="stat-card-white h-100">
       <div>
         <div class="small fw-semibold">Balance</div>
-        <div class="fs-4 fw-bold {% if balance >= 0 %}text-success{% else %}text-danger{% endif %}" style="{% if balance >= 0 %}color: #4CAF50{% else %}color: #d32f2f{% endif %};">${{ balance|default:0|floatformat:0 }}</div>
-        <div class="small">Efectivo - Gastos</div>
+        <div class="fs-4 fw-bold {% if balance >= 0 %}text-success{% else %}text-danger{% endif %}" style="{% if balance >= 0 %}color: #4CAF50{% else %}color: #d32f2f{% endif %};">${{ balance|default:0|cop }}</div>
+        <div class="small">Ingresos - Gastos</div>
       </div>
       <div class="stat-icon-wrapper" {% if balance >= 0 %}style="background: rgba(76, 175, 80, 0.2); color: #4CAF50;"{% else %}style="background: rgba(211, 47, 47, 0.2); color: #d32f2f;"{% endif %}>
         <i class="bi bi-bar-chart-line"></i>
@@ -106,7 +118,7 @@
             {% for v in ventas_ef %}
             <tr>
               <td class="ps-3 small">{{ v.descripcion }}</td>
-              <td class="text-end pe-3 fw-semibold text-success">${{ v.monto|default:0|floatformat:0 }}</td>
+              <td class="text-end pe-3 fw-semibold text-success">${{ v.monto|default:0|cop }}</td>
             </tr>
             {% empty %}
             <tr><td colspan="2" class="text-center text-muted py-3 small">Sin registros de ventas en efectivo</td></tr>
@@ -116,7 +128,7 @@
             <tfoot>
               <tr class="table-light">
                 <td class="ps-3 fw-bold small">TOTAL</td>
-                <td class="text-end pe-3 fw-bold text-success" style="font-size: 0.95rem;">${{ total_efectivo|default:0|floatformat:0 }}</td>
+                <td class="text-end pe-3 fw-bold text-success" style="font-size: 0.95rem;">${{ total_efectivo|default:0|cop }}</td>
               </tr>
             </tfoot>
             {% endif %}
@@ -150,7 +162,7 @@
                 <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-2 py-1 small">{{ g.categoria }}</span>
               </td>
               <td class="small">{{ g.descripcion }}</td>
-              <td class="text-end pe-3 fw-semibold text-danger">${{ g.monto|default:0|floatformat:0 }}</td>
+              <td class="text-end pe-3 fw-semibold text-danger">${{ g.monto|default:0|cop }}</td>
             </tr>
             {% empty %}
             <tr><td colspan="3" class="text-center text-muted py-3 small">Sin gastos registrados</td></tr>
@@ -160,7 +172,7 @@
             <tfoot>
               <tr class="table-light">
                 <td colspan="2" class="ps-3 fw-bold small">TOTAL</td>
-                <td class="text-end pe-3 fw-bold text-danger" style="font-size: 0.95rem;">${{ total_gastos|default:0|floatformat:0 }}</td>
+                <td class="text-end pe-3 fw-bold text-danger" style="font-size: 0.95rem;">${{ total_gastos|default:0|cop }}</td>
               </tr>
             </tfoot>
             {% endif %}
@@ -195,11 +207,11 @@
               <td class="ps-3 small fw-semibold" style="color: var(--text-main);">
                 <a href="{% url 'venta_credito_detail' v.pk %}" style="color: var(--orange-primary); text-decoration: none;">{{ v.cliente }}</a>
               </td>
-              <td class="text-end pe-2 fw-semibold text-primary">${{ v.total|default:0|floatformat:0 }}</td>
+              <td class="text-end pe-2 fw-semibold text-primary">${{ v.total|default:0|cop }}</td>
               <td class="text-end pe-3">
                 {% if v.saldo_pendiente > 0 %}
                   <span class="badge fw-bold px-2 py-1" style="background-color: rgba(211, 47, 47, 0.15); color: #d32f2f; border: 1px solid rgba(211, 47, 47, 0.3);">
-                    ${{ v.saldo_pendiente|default:0|floatformat:0 }}
+                    ${{ v.saldo_pendiente|default:0|cop }}
                   </span>
                 {% else %}
                   <span class="badge fw-bold px-2 py-1" style="background-color: rgba(76, 175, 80, 0.15); color: #4CAF50; border: 1px solid rgba(76, 175, 80, 0.3);">
@@ -216,7 +228,7 @@
             <tfoot>
               <tr class="table-light">
                 <td class="ps-3 fw-bold small">TOTAL</td>
-                <td class="text-end pe-2 fw-bold text-primary" style="font-size: 0.95rem;">${{ total_credito|default:0|floatformat:0 }}</td>
+                <td class="text-end pe-2 fw-bold text-primary" style="font-size: 0.95rem;">${{ total_credito|default:0|cop }}</td>
                 <td></td>
               </tr>
             </tfoot>
@@ -227,6 +239,48 @@
     </div>
   </div>
 </div>
+
+<!-- COBROS DE CRÉDITO -->
+{% if abonos %}
+<div class="row g-4 mt-0">
+  <div class="col-lg-6">
+    <div class="card border-0 shadow-sm" style="border-radius: 12px; overflow: hidden;">
+      <div class="card-header border-bottom-0 bg-white py-3 d-flex align-items-center">
+        <div class="stat-icon-wrapper d-inline-flex me-3 shadow-sm" style="width: 32px; height: 32px; font-size: 1rem; background: rgba(0, 137, 123, 0.2); color: #00897B;">
+          <i class="bi bi-arrow-down-circle"></i>
+        </div>
+        <h6 class="mb-0 fw-bold" style="color: white;">Cobros de Crédito</h6>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-sm align-middle mb-0">
+            <thead class="bg-light">
+              <tr>
+                <th class="ps-3 fw-bold small" style="color: var(--text-secondary);">CLIENTE</th>
+                <th class="text-end pe-3 fw-bold small" style="color: var(--text-secondary);">ABONO</th>
+              </tr>
+            </thead>
+            <tbody>
+            {% for a in abonos %}
+            <tr>
+              <td class="ps-3 small fw-semibold">{{ a.venta.cliente }}</td>
+              <td class="text-end pe-3 fw-semibold" style="color: #00897B;">${{ a.monto|default:0|cop }}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+            <tfoot>
+              <tr class="table-light">
+                <td class="ps-3 fw-bold small">TOTAL</td>
+                <td class="text-end pe-3 fw-bold" style="font-size: 0.95rem; color: #00897B;">${{ total_abonos|default:0|cop }}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
 
 {% endblock %}
 

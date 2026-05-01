@@ -66,12 +66,12 @@
     function updateTotal() {
       if (!inputKg || !inputPrecio) return;
       const kg = parseFloat(inputKg.value) || 0;
-      const precio = parseFloat(inputPrecio.value) || 0;
+      const precio = parseCOP(inputPrecio.value);
       const total = kg * precio;
       
       if (total > 0) {
         previewContainer.style.display = 'block';
-        previewVal.innerText = '$' + total.toFixed(2);
+        previewVal.innerText = '$' + Math.round(total).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
       } else {
         previewContainer.style.display = 'none';
       }

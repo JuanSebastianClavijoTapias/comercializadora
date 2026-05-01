@@ -5,7 +5,7 @@
 <div class="card mb-3">
   <div class="card-body d-flex justify-content-between align-items-center">
     <div><span class="text-muted">Total deuda pendiente con proveedores:</span></div>
-    <div class="fs-3 fw-bold text-danger">${{ total_deuda|default:0|floatformat:0 }}</div>
+    <div class="fs-3 fw-bold text-danger">${{ total_deuda|default:0|cop }}</div>
   </div>
 </div>
 <div class="card">
@@ -19,9 +19,9 @@
         <td class="fw-semibold">{{ v.proveedor }}</td>
         <td><span class="badge bg-success">{{ v.producto }}</span></td>
         <td>{{ v.fecha }}</td>
-        <td>${{ v.total_valor|default:0|floatformat:0 }}</td>
-        <td class="text-success">${{ v.total_pagado|default:0|floatformat:0 }}</td>
-        <td class="text-danger fw-bold">${{ v.saldo_pendiente|default:0|floatformat:0 }}</td>
+        <td>${{ v.total_valor|default:0|cop }}</td>
+        <td class="text-success">${{ v.total_pagado|default:0|cop }}</td>
+        <td class="text-danger fw-bold">${{ v.saldo_pendiente|default:0|cop }}</td>
         <td><a href="{% url 'viaje_detail' v.pk %}" class="btn btn-sm btn-outline-primary">Ver</a></td>
       </tr>
       {% empty %}

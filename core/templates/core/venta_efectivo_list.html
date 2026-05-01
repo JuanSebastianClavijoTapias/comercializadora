@@ -9,7 +9,7 @@
     <div class="stat-card-white h-100">
       <div>
         <div class="small fw-semibold">Ventas Hoy</div>
-        <div class="fs-4 fw-bold">${{ total|default:0|floatformat:0 }}</div>
+        <div class="fs-4 fw-bold">${{ total|default:0|cop }}</div>
         <div class="small">{{ num_ventas|default:0 }} Transacciones</div>
       </div>
       <div class="stat-icon-wrapper" style="background: rgba(76, 175, 80, 0.2); color: #4CAF50;">
@@ -33,7 +33,7 @@
     <div class="stat-card-white h-100">
       <div>
         <div class="small fw-semibold">Precio Promedio</div>
-        <div class="fs-4 fw-bold">${{ precio_promedio|default:0|floatformat:0 }}/kg</div>
+        <div class="fs-4 fw-bold">${{ precio_promedio|default:0|cop }}/kg</div>
         <div class="small">Por kilogramo</div>
       </div>
       <div class="stat-icon-wrapper" style="background: rgba(63, 81, 181, 0.2); color: #3f51b5;">
@@ -85,10 +85,10 @@
                   </span>
                 </td>
                 <td class="text-end pe-2 fw-semibold" style="color: var(--text-main);">{{ d.kg_vendido }}</td>
-                <td class="text-end pe-2 text-muted small">${{ d.precio_por_kg|default:0|floatformat:0 }}</td>
+                <td class="text-end pe-2 text-muted small">${{ d.precio_por_kg|default:0|cop }}</td>
                 <td class="text-end pe-2">
                   <span class="badge fw-bold px-2 py-1" style="background-color: rgba(76, 175, 80, 0.15); color: #2e7d32; border: 1px solid rgba(76, 175, 80, 0.3);">
-                    ${{ d.total|default:0|floatformat:0 }}
+                    ${{ d.total|default:0|cop }}
                   </span>
                 </td>
                 <td class="text-end pe-4">

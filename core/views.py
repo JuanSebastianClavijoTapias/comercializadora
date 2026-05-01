@@ -264,6 +264,8 @@ def dashboard(request):
     ctx = {
         'hoy': hoy,
         'total_efectivo': total_efectivo,
+        'total_ventas_efectivo': total_ventas_efectivo,
+        'total_abonos': total_abonos,
         'total_credito_hoy': total_credito_hoy,
         'saldo_credito_hoy': saldo_credito_hoy,
         'total_gastos': total_gastos,
@@ -1078,13 +1080,16 @@ def reporte_diario(request):
     ventas_ef = VentaEfectivo.objects.filter(fecha=fecha)
     ventas_cr = VentaCredito.objects.filter(fecha=fecha)
     gastos = Gasto.objects.filter(fecha=fecha).select_related('categoria')
+    abonos = PagoVentaCredito.objects.filter(fecha=fecha).select_related('venta__cliente')
     total_efectivo = sum(v.total for v in ventas_ef)
     total_credito = sum(v.total for v in ventas_cr)
+    total_abonos = sum(a.monto for a in abonos)
     total_gastos = sum(g.monto for g in gastos)
-    balance = total_efectivo + total_credito - total_gastos
+    balance = total_efectivo + total_abonos - total_gastos
     ctx = {
         'fecha': fecha, 'ventas_ef': ventas_ef, 'ventas_cr': ventas_cr,
-        'gastos': gastos, 'total_efectivo': total_efectivo,
+        'gastos': gastos, 'abonos': abonos,
+        'total_efectivo': total_efectivo, 'total_abonos': total_abonos,
         'total_credito': total_credito, 'total_gastos': total_gastos, 'balance': balance,
     }
     return render(request, 'core/reporte_diario.html', ctx)
@@ -1121,6 +1126,10 @@ def inventario_weekly_summary(request):
     ventas_efectivo_semana = VentaEfectivo.objects.filter(fecha__range=[inicio_semana, fin_semana])
     total_efectivo_semana = sum(v.total for v in ventas_efectivo_semana) or Decimal('0')
     promedio_efectivo = total_efectivo_semana / len(ventas_efectivo_semana) if ventas_efectivo_semana else Decimal('0')
+
+    # 2b. COBROS DE CRÉDITO (ABONOS) DE LA SEMANA
+    abonos_semana = PagoVentaCredito.objects.filter(fecha__range=[inicio_semana, fin_semana])
+    total_abonos_semana = sum(a.monto for a in abonos_semana) or Decimal('0')
     
     # 3. VENTAS A CRÉDITO DE LA SEMANA
     ventas_credito_semana = VentaCredito.objects.filter(fecha__range=[inicio_semana, fin_semana])
@@ -1170,6 +1179,8 @@ def inventario_weekly_summary(request):
         'num_gastos': gastos_semana.count(),
         'num_ventas_efectivo': ventas_efectivo_semana.count(),
         'num_ventas_credito': ventas_credito_semana.count(),
+        'num_abonos_semana': abonos_semana.count(),
+        'total_abonos_semana': total_abonos_semana,
         'promedio_efectivo': promedio_efectivo,
         'promedio_credito': promedio_credito,
         # Inventario Semanal

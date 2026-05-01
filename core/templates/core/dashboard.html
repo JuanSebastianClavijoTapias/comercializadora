@@ -19,13 +19,13 @@
 <!-- KPI STAT CARDS -->
 <div class="kpi-stat p-4">
   <h1 class="d-flex justify-content-start mr-6">¡Lo que llevas hoy&nbsp<span style="color: rgb(252, 252, 121); font-weight: bold;">{{ hoy }}!</span></h1>
-  <div class="row row-cols-1 row-cols-md-2 row-cols-xl-5 g-3 mb-4">
+  <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 row-cols-xxl-6 g-3 mb-4">
   <div class="col">
     <div class="stat-card-white h-100" style="background: linear-gradient(135deg, var(--orange-primary) 0%, var(--orange-secondary) 100%);">
       <div>
         <div class="small fw-semibold" style="color: white;">Efectivo Hoy</div>
-        <div class="fs-4 fw-bold" style="color: white;">${{ total_efectivo|default:0|floatformat:0 }}</div>
-        <div class="small" style="color: rgba(255,255,255,0.9);">{{ num_ventas_efectivo }} Vta. | {{ num_abonos }} Abonos</div>
+        <div class="fs-4 fw-bold" style="color: white;">${{ total_ventas_efectivo|default:0|cop }}</div>
+        <div class="small" style="color: rgba(255,255,255,0.9);">{{ num_ventas_efectivo }} Ventas</div>
       </div>
       <div class="stat-icon-wrapper" style="background: rgba(255,255,255,0.25); color: white;">
         <i class="bi bi-cash-coin"></i>
@@ -33,11 +33,23 @@
     </div>
   </div>
   <div class="col">
+    <div class="stat-card-white h-100" style="background: linear-gradient(135deg, #00897B 0%, #00695C 100%);">
+      <div>
+        <div class="small fw-semibold" style="color: white;">Cobros Crédito Hoy</div>
+        <div class="fs-4 fw-bold" style="color: white;">${{ total_abonos|default:0|cop }}</div>
+        <div class="small" style="color: rgba(255,255,255,0.9);">{{ num_abonos }} Abonos</div>
+      </div>
+      <div class="stat-icon-wrapper" style="background: rgba(255,255,255,0.25); color: white;">
+        <i class="bi bi-arrow-down-circle"></i>
+      </div>
+    </div>
+  </div>
+  <div class="col">
     <div class="stat-card-white h-100" style="background: linear-gradient(135deg, #5C6BC0 0%, #3949AB 100%);">
       <div>
         <div class="small fw-semibold" style="color: white;">Crédito Disp. (Hoy)</div>
-        <div class="fs-4 fw-bold" style="color: white;">${{ saldo_credito_hoy|default:0|floatformat:0 }}</div>
-        <div class="small" style="color: rgba(255,255,255,0.9);">Emitido: ${{ total_credito_hoy|default:0|floatformat:0 }}</div>
+        <div class="fs-4 fw-bold" style="color: white;">${{ saldo_credito_hoy|default:0|cop }}</div>
+        <div class="small" style="color: rgba(255,255,255,0.9);">Emitido: ${{ total_credito_hoy|default:0|cop }}</div>
       </div>
       <div class="stat-icon-wrapper" style="background: rgba(255,255,255,0.25); color: white;">
         <i class="bi bi-credit-card"></i>
@@ -48,7 +60,7 @@
     <div class="stat-card-white h-100" style="cursor: pointer; background: linear-gradient(135deg, #F57C00 0%, #E65100 100%);" data-bs-toggle="modal" data-bs-target="#modalPorCobrar">
       <div>
         <div class="small fw-semibold" style="color: white;">Total por Cobrar</div>
-        <div class="fs-4 fw-bold" style="color: white;">${{ total_por_cobrar|default:0|floatformat:0 }}</div>
+        <div class="fs-4 fw-bold" style="color: white;">${{ total_por_cobrar|default:0|cop }}</div>
         <div class="mt-2">
           <span class="badge rounded-pill shadow-sm" style="background-color: rgba(255,255,255,0.3); color: white; padding: 6px 14px; font-weight: 500; font-size: 0.75rem; border: 1px solid rgba(255, 255, 255, 0.5);">
             <i class="bi bi-person-lines-fill me-1"></i> ¡Ver Clientes!
@@ -64,7 +76,7 @@
     <div class="stat-card-white h-100" style="background: linear-gradient(135deg, #E91E63 0%, #C2185B 100%);">
       <div>
         <div class="small fw-semibold" style="color: white;">Gastos Hoy</div>
-        <div class="fs-4 fw-bold" style="color: white;">${{ total_gastos|default:0|floatformat:0 }}</div>
+        <div class="fs-4 fw-bold" style="color: white;">${{ total_gastos|default:0|cop }}</div>
         <div class="small" style="color: rgba(255,255,255,0.9);">Egresos del día</div>
       </div>
       <div class="stat-icon-wrapper" style="background: rgba(255,255,255,0.25); color: white;">
@@ -76,8 +88,8 @@
     <div class="stat-card-white h-100" style="background: linear-gradient(135deg, #4CAF50 0%, #388E3C 100%);">
       <div>
         <div class="small fw-semibold" style="color: white;">Balance Hoy</div>
-        <div class="fs-4 fw-bold" style="color: white;">${{ balance_hoy|default:0|floatformat:0 }}</div>
-        <div class="small" style="color: rgba(255,255,255,0.9);">Efectivo - Gastos</div>
+        <div class="fs-4 fw-bold" style="color: white;">${{ balance_hoy|default:0|cop }}</div>
+        <div class="small" style="color: rgba(255,255,255,0.9);">Ingresos - Gastos</div>
       </div>
       <div class="stat-icon-wrapper" style="background: rgba(255,255,255,0.25); color: white;">
         <i class="bi bi-bar-chart-line"></i>
@@ -96,8 +108,8 @@
     <div class="stat-card-white h-100" style="background: linear-gradient(135deg, #00897B 0%, #00695C 100%); cursor: pointer;" data-bs-toggle="modal" data-bs-target="#modalInventarioInicial">
       <div>
         <div class="small fw-semibold" style="color: white;">Inventario Inicial</div>
-        <div class="fs-4 fw-bold" style="color: white;">{{ inventario_inicial_kg|floatformat:0|default:0 }} kg</div>
-        <div class="small" style="color: rgba(255,255,255,0.9);">Disponible al inicio del día</div>
+        <div class="fs-4 fw-bold" style="color: white;">{{ weekly_initial_inventory_kg|floatformat:0|default:0 }} kg</div>
+        <div class="small" style="color: rgba(255,255,255,0.9);">Disponible al inicio de la semana</div>
       </div>
       <div class="stat-icon-wrapper" style="background: rgba(255,255,255,0.25); color: white;">
         <i class="bi bi-box-seam"></i>
@@ -209,7 +221,7 @@
                   {% endif %}
                 </td>
                 <td class="text-end pe-4 fw-bold {% if venta.tipo == 'Efectivo' %}text-success{% else %}text-dark{% endif %}">
-                  ${{ venta.monto|default:0|floatformat:0 }}
+                  ${{ venta.monto|default:0|cop }}
                 </td>
               </tr>
               {% empty %}
@@ -243,7 +255,7 @@
               <td class="ps-4 fw-semibold" style="color: var(--text-main);">{{ v.producto }}</td>
               <td class="text-muted small">{{ v.proveedor }}</td>
               <td class="text-muted small">{{ v.fecha|date:"d/m/Y" }}</td>
-              <td class="text-end pe-4 fw-bold text-dark">${{ v.total_valor|default:0|floatformat:0 }}</td>
+              <td class="text-end pe-4 fw-bold text-dark">${{ v.total_valor|default:0|cop }}</td>
             </tr>
             {% empty %}
             <tr><td colspan="4" class="text-center text-muted py-4">Sin viajes registrados</td></tr>
@@ -269,7 +281,7 @@
             <tr>
               <td class="ps-4"><a href="{% url 'venta_credito_detail' v.pk %}" class="text-decoration-none fw-semibold" style="color: var(--orange-primary);">{{ v.cliente }}</a></td>
               <td class="text-muted small">{{ v.fecha|date:"d/m/Y" }}</td>
-              <td class="text-end pe-4 fw-bold text-danger">${{ v.saldo_pendiente|default:0|floatformat:0 }}</td>
+              <td class="text-end pe-4 fw-bold text-danger">${{ v.saldo_pendiente|default:0|cop }}</td>
             </tr>
             {% empty %}
             <tr><td colspan="3" class="text-center text-muted py-4">Sin pendientes</td></tr>
@@ -310,7 +322,7 @@
           </div>
           <div>
             <h5 class="modal-title fw-bold" id="modalPorCobrarLabel" style="color: white;">Cuentas por Cobrar</h5>
-            <span class="text-muted small">Total pendiente: <strong class="text-danger">${{ total_por_cobrar|default:0|floatformat:0 }}</strong></span>
+            <span class="text-muted small">Total pendiente: <strong class="text-danger">${{ total_por_cobrar|default:0|cop }}</strong></span>
           </div>
         </div>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -338,11 +350,11 @@
                 </td>
                 <td class="text-muted small">{{ vp.fecha|date:"d/m/Y" }}</td>
                 <td class="text-muted small">{% if vp.fecha_vencimiento %}{{ vp.fecha_vencimiento|date:"d/m/Y" }}{% else %}-{% endif %}</td>
-                <td class="fw-semibold">${{ vp.total|default:0|floatformat:0 }}</td>
-                <td class="text-success">${{ vp.total_pagado|default:0|floatformat:0 }}</td>
+                <td class="fw-semibold">${{ vp.total|default:0|cop }}</td>
+                <td class="text-success">${{ vp.total_pagado|default:0|cop }}</td>
                 <td>
                   <span class="badge text-dark fw-bold px-2 py-1" style="background-color: rgba(211, 47, 47, 0.1); color: #d32f2f !important;">
-                    ${{ vp.saldo_pendiente|default:0|floatformat:0 }}
+                    ${{ vp.saldo_pendiente|default:0|cop }}
                   </span>
                 </td>
                 <td class="pe-4">
@@ -350,7 +362,7 @@
                   <form method="post" action="{% url 'venta_credito_pago_add' vp.pk %}?next={% url 'dashboard' %}" class="d-flex align-items-center gap-1 m-0">
                     {% csrf_token %}
                     <div style="flex: 1;">
-                      <input type="number" step="0.01" name="monto" class="form-control form-control-sm" placeholder="Monto" required>
+                      <input type="text" inputmode="numeric" autocomplete="off" name="monto" class="form-control form-control-sm price-cop" placeholder="Monto" required>
                     </div>
                     <div style="flex: 1;">
                       <input type="date" name="fecha" value="{{ hoy|date:'Y-m-d' }}" class="form-control form-control-sm" required>
@@ -554,7 +566,7 @@
       </div>
       <div class="modal-body">
         <div class="alert alert-info" role="alert">
-          <i class="bi bi-info-circle me-2"></i> <strong>Total:</strong> {{ inventario_inicial_kg|floatformat:0|default:0 }} kg
+          <i class="bi bi-info-circle me-2"></i> <strong>Total:</strong> {{ weekly_initial_inventory_kg|floatformat:0|default:0 }} kg
         </div>
         {% if detalles_inventario_inicial %}
         <div class="table-responsive">
@@ -663,7 +675,7 @@
                 <td><strong>{{ venta.cliente }}</strong></td>
                 <td>{{ venta.clasificacion }}</td>
                 <td class="text-end">{{ venta.kg_vendido|floatformat:2 }}</td>
-                <td class="text-end text-success fw-bold">${{ venta.monto|floatformat:0 }}</td>
+                <td class="text-end text-success fw-bold">${{ venta.monto|cop }}</td>
               </tr>
               {% endfor %}
             </tbody>

@@ -9,7 +9,7 @@
     <div class="stat-card-white h-100">
       <div>
         <div class="small fw-semibold">Total Gastos Hoy</div>
-        <div class="fs-4 fw-bold">${{ total|default:0|floatformat:0 }}</div>
+        <div class="fs-4 fw-bold">${{ total|default:0|cop }}</div>
         <div class="small">{{ num_gastos|default:0 }} Registros</div>
       </div>
       <div class="stat-icon-wrapper" style="background: rgba(211, 47, 47, 0.2); color: #d32f2f;">
@@ -21,7 +21,7 @@
     <div class="stat-card-white h-100">
       <div>
         <div class="small fw-semibold">Gasto Promedio</div>
-        <div class="fs-4 fw-bold">${{ gasto_promedio|default:0|floatformat:0 }}</div>
+        <div class="fs-4 fw-bold">${{ gasto_promedio|default:0|cop }}</div>
         <div class="small">Por registro</div>
       </div>
       <div class="stat-icon-wrapper" style="background: rgba(255, 107, 53, 0.2); color: var(--orange-primary);">
@@ -33,7 +33,7 @@
     <div class="stat-card-white h-100">
       <div>
         <div class="small fw-semibold">Mayor Gasto</div>
-        <div class="fs-4 fw-bold">${{ gasto_maximo|default:0|floatformat:0 }}</div>
+        <div class="fs-4 fw-bold">${{ gasto_maximo|default:0|cop }}</div>
         <div class="small">Categoría</div>
       </div>
       <div class="stat-icon-wrapper" style="background: rgba(63, 81, 181, 0.2); color: #3f51b5;">
@@ -130,7 +130,7 @@
                 </span>
               </td>
               <td class="text-muted small">{{ g.descripcion }}</td>
-              <td class="text-end pe-2 fw-bold text-danger">${{ g.monto|default:0|floatformat:0 }}</td>
+              <td class="text-end pe-2 fw-bold text-danger">${{ g.monto|default:0|cop }}</td>
               <td class="text-end pe-4">
                 <div class="btn-group btn-group-sm" role="group">
                   <a href="{% url 'gasto_edit' g.pk %}" class="btn btn-sm" style="background-color: var(--bg-light); color: var(--orange-primary); border-radius: 6px; padding: 6px 10px; border: 1px solid var(--border-light);" title="Editar">
@@ -158,7 +158,7 @@
             <tfoot>
               <tr class="table-light">
                 <td colspan="2" class="ps-4 fw-bold text-uppercase" style="font-size: 0.8rem; letter-spacing: 0.5px; color: var(--text-secondary);">Total Gastos</td>
-                <td class="fw-bold fs-5 text-end pe-2 text-danger">${{ total|default:0|floatformat:0 }}</td>
+                <td class="fw-bold fs-5 text-end pe-2 text-danger">${{ total|default:0|cop }}</td>
                 <td></td>
               </tr>
             </tfoot>

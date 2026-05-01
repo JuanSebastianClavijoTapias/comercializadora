@@ -42,7 +42,7 @@
 
         <div class="p-3 rounded-2 text-center" style="background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); border: 1px solid #4CAF50;">
           <div class="text-uppercase fw-bold small mb-1" style="color: #1b5e20; font-size: 0.75rem; letter-spacing: 0.5px;">Total Venta</div>
-          <div class="fw-bold" style="color: #2e7d32; font-size: 1.4rem;">${{ venta.total|default:0|floatformat:0 }}</div>
+          <div class="fw-bold" style="color: #2e7d32; font-size: 1.4rem;">${{ venta.total|default:0|cop }}</div>
         </div>
       </div>
     </div>
@@ -145,10 +145,10 @@
             <div class="small text-muted" style="font-size: 0.75rem;">{{ d.clasificacion.producto.nombre }}</div>
           </td>
           <td class="text-center py-2 fw-semibold">{{ d.kg_vendido }}</td>
-          <td class="text-center py-2 text-muted small">${{ d.precio_por_kg|floatformat:0 }}</td>
+          <td class="text-center py-2 text-muted small">${{ d.precio_por_kg|cop }}</td>
           <td class="text-end pe-2 py-2">
             <span class="badge" style="background-color: rgba(76, 175, 80, 0.15); color: #2e7d32; font-weight: 600; font-size: 0.8rem;">
-              ${{ d.total|default:0|floatformat:0 }}
+              ${{ d.total|default:0|cop }}
             </span>
           </td>
           <td class="text-end pe-3 py-2">
@@ -184,7 +184,7 @@
         <div class="p-3 rounded-2 text-center" style="background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%); border: 1px solid #ef5350;">
           <div class="text-uppercase fw-bold small" style="color: #c62828; font-size: 0.7rem; letter-spacing: 0.5px; margin-bottom: 0.2rem;">Total Venta</div>
           <div class="fw-bold" style="color: #d84315; font-size: 1.4rem;">
-            ${{ venta.total|default:0|floatformat:0 }}
+            ${{ venta.total|default:0|cop }}
           </div>
         </div>
       </div>
@@ -213,7 +213,7 @@
         <label class="form-label form-control-sm text-uppercase fw-semibold" style="color: var(--text-sec); letter-spacing: 0.5px; font-size: 0.7rem; margin-bottom: 0.35rem;">Monto Pagado</label>
         <div class="input-group" style="border: 1px solid var(--orange-primary); border-radius: 6px; overflow: hidden;">
           <span class="input-group-text fw-bold" style="background: var(--orange-primary); color: white; border: none; padding: 0.4rem 0.6rem; font-size: 0.85rem;">$</span>
-          <input type="number" id="monto_pagado" class="form-control form-control-sm fw-semibold" placeholder="Ingresa monto" min="0" step="0.01" style="border: none; font-size: 0.9rem; color: #d84315;">
+          <input type="text" inputmode="numeric" autocomplete="off" id="monto_pagado" class="form-control form-control-sm fw-semibold price-cop" placeholder="Ingresa monto" style="border: none; font-size: 0.9rem; color: #d84315;">
         </div>
       </div>
     </div>
@@ -283,7 +283,7 @@
   function updateCalculations() {
     const clasificacionId = clasificacionSelect.value;
     const kg = parseFloat(kgInput.value) || 0;
-    const precio = parseFloat(precioInput.value) || 0;
+    const precio = parseCOP(precioInput.value);
 
     if (clasificacionId && clasificacionesStock[clasificacionId]) {
       const stock = clasificacionesStock[clasificacionId].stock;
@@ -319,7 +319,7 @@
 
   function updatePaymentCalculations() {
     const total = parseFloat('{{ venta.total|default:0|floatformat:2 }}');
-    const pagado = parseFloat(montoPagadoInput.value) || 0;
+    const pagado = parseCOP(montoPagadoInput.value);
     const cambio = Math.max(0, pagado - total);
 
     document.getElementById('resumen_pagado').textContent = pagado.toLocaleString('es-AR', {minimumFractionDigits: 0});
@@ -354,7 +354,7 @@
   // Llenar campos ocultos al enviar el formulario
   formFinalizarVenta.addEventListener('submit', function(e) {
     document.getElementById('hidden_medio_pago').value = medioPagoSelect.value || 'efectivo';
-    document.getElementById('hidden_monto_pagado').value = montoPagadoInput.value || '0';
+    document.getElementById('hidden_monto_pagado').value = String(montoPagadoInput.value).replace(/\./g, '') || '0';
   });
 
   kgInput.addEventListener('input', updateCalculations);
