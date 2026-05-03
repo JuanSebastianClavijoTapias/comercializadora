@@ -5,6 +5,7 @@ from django.http import JsonResponse
 from django.db.models import Sum, Q, F, Count
 from django.utils import timezone
 from django.db import transaction
+from django.urls import reverse
 from datetime import date, timedelta
 from decimal import Decimal, InvalidOperation
 from .models import *
@@ -12,18 +13,67 @@ from .forms import *
 
 # ---- FUNCIONES AUXILIARES DE INVENTARIO SEMANAL ----
 
+NOMINA_CATEGORY_NAME = 'Nómina'
+
 def get_week_monday(fecha):
     """Retorna el lunes de la semana de la fecha dada"""
     return fecha - timedelta(days=fecha.weekday())
 
-def get_or_create_weekly_inventory(fecha):
-    """Obtiene o crea el registro de inventario para la semana de la fecha dada"""
-    lunes = get_week_monday(fecha)
+def get_week_summary_url(week_start):
+    return f"{reverse('inventario_weekly_summary')}?week={week_start.isoformat()}"
+
+def parse_week_start(raw_value):
+    if not raw_value:
+        return get_week_monday(date.today())
+    try:
+        return get_week_monday(date.fromisoformat(raw_value))
+    except ValueError:
+        return get_week_monday(date.today())
+
+def get_nomina_category():
+    categoria, _ = CategoriaGasto.objects.get_or_create(nombre=NOMINA_CATEGORY_NAME)
+    return categoria
+
+def get_or_create_weekly_inventory_for_monday(lunes):
     weekly, created = WeeklyInventory.objects.get_or_create(
         week_start=lunes,
         defaults={'initial_inventory_kg': Decimal('0')}
     )
+
+    should_seed = created or (
+        weekly.initial_inventory_kg == 0 and
+        lunes == get_week_monday(date.today()) and
+        date.today() == lunes
+    )
+    if should_seed and weekly.initial_inventory_kg == 0:
+        prev_weekly = WeeklyInventory.objects.filter(week_start=lunes - timedelta(days=7)).first()
+        if prev_weekly:
+            weekly.initial_inventory_kg = prev_weekly.total_inventory_kg
+            weekly.save()
+        elif lunes == get_week_monday(date.today()):
+            current_stock = sum(c.stock_kg for c in Clasificacion.objects.filter(activo=True)) or Decimal('0')
+            if current_stock > 0:
+                weekly.initial_inventory_kg = current_stock
+                weekly.save()
+
     return weekly, created
+
+def get_or_create_weekly_inventory(fecha):
+    """Obtiene o crea el registro de inventario para la semana de la fecha dada"""
+    return get_or_create_weekly_inventory_for_monday(get_week_monday(fecha))
+
+def get_week_inventory_data(fecha):
+    lunes = get_week_monday(fecha)
+    domingo = lunes + timedelta(days=6)
+    weekly, _ = get_or_create_weekly_inventory_for_monday(lunes)
+
+    return {
+        'week_monday': lunes,
+        'week_sunday': domingo,
+        'initial_inventory_kg': weekly.initial_inventory_kg,
+        'total_inventory_kg': weekly.total_inventory_kg,
+        'weekly_record': weekly,
+    }
 
 def get_current_week_inventory_data():
     """Obtiene los datos de inventario inicial y total para la semana actual
@@ -35,45 +85,39 @@ def get_current_week_inventory_data():
     Primera vez:
     - Si no existe semana anterior, usa el stock actual como inicial
     """
-    hoy = date.today()
-    lunes = get_week_monday(hoy)
-    domingo = lunes + timedelta(days=6)
-    
-    # Obtener o crear registro de inventario para esta semana
-    weekly, created = get_or_create_weekly_inventory(hoy)
-    
-    # Si el inventario inicial está vacío (0) y es la primera vez que se accede
-    # o si es lunes, copiar del total de la semana anterior
-    if created or (weekly.initial_inventory_kg == 0 and hoy == lunes):
-        # Obtener la semana anterior
-        prev_lunes = lunes - timedelta(days=7)
-        try:
-            prev_weekly = WeeklyInventory.objects.get(week_start=prev_lunes)
-            # El inventario inicial de esta semana = total de la semana anterior (domingo 11:59 PM)
-            weekly.initial_inventory_kg = prev_weekly.total_inventory_kg
-            weekly.save()
-        except WeeklyInventory.DoesNotExist:
-            # Si no hay semana anterior, intentar usar el stock actual como inicial
-            # Esto solo ocurre la primera vez que se usa el sistema
-            if weekly.initial_inventory_kg == 0:
-                # Obtener todas las clasificaciones activas y sumar su stock
-                from .models import Clasificacion
-                all_clasificaciones = Clasificacion.objects.filter(activo=True)
-                current_stock = sum(c.stock_kg for c in all_clasificaciones) or Decimal('0')
-                if current_stock > 0:
-                    weekly.initial_inventory_kg = current_stock
-                    weekly.save()
-    
-    initial_kg = weekly.initial_inventory_kg
-    total_kg = weekly.total_inventory_kg
-    
-    return {
-        'week_monday': lunes,
-        'week_sunday': domingo,
-        'initial_inventory_kg': initial_kg,
-        'total_inventory_kg': total_kg,
-        'weekly_record': weekly
+    return get_week_inventory_data(date.today())
+
+def get_weekly_history():
+    week_starts = set(WeeklyInventory.objects.values_list('week_start', flat=True))
+    for model in (Gasto, VentaEfectivo, VentaCredito, PagoVentaCredito, Viaje):
+        week_starts.update(model.objects.dates('fecha', 'week'))
+
+    if not week_starts:
+        return []
+
+    weekly_records = {
+        record.week_start: record
+        for record in WeeklyInventory.objects.filter(week_start__in=week_starts)
     }
+    history = []
+    for week_start in sorted({get_week_monday(week) for week in week_starts}, reverse=True):
+        week_end = week_start + timedelta(days=6)
+        record = weekly_records.get(week_start)
+        nomina_total = sum(
+            gasto.monto for gasto in Gasto.objects.filter(
+                fecha__range=[week_start, week_end],
+                categoria__nombre__iexact=NOMINA_CATEGORY_NAME,
+            )
+        ) or Decimal('0')
+        history.append({
+            'week_start': week_start,
+            'week_end': week_end,
+            'record': record,
+            'initial_inventory_kg': record.initial_inventory_kg if record else None,
+            'total_inventory_kg': record.total_inventory_kg if record else None,
+            'nomina_total': nomina_total,
+        })
+    return history
 
 # ---- DASHBOARD ----
 @login_required
@@ -820,6 +864,66 @@ def gasto_delete(request, pk):
         return redirect('gasto_list')
     return render(request, 'core/confirm_delete.html', {'obj': obj, 'titulo': 'Eliminar Gasto', 'back_url': 'gasto_list'})
 
+@login_required
+def weekly_inventory_edit(request, pk):
+    weekly = get_object_or_404(WeeklyInventory, pk=pk)
+    form = WeeklyInventoryForm(request.POST or None, instance=weekly)
+    back_href = get_week_summary_url(weekly.week_start)
+
+    if form.is_valid():
+        form.save()
+        messages.success(request, 'Inventario semanal actualizado.')
+        return redirect(back_href)
+
+    return render(request, 'core/form_generic.html', {
+        'form': form,
+        'titulo': f'Editar inventario semanal {weekly.week_start.strftime("%d/%m/%Y")}',
+        'back_href': back_href,
+    })
+
+@login_required
+def nomina_edit(request, pk):
+    nomina = get_object_or_404(
+        Gasto.objects.select_related('categoria'),
+        pk=pk,
+        categoria__nombre__iexact=NOMINA_CATEGORY_NAME,
+    )
+    form = NominaForm(request.POST or None, instance=nomina)
+    back_href = get_week_summary_url(get_week_monday(nomina.fecha))
+
+    if form.is_valid():
+        nomina = form.save(commit=False)
+        nomina.categoria = get_nomina_category()
+        nomina.save()
+        messages.success(request, 'Nómina actualizada.')
+        return redirect(get_week_summary_url(get_week_monday(nomina.fecha)))
+
+    return render(request, 'core/form_generic.html', {
+        'form': form,
+        'titulo': 'Editar nómina',
+        'back_href': back_href,
+    })
+
+@login_required
+def nomina_delete(request, pk):
+    nomina = get_object_or_404(
+        Gasto.objects.select_related('categoria'),
+        pk=pk,
+        categoria__nombre__iexact=NOMINA_CATEGORY_NAME,
+    )
+    back_href = get_week_summary_url(get_week_monday(nomina.fecha))
+
+    if request.method == 'POST':
+        nomina.delete()
+        messages.success(request, 'Nómina eliminada.')
+        return redirect(back_href)
+
+    return render(request, 'core/confirm_delete.html', {
+        'obj': nomina,
+        'titulo': 'Eliminar nómina',
+        'back_href': back_href,
+    })
+
 # ---- VENTAS EFECTIVO ----
 @login_required
 def venta_efectivo_create(request):
@@ -1111,81 +1215,124 @@ def reporte_proveedor(request):
 # ---- RESUMEN SEMANAL ----
 @login_required
 def inventario_weekly_summary(request):
-    """Vista para mostrar resumen de métricas operacionales por semana"""
+    """Vista para mostrar resumen, historial y edición de métricas semanales."""
     hoy = date.today()
-    
-    # Calcular rango de semana (lunes a domingo)
-    inicio_semana = hoy - timedelta(days=hoy.weekday())  # Lunes
-    fin_semana = inicio_semana + timedelta(days=6)       # Domingo
-    
-    # 1. GASTOS DE LA SEMANA
-    gastos_semana = Gasto.objects.filter(fecha__range=[inicio_semana, fin_semana])
-    total_gastos_semana = sum(g.monto for g in gastos_semana) or Decimal('0')
-    
-    # 2. VENTAS EN EFECTIVO DE LA SEMANA
-    ventas_efectivo_semana = VentaEfectivo.objects.filter(fecha__range=[inicio_semana, fin_semana])
-    total_efectivo_semana = sum(v.total for v in ventas_efectivo_semana) or Decimal('0')
-    promedio_efectivo = total_efectivo_semana / len(ventas_efectivo_semana) if ventas_efectivo_semana else Decimal('0')
+    inicio_semana = parse_week_start(request.GET.get('week'))
+    weekly_inv = get_week_inventory_data(inicio_semana)
+    inicio_semana = weekly_inv['week_monday']
+    fin_semana = weekly_inv['week_sunday']
+    weekly_record = weekly_inv['weekly_record']
 
-    # 2b. COBROS DE CRÉDITO (ABONOS) DE LA SEMANA
-    abonos_semana = PagoVentaCredito.objects.filter(fecha__range=[inicio_semana, fin_semana])
+    default_nomina_date = hoy if inicio_semana <= hoy <= fin_semana else inicio_semana
+    default_nomina_desc = f'Nómina semana {inicio_semana.strftime("%d/%m")} - {fin_semana.strftime("%d/%m")}'
+    if request.method == 'POST' and request.POST.get('form_type') == 'nomina':
+        nomina_form = NominaForm(request.POST)
+        if nomina_form.is_valid():
+            nomina = nomina_form.save(commit=False)
+            if not inicio_semana <= nomina.fecha <= fin_semana:
+                nomina_form.add_error('fecha', 'La fecha debe pertenecer a la semana seleccionada.')
+            else:
+                nomina.categoria = get_nomina_category()
+                nomina.save()
+                messages.success(request, 'Nómina registrada correctamente.')
+                return redirect(get_week_summary_url(inicio_semana))
+    else:
+        nomina_form = NominaForm(initial={
+            'fecha': default_nomina_date,
+            'descripcion': default_nomina_desc,
+        })
+
+    gastos_semana = Gasto.objects.filter(
+        fecha__range=[inicio_semana, fin_semana]
+    ).select_related('categoria').order_by('-fecha', '-id')
+    nominas_semana = gastos_semana.filter(categoria__nombre__iexact=NOMINA_CATEGORY_NAME)
+    gastos_operativos_semana = gastos_semana.exclude(categoria__nombre__iexact=NOMINA_CATEGORY_NAME)
+    total_gastos_semana = sum(g.monto for g in gastos_operativos_semana) or Decimal('0')
+    monto_nomina = sum(g.monto for g in nominas_semana) or Decimal('0')
+
+    ventas_efectivo_semana = VentaEfectivo.objects.filter(
+        fecha__range=[inicio_semana, fin_semana]
+    ).select_related('cliente').prefetch_related('detalles__clasificacion').order_by('-fecha', '-id')
+    total_efectivo_semana = sum(v.total for v in ventas_efectivo_semana) or Decimal('0')
+    num_ventas_efectivo = ventas_efectivo_semana.count()
+    promedio_efectivo = total_efectivo_semana / num_ventas_efectivo if num_ventas_efectivo else Decimal('0')
+
+    abonos_semana = PagoVentaCredito.objects.filter(
+        fecha__range=[inicio_semana, fin_semana]
+    ).select_related('venta__cliente').order_by('-fecha', '-id')
     total_abonos_semana = sum(a.monto for a in abonos_semana) or Decimal('0')
-    
-    # 3. VENTAS A CRÉDITO DE LA SEMANA
-    ventas_credito_semana = VentaCredito.objects.filter(fecha__range=[inicio_semana, fin_semana])
+
+    ventas_credito_semana = VentaCredito.objects.filter(
+        fecha__range=[inicio_semana, fin_semana]
+    ).select_related('cliente').prefetch_related('detalles', 'pagos').order_by('-fecha', '-id')
     total_credito_semana = sum(v.total for v in ventas_credito_semana) or Decimal('0')
-    promedio_credito = total_credito_semana / len(ventas_credito_semana) if ventas_credito_semana else Decimal('0')
-    
-    # 4. TOTAL VENTAS
+    num_ventas_credito = ventas_credito_semana.count()
+    promedio_credito = total_credito_semana / num_ventas_credito if num_ventas_credito else Decimal('0')
+
     total_ventas_semana = total_efectivo_semana + total_credito_semana
-    
-    # 5. DESECHOS/PODRIDO DE LA SEMANA
-    viajes_semana = Viaje.objects.filter(fecha__range=[inicio_semana, fin_semana])
-    total_kg_podridos = sum(v.kg_podridos for v in viajes_semana) or Decimal('0')
-    
-    # 6. BALANCE NETO
-    balance_neto = total_ventas_semana - total_gastos_semana
-    
-    # 7. DETECTAR SI HAY NÓMINA EN LA SEMANA (días 10, 20, 30)
+
+    viajes_semana = Viaje.objects.filter(
+        fecha__range=[inicio_semana, fin_semana]
+    ).select_related('proveedor').order_by('-fecha', '-id')
+    desechos_semana = viajes_semana.filter(kg_podridos__gt=0)
+    total_kg_podridos = sum(v.kg_podridos for v in desechos_semana) or Decimal('0')
+
+    compras_semana = LoteClasificacion.objects.filter(
+        viaje__fecha__range=[inicio_semana, fin_semana]
+    ).select_related('viaje__proveedor', 'clasificacion__producto').order_by('-viaje__fecha', '-id')
+    compras_semana_kg = sum(lote.kg_neto for lote in compras_semana) or Decimal('0')
+
+    balance_neto = total_ventas_semana - total_gastos_semana - monto_nomina
     dias_nomina = [10, 20, 30]
     tiene_nomina_hoy = hoy.day in dias_nomina
-    hay_nomina_en_semana = any(
-        (inicio_semana + timedelta(days=i)).day in dias_nomina 
+    dias_nomina_semana = [
+        inicio_semana + timedelta(days=i)
         for i in range(7)
-    )
-    
-    # Si hay nómina en la semana, calcular monto estimado (puede ajustarse según lógica del negocio)
-    # Por ahora, mostrar un placeholder o calcular desde otra fuente
-    monto_nomina = Decimal('0')  # Placeholder - ajustar según lógica del negocio
-    
-    # 8. INVENTARIO SEMANAL
-    weekly_inv = get_current_week_inventory_data()
-    initial_inventory_kg = weekly_inv['initial_inventory_kg']
-    total_inventory_kg = weekly_inv['total_inventory_kg']
-    
+        if (inicio_semana + timedelta(days=i)).day in dias_nomina
+    ]
+
+    current_week_start = get_week_monday(hoy)
+    next_week_start = inicio_semana + timedelta(days=7) if inicio_semana < current_week_start else None
+
     ctx = {
         'hoy': hoy,
         'inicio_semana': inicio_semana,
         'fin_semana': fin_semana,
+        'weekly_record': weekly_record,
+        'current_week_start': current_week_start,
+        'previous_week_start': inicio_semana - timedelta(days=7),
+        'next_week_start': next_week_start,
+        'selected_week_is_current': inicio_semana == current_week_start,
         'total_gastos_semana': total_gastos_semana,
+        'total_egresos_semana': total_gastos_semana + monto_nomina,
         'total_efectivo_semana': total_efectivo_semana,
         'total_credito_semana': total_credito_semana,
         'total_ventas_semana': total_ventas_semana,
+        'total_abonos_semana': total_abonos_semana,
         'balance_neto': balance_neto,
         'total_kg_podridos': total_kg_podridos,
         'tiene_nomina_hoy': tiene_nomina_hoy,
-        'hay_nomina_en_semana': hay_nomina_en_semana,
+        'dias_nomina_semana': dias_nomina_semana,
         'monto_nomina': monto_nomina,
-        'num_gastos': gastos_semana.count(),
-        'num_ventas_efectivo': ventas_efectivo_semana.count(),
-        'num_ventas_credito': ventas_credito_semana.count(),
+        'num_gastos': gastos_operativos_semana.count(),
+        'num_nominas_semana': nominas_semana.count(),
+        'num_ventas_efectivo': num_ventas_efectivo,
+        'num_ventas_credito': num_ventas_credito,
         'num_abonos_semana': abonos_semana.count(),
-        'total_abonos_semana': total_abonos_semana,
         'promedio_efectivo': promedio_efectivo,
         'promedio_credito': promedio_credito,
-        # Inventario Semanal
-        'initial_inventory_kg': initial_inventory_kg,
-        'total_inventory_kg': total_inventory_kg,
+        'initial_inventory_kg': weekly_inv['initial_inventory_kg'],
+        'total_inventory_kg': weekly_inv['total_inventory_kg'],
+        'compras_semana_kg': compras_semana_kg,
+        'gastos_semana': gastos_operativos_semana,
+        'nominas_semana': nominas_semana,
+        'ventas_efectivo_semana': ventas_efectivo_semana,
+        'abonos_semana': abonos_semana,
+        'ventas_credito_semana': ventas_credito_semana,
+        'desechos_semana': desechos_semana,
+        'compras_semana': compras_semana,
+        'weekly_history': get_weekly_history(),
+        'nomina_form': nomina_form,
     }
-    
+
     return render(request, 'core/inventario_weekly_summary.html', ctx)

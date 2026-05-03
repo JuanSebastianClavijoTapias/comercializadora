@@ -2,243 +2,819 @@
 {% block title %}Resumen Semanal - FrutaSystem{% endblock %}
 {% block page_title %}<i class="bi bi-graph-up me-2"></i>Resumen Semanal de Operaciones{% endblock %}
 
+{% block extra_css %}
+<style>
+  .weekly-card-trigger {
+    width: 100%;
+    border: 0;
+    padding: 1.5rem;
+    text-align: left;
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+    cursor: pointer;
+  }
+
+  .weekly-card-trigger:hover,
+  .weekly-card-trigger:focus-visible {
+    transform: translateY(-4px);
+    box-shadow: 0 18px 35px rgba(15, 23, 42, 0.2);
+  }
+
+  .weekly-card-trigger:focus-visible {
+    outline: 3px solid rgba(255, 255, 255, 0.6);
+    outline-offset: 1px;
+  }
+
+  .weekly-card-trigger .stat-icon-wrapper {
+    flex-shrink: 0;
+  }
+
+  .weekly-toolbar .btn {
+    border-radius: 999px;
+  }
+
+  .weekly-history-table tbody tr.is-active {
+    background: rgba(2, 136, 209, 0.08);
+  }
+
+  .weekly-history-table tbody tr:hover {
+    background: rgba(255, 152, 0, 0.06);
+  }
+
+  .modal-summary-pill {
+    border-radius: 14px;
+    padding: 0.85rem 1rem;
+    background: var(--bg-light);
+    border: 1px solid rgba(15, 23, 42, 0.08);
+  }
+
+  .weekly-form-card .form-control,
+  .weekly-form-card .form-select {
+    border-radius: 10px;
+  }
+
+  .weekly-mini-note {
+    background: rgba(255, 152, 0, 0.08);
+    border: 1px solid rgba(255, 152, 0, 0.18);
+    border-radius: 14px;
+  }
+
+  .weekly-empty-state {
+    color: var(--text-secondary);
+    text-align: center;
+    padding: 1.5rem 1rem;
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="mb-3">
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
   <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary btn-sm">
     <i class="bi bi-arrow-left me-1"></i>Volver al Dashboard
   </a>
-</div>
 
-<!-- INFORMACIÓN DE LA SEMANA -->
-<div class="alert alert-info border-0 d-flex justify-content-between align-items-center" style="background: linear-gradient(135deg, #E3F2FD 0%, #F3E5F5 100%); border-left: 5px solid #0288D1;">
-  <div>
-    <strong>Semana del {{ inicio_semana|date:"d/m/Y" }} al {{ fin_semana|date:"d/m/Y" }}</strong>
-    <p class="mb-0 small text-muted">{{ inicio_semana|date:"l" }} a {{ fin_semana|date:"l" }}</p>
+  <div class="weekly-toolbar d-flex flex-wrap gap-2">
+    <a href="?week={{ previous_week_start|date:'Y-m-d' }}" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-chevron-left me-1"></i>Semana anterior
+    </a>
+    {% if next_week_start %}
+    <a href="?week={{ next_week_start|date:'Y-m-d' }}" class="btn btn-outline-secondary btn-sm">
+      Semana siguiente<i class="bi bi-chevron-right ms-1"></i>
+    </a>
+    {% endif %}
+    {% if not selected_week_is_current %}
+    <a href="?week={{ current_week_start|date:'Y-m-d' }}" class="btn btn-primary btn-sm">
+      <i class="bi bi-calendar-week me-1"></i>Semana actual
+    </a>
+    {% endif %}
+    <a href="{% url 'weekly_inventory_edit' weekly_record.pk %}" class="btn btn-outline-primary btn-sm">
+      <i class="bi bi-pencil-square me-1"></i>Editar inventario
+    </a>
   </div>
 </div>
 
-<!-- ALERTA DE NÓMINA -->
-{% if tiene_nomina_hoy %}
+<div class="alert alert-info border-0 d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3" style="background: linear-gradient(135deg, #E3F2FD 0%, #FDF4E7 100%); border-left: 5px solid #0288D1;">
+  <div>
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+      <strong>Semana del {{ inicio_semana|date:"d/m/Y" }} al {{ fin_semana|date:"d/m/Y" }}</strong>
+      {% if selected_week_is_current %}
+      <span class="badge text-bg-primary">Semana actual</span>
+      {% else %}
+      <span class="badge text-bg-light">Histórico</span>
+      {% endif %}
+    </div>
+    <p class="mb-1 small text-muted">{{ inicio_semana|date:"l" }} a {{ fin_semana|date:"l" }}</p>
+    <div class="d-flex flex-wrap gap-2 mt-2">
+      {% for dia in dias_nomina_semana %}
+      <span class="badge rounded-pill text-bg-warning">Nómina {{ dia|date:"d/m" }}</span>
+      {% empty %}
+      <span class="badge rounded-pill text-bg-light">Sin día fijo de nómina en esta semana</span>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="text-md-end small text-muted">
+    <div>Registro semanal actualizado</div>
+    <strong>{{ weekly_record.updated_at|date:"d/m/Y H:i" }}</strong>
+  </div>
+</div>
+
+{% if selected_week_is_current and tiene_nomina_hoy %}
 <div class="alert alert-warning border-0 mb-3" style="background: linear-gradient(135deg, #FFF3E0 0%, #FFE0B2 100%); border-left: 5px solid #F57C00;">
   <i class="bi bi-exclamation-triangle-fill me-2"></i>
-  <strong>¡ATENCIÓN! Hoy es Nómina (Día {{ hoy.day }})</strong>
+  <strong>Hoy corresponde nómina.</strong> Puedes registrarla desde el formulario de la derecha.
 </div>
 {% endif %}
 
-<!-- KPI CARDS - MÉTRICAS PRINCIPALES -->
 <div class="row row-cols-1 row-cols-md-2 row-cols-xl-5 g-3 mb-4">
-  <!-- GASTOS -->
   <div class="col">
-    <div class="stat-card-white h-100" style="background: linear-gradient(135deg, #E91E63 0%, #C2185B 100%);">
-      <div>
-        <div class="small fw-semibold" style="color: white;">Gastos Semana</div>
-        <div class="fs-4 fw-bold" style="color: white;">${{ total_gastos_semana|cop }}</div>
-        <div class="small" style="color: rgba(255,255,255,0.9);">{{ num_gastos }} gasto{{ num_gastos|pluralize:"s" }}</div>
+    <button type="button" class="stat-card-white weekly-card-trigger h-100" data-bs-toggle="modal" data-bs-target="#modalGastos" style="background: linear-gradient(135deg, #E91E63 0%, #C2185B 100%);">
+      <div class="d-flex justify-content-between align-items-start gap-3">
+        <div>
+          <div class="small fw-semibold" style="color: white;">Gastos Semana</div>
+          <div class="fs-4 fw-bold" style="color: white;">${{ total_gastos_semana|cop }}</div>
+          <div class="small" style="color: rgba(255,255,255,0.9);">{{ num_gastos }} registro{{ num_gastos|pluralize:"s" }}</div>
+        </div>
+        <div class="stat-icon-wrapper" style="background: rgba(255,255,255,0.25); color: white;">
+          <i class="bi bi-receipt"></i>
+        </div>
       </div>
-      <div class="stat-icon-wrapper" style="background: rgba(255,255,255,0.25); color: white;">
-        <i class="bi bi-receipt"></i>
-      </div>
-    </div>
+    </button>
   </div>
 
-  <!-- NÓMINA (si hay en la semana) -->
-  {% if hay_nomina_en_semana %}
   <div class="col">
-    <div class="stat-card-white h-100" style="background: linear-gradient(135deg, #FF6F00 0%, #E65100 100%);">
-      <div>
-        <div class="small fw-semibold" style="color: white;">Nómina (Semana)</div>
-        <div class="fs-4 fw-bold" style="color: white;">{{ monto_nomina|cop }}</div>
-        <div class="small" style="color: rgba(255,255,255,0.9);">Pagos de empleados</div>
+    <button type="button" class="stat-card-white weekly-card-trigger h-100" data-bs-toggle="modal" data-bs-target="#modalNominas" style="background: linear-gradient(135deg, #FF6F00 0%, #E65100 100%);">
+      <div class="d-flex justify-content-between align-items-start gap-3">
+        <div>
+          <div class="small fw-semibold" style="color: white;">Nóminas</div>
+          <div class="fs-4 fw-bold" style="color: white;">${{ monto_nomina|cop }}</div>
+          <div class="small" style="color: rgba(255,255,255,0.9);">{{ num_nominas_semana }} registro{{ num_nominas_semana|pluralize:"s" }}</div>
+        </div>
+        <div class="stat-icon-wrapper" style="background: rgba(255,255,255,0.25); color: white;">
+          <i class="bi bi-people-fill"></i>
+        </div>
       </div>
-      <div class="stat-icon-wrapper" style="background: rgba(255,255,255,0.25); color: white;">
-        <i class="bi bi-people-fill"></i>
-      </div>
-    </div>
-  </div>
-  {% endif %}
-
-  <!-- VENTAS EN EFECTIVO -->
-  <div class="col">
-    <div class="stat-card-white h-100" style="background: linear-gradient(135deg, #4CAF50 0%, #388E3C 100%);">
-      <div>
-        <div class="small fw-semibold" style="color: white;">Vtas Efectivo</div>
-        <div class="fs-4 fw-bold" style="color: white;">${{ total_efectivo_semana|cop }}</div>
-        <div class="small" style="color: rgba(255,255,255,0.9);">{{ num_ventas_efectivo }} venta{{ num_ventas_efectivo|pluralize:"s" }}</div>
-      </div>
-      <div class="stat-icon-wrapper" style="background: rgba(255,255,255,0.25); color: white;">
-        <i class="bi bi-cash-coin"></i>
-      </div>
-    </div>
+    </button>
   </div>
 
-  <!-- COBROS CRÉDITO SEMANA -->
   <div class="col">
-    <div class="stat-card-white h-100" style="background: linear-gradient(135deg, #00897B 0%, #00695C 100%);">
-      <div>
-        <div class="small fw-semibold" style="color: white;">Cobros Crédito</div>
-        <div class="fs-4 fw-bold" style="color: white;">${{ total_abonos_semana|cop }}</div>
-        <div class="small" style="color: rgba(255,255,255,0.9);">{{ num_abonos_semana }} abono{{ num_abonos_semana|pluralize:"s" }}</div>
+    <button type="button" class="stat-card-white weekly-card-trigger h-100" data-bs-toggle="modal" data-bs-target="#modalVentasEfectivo" style="background: linear-gradient(135deg, #4CAF50 0%, #388E3C 100%);">
+      <div class="d-flex justify-content-between align-items-start gap-3">
+        <div>
+          <div class="small fw-semibold" style="color: white;">Vtas Efectivo</div>
+          <div class="fs-4 fw-bold" style="color: white;">${{ total_efectivo_semana|cop }}</div>
+          <div class="small" style="color: rgba(255,255,255,0.9);">{{ num_ventas_efectivo }} venta{{ num_ventas_efectivo|pluralize:"s" }}</div>
+        </div>
+        <div class="stat-icon-wrapper" style="background: rgba(255,255,255,0.25); color: white;">
+          <i class="bi bi-cash-coin"></i>
+        </div>
       </div>
-      <div class="stat-icon-wrapper" style="background: rgba(255,255,255,0.25); color: white;">
-        <i class="bi bi-arrow-down-circle"></i>
-      </div>
-    </div>
+    </button>
   </div>
 
-  <!-- VENTAS A CRÉDITO -->
   <div class="col">
-    <div class="stat-card-white h-100" style="background: linear-gradient(135deg, #5C6BC0 0%, #3949AB 100%);">
-      <div>
-        <div class="small fw-semibold" style="color: white;">Vtas Crédito</div>
-        <div class="fs-4 fw-bold" style="color: white;">${{ total_credito_semana|cop }}</div>
-        <div class="small" style="color: rgba(255,255,255,0.9);">{{ num_ventas_credito }} venta{{ num_ventas_credito|pluralize:"s" }}</div>
+    <button type="button" class="stat-card-white weekly-card-trigger h-100" data-bs-toggle="modal" data-bs-target="#modalAbonos" style="background: linear-gradient(135deg, #00897B 0%, #00695C 100%);">
+      <div class="d-flex justify-content-between align-items-start gap-3">
+        <div>
+          <div class="small fw-semibold" style="color: white;">Cobros Crédito</div>
+          <div class="fs-4 fw-bold" style="color: white;">${{ total_abonos_semana|cop }}</div>
+          <div class="small" style="color: rgba(255,255,255,0.9);">{{ num_abonos_semana }} abono{{ num_abonos_semana|pluralize:"s" }}</div>
+        </div>
+        <div class="stat-icon-wrapper" style="background: rgba(255,255,255,0.25); color: white;">
+          <i class="bi bi-arrow-down-circle"></i>
+        </div>
       </div>
-      <div class="stat-icon-wrapper" style="background: rgba(255,255,255,0.25); color: white;">
-        <i class="bi bi-credit-card"></i>
-      </div>
-    </div>
+    </button>
   </div>
 
-  <!-- TOTAL VENTAS -->
   <div class="col">
-    <div class="stat-card-white h-100" style="background: linear-gradient(135deg, #FF9800 0%, #F57C00 100%);">
-      <div>
-        <div class="small fw-semibold" style="color: white;">Total Ventas</div>
-        <div class="fs-4 fw-bold" style="color: white;">${{ total_ventas_semana|cop }}</div>
-        <div class="small" style="color: rgba(255,255,255,0.9);">Efectivo + Crédito</div>
+    <button type="button" class="stat-card-white weekly-card-trigger h-100" data-bs-toggle="modal" data-bs-target="#modalVentasCredito" style="background: linear-gradient(135deg, #5C6BC0 0%, #3949AB 100%);">
+      <div class="d-flex justify-content-between align-items-start gap-3">
+        <div>
+          <div class="small fw-semibold" style="color: white;">Vtas Crédito</div>
+          <div class="fs-4 fw-bold" style="color: white;">${{ total_credito_semana|cop }}</div>
+          <div class="small" style="color: rgba(255,255,255,0.9);">{{ num_ventas_credito }} venta{{ num_ventas_credito|pluralize:"s" }}</div>
+        </div>
+        <div class="stat-icon-wrapper" style="background: rgba(255,255,255,0.25); color: white;">
+          <i class="bi bi-credit-card"></i>
+        </div>
       </div>
-      <div class="stat-icon-wrapper" style="background: rgba(255,255,255,0.25); color: white;">
-        <i class="bi bi-bag-check"></i>
+    </button>
+  </div>
+
+  <div class="col">
+    <button type="button" class="stat-card-white weekly-card-trigger h-100" data-bs-toggle="modal" data-bs-target="#modalTotalVentas" style="background: linear-gradient(135deg, #FF9800 0%, #F57C00 100%);">
+      <div class="d-flex justify-content-between align-items-start gap-3">
+        <div>
+          <div class="small fw-semibold" style="color: white;">Total Ventas</div>
+          <div class="fs-4 fw-bold" style="color: white;">${{ total_ventas_semana|cop }}</div>
+          <div class="small" style="color: rgba(255,255,255,0.9);">{{ num_ventas_efectivo|add:num_ventas_credito }} operación{{ num_ventas_efectivo|add:num_ventas_credito|pluralize:"es" }}</div>
+        </div>
+        <div class="stat-icon-wrapper" style="background: rgba(255,255,255,0.25); color: white;">
+          <i class="bi bi-bag-check"></i>
+        </div>
       </div>
-    </div>
+    </button>
+  </div>
+
+  <div class="col">
+    <button type="button" class="stat-card-white weekly-card-trigger h-100" data-bs-toggle="modal" data-bs-target="#modalDesechos" style="background: linear-gradient(135deg, #E64A19 0%, #B71C1C 100%);">
+      <div class="d-flex justify-content-between align-items-start gap-3">
+        <div>
+          <div class="small fw-semibold" style="color: white;">Desechos / Podrido</div>
+          <div class="fs-4 fw-bold" style="color: white;">{{ total_kg_podridos|floatformat:0 }} kg</div>
+          <div class="small" style="color: rgba(255,255,255,0.9);">Pérdida por rechazo</div>
+        </div>
+        <div class="stat-icon-wrapper" style="background: rgba(255,255,255,0.25); color: white;">
+          <i class="bi bi-exclamation-triangle"></i>
+        </div>
+      </div>
+    </button>
+  </div>
+
+  <div class="col">
+    <button type="button" class="stat-card-white weekly-card-trigger h-100" data-bs-toggle="modal" data-bs-target="#modalInventarioInicial" style="background: linear-gradient(135deg, #00897B 0%, #00695C 100%);">
+      <div class="d-flex justify-content-between align-items-start gap-3">
+        <div>
+          <div class="small fw-semibold" style="color: white;">Inventario Inicial</div>
+          <div class="fs-4 fw-bold" style="color: white;">{{ initial_inventory_kg|floatformat:0 }} kg</div>
+          <div class="small" style="color: rgba(255,255,255,0.9);">Base de arranque semanal</div>
+        </div>
+        <div class="stat-icon-wrapper" style="background: rgba(255,255,255,0.25); color: white;">
+          <i class="bi bi-box-seam"></i>
+        </div>
+      </div>
+    </button>
+  </div>
+
+  <div class="col">
+    <button type="button" class="stat-card-white weekly-card-trigger h-100" data-bs-toggle="modal" data-bs-target="#modalInventarioTotal" style="background: linear-gradient(135deg, #0288D1 0%, #01579B 100%);">
+      <div class="d-flex justify-content-between align-items-start gap-3">
+        <div>
+          <div class="small fw-semibold" style="color: white;">Inventario Total</div>
+          <div class="fs-4 fw-bold" style="color: white;">{{ total_inventory_kg|floatformat:0 }} kg</div>
+          <div class="small" style="color: rgba(255,255,255,0.9);">{{ compras_semana_kg|floatformat:0 }} kg comprados</div>
+        </div>
+        <div class="stat-icon-wrapper" style="background: rgba(255,255,255,0.25); color: white;">
+          <i class="bi bi-stack"></i>
+        </div>
+      </div>
+    </button>
   </div>
 </div>
 
-<!-- DESECHOS -->
-<div class="row g-3 mb-4">
-  <div class="col-lg-3">
-    <div class="stat-card-white h-100" style="background: linear-gradient(135deg, #E64A19 0%, #B71C1C 100%);">
-      <div>
-        <div class="small fw-semibold" style="color: white;">Desechos/Podrido</div>
-        <div class="fs-4 fw-bold" style="color: white;">{{ total_kg_podridos|floatformat:0 }} kg</div>
-        <div class="small" style="color: rgba(255,255,255,0.9);">Pérdida por rechazo</div>
+<div class="row g-4 mb-4">
+  <div class="col-lg-7">
+    <div class="card border-0 shadow-sm h-100" style="border-radius: 16px; overflow: hidden;">
+      <div class="card-header py-3 d-flex justify-content-between align-items-center" style="background: linear-gradient(135deg, #1E3A8A 0%, #2563EB 100%);">
+        <h6 class="mb-0 fw-bold text-white"><i class="bi bi-clock-history me-2"></i>Historial de Semanas</h6>
+        <span class="badge rounded-pill text-bg-light">{{ weekly_history|length }} semanas</span>
       </div>
-      <div class="stat-icon-wrapper" style="background: rgba(255,255,255,0.25); color: white;">
-        <i class="bi bi-exclamation-triangle"></i>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0 weekly-history-table">
+            <thead class="bg-light">
+              <tr>
+                <th class="ps-4">Semana</th>
+                <th>Inventario</th>
+                <th>Nómina</th>
+                <th class="text-end pe-4">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in weekly_history %}
+              <tr class="{% if item.week_start == inicio_semana %}is-active{% endif %}">
+                <td class="ps-4">
+                  <div class="fw-semibold">{{ item.week_start|date:"d/m/Y" }} - {{ item.week_end|date:"d/m/Y" }}</div>
+                  <div class="small text-muted">
+                    {% if item.week_start == inicio_semana %}
+                    Semana en vista
+                    {% elif item.record %}
+                    Actualizada {{ item.record.updated_at|date:"d/m/Y" }}
+                    {% else %}
+                    Aún sin ajuste manual
+                    {% endif %}
+                  </div>
+                </td>
+                <td>
+                  {% if item.record %}
+                  <div class="fw-semibold">{{ item.initial_inventory_kg|floatformat:0 }} kg</div>
+                  <div class="small text-muted">Total: {{ item.total_inventory_kg|floatformat:0 }} kg</div>
+                  {% else %}
+                  <span class="text-muted">Se crea al abrir la semana</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <span class="fw-semibold">${{ item.nomina_total|cop }}</span>
+                </td>
+                <td class="text-end pe-4">
+                  <div class="btn-group btn-group-sm" role="group">
+                    <a href="?week={{ item.week_start|date:'Y-m-d' }}" class="btn btn-outline-primary" title="Ver semana">
+                      <i class="bi bi-eye"></i>
+                    </a>
+                    {% if item.record %}
+                    <a href="{% url 'weekly_inventory_edit' item.record.pk %}" class="btn btn-outline-secondary" title="Editar inventario">
+                      <i class="bi bi-pencil"></i>
+                    </a>
+                    {% endif %}
+                  </div>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="4">
+                  <div class="weekly-empty-state">
+                    <i class="bi bi-calendar-x fs-1 d-block mb-2"></i>
+                    No hay semanas registradas todavía.
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>
-</div>
 
-<!-- SECCIÓN DE INVENTARIO SEMANAL -->
-<div class="row g-3 mb-4">
-  <!-- INVENTARIO INICIAL DE LA SEMANA -->
-  <div class="col-lg-6">
-    <div class="stat-card-white h-100" style="background: linear-gradient(135deg, #00897B 0%, #00695C 100%);">
-      <div>
-        <div class="small fw-semibold" style="color: white;">Inventario Inicial</div>
-        <div class="fs-4 fw-bold" style="color: white;">{{ initial_inventory_kg|floatformat:0|default:0|add:"0" }} kg</div>
-        <div class="small" style="color: rgba(255,255,255,0.9);">Stock al inicio de la semana</div>
+  <div class="col-lg-5" id="nominas-section">
+    <div class="card border-0 shadow-sm weekly-form-card" style="border-radius: 16px; overflow: hidden;">
+      <div class="card-header py-3" style="background: linear-gradient(135deg, #F57C00 0%, #FB8C00 100%);">
+        <h6 class="mb-0 fw-bold text-white"><i class="bi bi-person-lines-fill me-2"></i>Agregar Nómina a la Semana</h6>
       </div>
-      <div class="stat-icon-wrapper" style="background: rgba(255,255,255,0.25); color: white;">
-        <i class="bi bi-box-seam"></i>
-      </div>
-    </div>
-  </div>
+      <div class="card-body p-4">
+        <form method="post" class="row g-3">
+          {% csrf_token %}
+          <input type="hidden" name="form_type" value="nomina">
 
-  <!-- INVENTARIO TOTAL DE LA SEMANA -->
-  <div class="col-lg-6">
-    <div class="stat-card-white h-100" style="background: linear-gradient(135deg, #0288D1 0%, #01579B 100%);">
-      <div>
-        <div class="small fw-semibold" style="color: white;">Inventario Total</div>
-        <div class="fs-4 fw-bold" style="color: white;">{{ total_inventory_kg|floatformat:0|default:0|add:"0" }} kg</div>
-        <div class="small" style="color: rgba(255,255,255,0.9);">Inicial + Compras de la semana</div>
-      </div>
-      <div class="stat-icon-wrapper" style="background: rgba(255,255,255,0.25); color: white;">
-        <i class="bi bi-stack"></i>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- RESUMEN FINANCIERO -->
-<div class="row g-3 mb-4">
-  <div class="col-lg-9">
-    <div class="card border-0 shadow-sm" style="border-radius: 12px;">
-      <div class="card-header py-3" style="background: linear-gradient(135deg, #7B1FA2 0%, #6A1B9A 100%); border-bottom: 2px solid #7B1FA2;">
-        <h6 class="mb-0 fw-bold" style="color: white;"><i class="bi bi-calculator me-2"></i>Resumen Financiero</h6>
-      </div>
-      <div class="card-body">
-        <div class="row text-center">
-          <div class="col-md-4 py-2 border-end">
-            <div class="small text-muted">Total Ingresos</div>
-            <div class="fs-5 fw-bold text-success">${{ total_ventas_semana|cop }}</div>
+          <div class="col-12">
+            <label class="form-label fw-semibold small text-uppercase">Descripción</label>
+            {{ nomina_form.descripcion }}
+            {% if nomina_form.descripcion.errors %}<div class="text-danger small mt-1">{{ nomina_form.descripcion.errors }}</div>{% endif %}
           </div>
-          <div class="col-md-4 py-2 border-end">
-            <div class="small text-muted">Total Egresos (Gastos)</div>
-            <div class="fs-5 fw-bold text-danger">${{ total_gastos_semana|cop }}</div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-semibold small text-uppercase">Monto</label>
+            {{ nomina_form.monto }}
+            {% if nomina_form.monto.errors %}<div class="text-danger small mt-1">{{ nomina_form.monto.errors }}</div>{% endif %}
           </div>
-          <div class="col-md-4 py-2">
-            <div class="small text-muted">Balance Neto</div>
-            <div class="fs-5 fw-bold" style="color: {% if balance_neto > 0 %}#4CAF50{% else %}#FF6B6B{% endif %}">
-              {% if balance_neto > 0 %}+{% endif %}${{ balance_neto|cop }}
+
+          <div class="col-md-6">
+            <label class="form-label fw-semibold small text-uppercase">Fecha</label>
+            {{ nomina_form.fecha }}
+            {% if nomina_form.fecha.errors %}<div class="text-danger small mt-1">{{ nomina_form.fecha.errors }}</div>{% endif %}
+          </div>
+
+          <div class="col-12">
+            <button type="submit" class="btn btn-warning w-100 fw-semibold text-white">
+              <i class="bi bi-plus-lg me-1"></i>Guardar nómina
+            </button>
+          </div>
+        </form>
+
+        <div class="weekly-mini-note p-3 mt-3 small text-muted">
+          Las nóminas se guardan como gastos con categoría <strong>Nómina</strong> para que aparezcan en el historial, balance y modales del resumen semanal.
+        </div>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mt-4" style="border-radius: 16px; overflow: hidden;">
+      <div class="card-header py-3 bg-white border-bottom-0 d-flex justify-content-between align-items-center">
+        <h6 class="mb-0 fw-bold"><i class="bi bi-list-check me-2"></i>Nóminas Registradas</h6>
+        <span class="badge rounded-pill text-bg-warning">${{ monto_nomina|cop }}</span>
+      </div>
+      <div class="card-body p-0">
+        {% for nomina in nominas_semana %}
+        <div class="d-flex justify-content-between align-items-start gap-3 p-3 {% if not forloop.last %}border-bottom{% endif %}">
+          <div>
+            <div class="fw-semibold">{{ nomina.descripcion }}</div>
+            <div class="small text-muted">{{ nomina.fecha|date:"d/m/Y" }}</div>
+          </div>
+          <div class="text-end">
+            <div class="fw-bold" style="color: #E65100;">${{ nomina.monto|cop }}</div>
+            <div class="btn-group btn-group-sm mt-2" role="group">
+              <a href="{% url 'nomina_edit' nomina.pk %}" class="btn btn-outline-secondary" title="Editar nómina">
+                <i class="bi bi-pencil"></i>
+              </a>
+              <a href="{% url 'nomina_delete' nomina.pk %}" class="btn btn-outline-danger" title="Eliminar nómina">
+                <i class="bi bi-trash3"></i>
+              </a>
             </div>
           </div>
         </div>
+        {% empty %}
+        <div class="weekly-empty-state">
+          <i class="bi bi-person-x fs-1 d-block mb-2"></i>
+          No hay nóminas registradas en esta semana.
+        </div>
+        {% endfor %}
       </div>
     </div>
   </div>
 </div>
 
-<!-- DESGLOSE POR TIPO -->
-<div class="row g-3">
-  <!-- VENTAS EN EFECTIVO -->
-  <div class="col-lg-6">
-    <div class="card border-0 shadow-sm" style="border-radius: 12px; overflow: hidden;">
-      <div class="card-header py-3" style="background: linear-gradient(135deg, #D32F2F 0%, #B71C1C 100%); border-bottom: 3px solid #D32F2F;">
-        <h6 class="mb-0 fw-bold" style="color: white;"><i class="bi bi-cash-coin me-2"></i>Ventas en Efectivo</h6>
-      </div>
-      <div class="card-body">
-        <div class="d-flex justify-content-between align-items-baseline mb-2">
-          <span class="text-muted">Cantidad</span>
-          <strong class="fs-5">{{ num_ventas_efectivo }}</strong>
-        </div>
-        <div class="d-flex justify-content-between align-items-baseline">
-          <span class="text-muted">Total</span>
-          <strong class="fs-4 text-success">${{ total_efectivo_semana|cop }}</strong>
-        </div>
-        <hr>
-        <div class="small text-muted">
-          <i class="bi bi-info-circle me-1"></i>
-          Promedio por venta: <strong>${{ promedio_efectivo|cop }}</strong>
-        </div>
-      </div>
-    </div>
+<div class="card border-0 shadow-sm mb-4" style="border-radius: 16px; overflow: hidden;">
+  <div class="card-header py-3" style="background: linear-gradient(135deg, #6A1B9A 0%, #8E24AA 100%);">
+    <h6 class="mb-0 fw-bold text-white"><i class="bi bi-calculator me-2"></i>Resumen Financiero</h6>
   </div>
-
-  <!-- VENTAS A CRÉDITO -->
-  <div class="col-lg-6">
-    <div class="card border-0 shadow-sm" style="border-radius: 12px; overflow: hidden;">
-      <div class="card-header py-3" style="background: linear-gradient(135deg, #1976D2 0%, #1565C0 100%); border-bottom: 3px solid #1976D2;">
-        <h6 class="mb-0 fw-bold" style="color: white;"><i class="bi bi-credit-card me-2"></i>Ventas a Crédito</h6>
+  <div class="card-body">
+    <div class="row g-3 text-center">
+      <div class="col-md-3">
+        <div class="modal-summary-pill h-100">
+          <div class="small text-muted">Ventas</div>
+          <div class="fs-5 fw-bold text-success">${{ total_ventas_semana|cop }}</div>
+        </div>
       </div>
-      <div class="card-body">
-        <div class="d-flex justify-content-between align-items-baseline mb-2">
-          <span class="text-muted">Cantidad</span>
-          <strong class="fs-5">{{ num_ventas_credito }}</strong>
+      <div class="col-md-3">
+        <div class="modal-summary-pill h-100">
+          <div class="small text-muted">Cobros Crédito</div>
+          <div class="fs-5 fw-bold" style="color: #00897B;">${{ total_abonos_semana|cop }}</div>
         </div>
-        <div class="d-flex justify-content-between align-items-baseline">
-          <span class="text-muted">Total</span>
-          <strong class="fs-4 text-primary">${{ total_credito_semana|cop }}</strong>
+      </div>
+      <div class="col-md-3">
+        <div class="modal-summary-pill h-100">
+          <div class="small text-muted">Egresos</div>
+          <div class="fs-5 fw-bold text-danger">${{ total_egresos_semana|cop }}</div>
         </div>
-        <hr>
-        <div class="small text-muted">
-          <i class="bi bi-info-circle me-1"></i>
-          Promedio por venta: <strong>${{ promedio_credito|cop }}</strong>
+      </div>
+      <div class="col-md-3">
+        <div class="modal-summary-pill h-100">
+          <div class="small text-muted">Balance Neto</div>
+          <div class="fs-5 fw-bold" style="color: {% if balance_neto >= 0 %}#2E7D32{% else %}#C62828{% endif %};">
+            {% if balance_neto > 0 %}+{% endif %}${{ balance_neto|cop }}
+          </div>
         </div>
       </div>
     </div>
   </div>
 </div>
 
+<div class="modal fade" id="modalGastos" tabindex="-1" aria-labelledby="modalGastosLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalGastosLabel">Detalle de Gastos de la Semana</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-summary-pill mb-3">
+          <div class="small text-muted">Total gastos operativos</div>
+          <div class="fs-5 fw-bold text-danger">${{ total_gastos_semana|cop }}</div>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Categoría</th>
+                <th>Descripción</th>
+                <th class="text-end">Monto</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for gasto in gastos_semana %}
+              <tr>
+                <td>{{ gasto.fecha|date:"d/m/Y" }}</td>
+                <td>{{ gasto.categoria.nombre }}</td>
+                <td>{{ gasto.descripcion }}</td>
+                <td class="text-end fw-semibold text-danger">${{ gasto.monto|cop }}</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="4" class="text-center text-muted py-4">No hay gastos operativos en esta semana.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="modalNominas" tabindex="-1" aria-labelledby="modalNominasLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalNominasLabel">Detalle de Nóminas</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <div class="d-flex justify-content-between align-items-center modal-summary-pill mb-3">
+          <div>
+            <div class="small text-muted">Total nóminas</div>
+            <div class="fs-5 fw-bold" style="color: #E65100;">${{ monto_nomina|cop }}</div>
+          </div>
+          <a href="#nominas-section" class="btn btn-warning btn-sm text-white" data-bs-dismiss="modal">
+            <i class="bi bi-plus-lg me-1"></i>Agregar nómina
+          </a>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Descripción</th>
+                <th class="text-end">Monto</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for nomina in nominas_semana %}
+              <tr>
+                <td>{{ nomina.fecha|date:"d/m/Y" }}</td>
+                <td>{{ nomina.descripcion }}</td>
+                <td class="text-end fw-semibold">${{ nomina.monto|cop }}</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="3" class="text-center text-muted py-4">No hay nóminas registradas en esta semana.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="modalVentasEfectivo" tabindex="-1" aria-labelledby="modalVentasEfectivoLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalVentasEfectivoLabel">Ventas en Efectivo</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row g-3 mb-3">
+          <div class="col-md-6"><div class="modal-summary-pill"><div class="small text-muted">Total vendido</div><div class="fs-5 fw-bold text-success">${{ total_efectivo_semana|cop }}</div></div></div>
+          <div class="col-md-6"><div class="modal-summary-pill"><div class="small text-muted">Promedio por venta</div><div class="fs-5 fw-bold text-success">${{ promedio_efectivo|cop }}</div></div></div>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Cliente</th>
+                <th>Descripción</th>
+                <th class="text-end">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for venta in ventas_efectivo_semana %}
+              <tr>
+                <td>{{ venta.fecha|date:"d/m/Y" }}</td>
+                <td>{{ venta.cliente|default:"General" }}</td>
+                <td>{{ venta.descripcion|default:"Venta sin descripción" }}</td>
+                <td class="text-end fw-semibold text-success">${{ venta.total|cop }}</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="4" class="text-center text-muted py-4">No hay ventas en efectivo en esta semana.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="modalAbonos" tabindex="-1" aria-labelledby="modalAbonosLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalAbonosLabel">Cobros de Crédito</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-summary-pill mb-3">
+          <div class="small text-muted">Total cobrado</div>
+          <div class="fs-5 fw-bold" style="color: #00897B;">${{ total_abonos_semana|cop }}</div>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Cliente</th>
+                <th>Medio</th>
+                <th class="text-end">Monto</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for abono in abonos_semana %}
+              <tr>
+                <td>{{ abono.fecha|date:"d/m/Y" }}</td>
+                <td>{{ abono.venta.cliente }}</td>
+                <td>{{ abono.get_medio_pago_display }}</td>
+                <td class="text-end fw-semibold">${{ abono.monto|cop }}</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="4" class="text-center text-muted py-4">No hay abonos registrados en esta semana.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="modalVentasCredito" tabindex="-1" aria-labelledby="modalVentasCreditoLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalVentasCreditoLabel">Ventas a Crédito</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row g-3 mb-3">
+          <div class="col-md-6"><div class="modal-summary-pill"><div class="small text-muted">Total vendido a crédito</div><div class="fs-5 fw-bold text-primary">${{ total_credito_semana|cop }}</div></div></div>
+          <div class="col-md-6"><div class="modal-summary-pill"><div class="small text-muted">Promedio por venta</div><div class="fs-5 fw-bold text-primary">${{ promedio_credito|cop }}</div></div></div>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Cliente</th>
+                <th class="text-end">Total</th>
+                <th class="text-end">Saldo</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for venta in ventas_credito_semana %}
+              <tr>
+                <td>{{ venta.fecha|date:"d/m/Y" }}</td>
+                <td>{{ venta.cliente }}</td>
+                <td class="text-end fw-semibold text-primary">${{ venta.total|cop }}</td>
+                <td class="text-end">${{ venta.saldo_pendiente|cop }}</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="4" class="text-center text-muted py-4">No hay ventas a crédito en esta semana.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="modalTotalVentas" tabindex="-1" aria-labelledby="modalTotalVentasLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalTotalVentasLabel">Resumen de Ventas</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row g-3 mb-3">
+          <div class="col-md-4"><div class="modal-summary-pill"><div class="small text-muted">Ventas efectivo</div><div class="fs-5 fw-bold text-success">${{ total_efectivo_semana|cop }}</div></div></div>
+          <div class="col-md-4"><div class="modal-summary-pill"><div class="small text-muted">Ventas crédito</div><div class="fs-5 fw-bold text-primary">${{ total_credito_semana|cop }}</div></div></div>
+          <div class="col-md-4"><div class="modal-summary-pill"><div class="small text-muted">Total ventas</div><div class="fs-5 fw-bold" style="color: #F57C00;">${{ total_ventas_semana|cop }}</div></div></div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead>
+              <tr>
+                <th>Tipo</th>
+                <th>Cantidad</th>
+                <th class="text-end">Monto</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Ventas en efectivo</td>
+                <td>{{ num_ventas_efectivo }}</td>
+                <td class="text-end fw-semibold text-success">${{ total_efectivo_semana|cop }}</td>
+              </tr>
+              <tr>
+                <td>Ventas a crédito</td>
+                <td>{{ num_ventas_credito }}</td>
+                <td class="text-end fw-semibold text-primary">${{ total_credito_semana|cop }}</td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr>
+                <th colspan="2">Total</th>
+                <th class="text-end">${{ total_ventas_semana|cop }}</th>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="modalDesechos" tabindex="-1" aria-labelledby="modalDesechosLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalDesechosLabel">Desechos y Producto Podrido</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-summary-pill mb-3">
+          <div class="small text-muted">Total rechazado</div>
+          <div class="fs-5 fw-bold text-danger">{{ total_kg_podridos|floatformat:0 }} kg</div>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Proveedor</th>
+                <th class="text-end">Kg podridos</th>
+                <th>Observaciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for viaje in desechos_semana %}
+              <tr>
+                <td>{{ viaje.fecha|date:"d/m/Y" }}</td>
+                <td>{{ viaje.proveedor }}</td>
+                <td class="text-end fw-semibold text-danger">{{ viaje.kg_podridos|floatformat:0 }} kg</td>
+                <td>{{ viaje.observaciones|default:"-" }}</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="4" class="text-center text-muted py-4">No hubo desechos en esta semana.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="modalInventarioInicial" tabindex="-1" aria-labelledby="modalInventarioInicialLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalInventarioInicialLabel">Inventario Inicial de la Semana</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="modal-summary-pill h-100">
+              <div class="small text-muted">Inventario inicial</div>
+              <div class="fs-5 fw-bold" style="color: #00695C;">{{ initial_inventory_kg|floatformat:0 }} kg</div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="modal-summary-pill h-100">
+              <div class="small text-muted">Última actualización</div>
+              <div class="fs-6 fw-bold">{{ weekly_record.updated_at|date:"d/m/Y H:i" }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="alert alert-light mt-3 mb-0">
+          Este valor se usa como base para calcular el inventario total de la semana. Puedes ajustarlo con el botón <strong>Editar inventario</strong> de la parte superior.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="modalInventarioTotal" tabindex="-1" aria-labelledby="modalInventarioTotalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalInventarioTotalLabel">Inventario Total de la Semana</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row g-3 mb-3">
+          <div class="col-md-4"><div class="modal-summary-pill"><div class="small text-muted">Inventario inicial</div><div class="fs-5 fw-bold">{{ initial_inventory_kg|floatformat:0 }} kg</div></div></div>
+          <div class="col-md-4"><div class="modal-summary-pill"><div class="small text-muted">Compras registradas</div><div class="fs-5 fw-bold text-primary">{{ compras_semana_kg|floatformat:0 }} kg</div></div></div>
+          <div class="col-md-4"><div class="modal-summary-pill"><div class="small text-muted">Inventario total</div><div class="fs-5 fw-bold text-success">{{ total_inventory_kg|floatformat:0 }} kg</div></div></div>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Proveedor</th>
+                <th>Clasificación</th>
+                <th class="text-end">Kg netos</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for lote in compras_semana %}
+              <tr>
+                <td>{{ lote.viaje.fecha|date:"d/m/Y" }}</td>
+                <td>{{ lote.viaje.proveedor }}</td>
+                <td>{{ lote.clasificacion }}</td>
+                <td class="text-end fw-semibold text-primary">{{ lote.kg_neto|floatformat:2 }} kg</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="4" class="text-center text-muted py-4">No hay compras registradas en esta semana.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}

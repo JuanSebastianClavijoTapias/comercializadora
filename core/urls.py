@@ -62,4 +62,7 @@ urlpatterns = [
     path('reportes/proveedores/', views.reporte_proveedor, name='reporte_proveedor'),
     # Resumen Semanal
     path('inventario/semanal/', views.inventario_weekly_summary, name='inventario_weekly_summary'),
+    path('inventario/semanal/<int:pk>/editar/', views.weekly_inventory_edit, name='weekly_inventory_edit'),
+    path('inventario/semanal/nominas/<int:pk>/editar/', views.nomina_edit, name='nomina_edit'),
+    path('inventario/semanal/nominas/<int:pk>/eliminar/', views.nomina_delete, name='nomina_delete'),
 ]

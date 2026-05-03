@@ -113,6 +113,25 @@ class GastoForm(forms.ModelForm):
             'fecha': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
         }
 
+class NominaForm(forms.ModelForm):
+    class Meta:
+        model = Gasto
+        fields = ['descripcion', 'monto', 'fecha']
+        widgets = {
+            'descripcion': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Nómina operativa semana 01/05'}),
+            'monto': forms.TextInput(attrs={'class': 'form-control price-cop', 'inputmode': 'numeric', 'autocomplete': 'off'}),
+            'fecha': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+        }
+
+class WeeklyInventoryForm(forms.ModelForm):
+    class Meta:
+        model = WeeklyInventory
+        fields = ['week_start', 'initial_inventory_kg']
+        widgets = {
+            'week_start': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'initial_inventory_kg': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0'}),
+        }
+
 class VentaEfectivoForm(forms.ModelForm):
     class Meta:
         model = VentaEfectivo

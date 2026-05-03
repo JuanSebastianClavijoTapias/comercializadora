@@ -39,7 +39,9 @@
             <button type="submit" class="btn btn-primary px-4 py-2 fw-semibold">
               <i class="bi bi-check2 me-1"></i> Guardar Cambios
             </button>
-            {% if back_url %}
+            {% if back_href %}
+            <a href="{{ back_href }}" class="btn btn-outline-secondary py-2 border-0 fw-semibold" style="color: var(--text-sec);"><i class="bi bi-x-circle me-1"></i> Cancelar</a>
+            {% elif back_url %}
               {% if back_url_args %}
               <a href="{% url back_url back_url_args|first %}" class="btn btn-outline-secondary py-2 border-0 fw-semibold" style="color: var(--text-sec);"><i class="bi bi-x-circle me-1"></i> Cancelar</a>
               {% else %}
