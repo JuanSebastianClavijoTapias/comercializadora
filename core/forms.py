@@ -1,6 +1,21 @@
 from django import forms
 from .models import *
 
+
+class COPInputNormalizationMixin:
+    cop_fields = ()
+
+    def __init__(self, *args, **kwargs):
+        data = kwargs.get('data')
+        if data is not None:
+            data = data.copy()
+            for field_name in self.cop_fields:
+                value = data.get(field_name)
+                if value not in (None, ''):
+                    data[field_name] = str(value).replace('.', '').strip()
+            kwargs['data'] = data
+        super().__init__(*args, **kwargs)
+
 class ProveedorForm(forms.ModelForm):
     class Meta:
         model = Proveedor
@@ -91,7 +106,9 @@ class LoteClasificacionForm(forms.ModelForm):
             'kg_neto': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
         }
 
-class PagoProveedorForm(forms.ModelForm):
+class PagoProveedorForm(COPInputNormalizationMixin, forms.ModelForm):
+    cop_fields = ('monto',)
+
     class Meta:
         model = PagoProveedor
         fields = ['monto', 'medio_pago', 'fecha', 'observaciones']
@@ -102,7 +119,9 @@ class PagoProveedorForm(forms.ModelForm):
             'observaciones': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
         }
 
-class GastoForm(forms.ModelForm):
+class GastoForm(COPInputNormalizationMixin, forms.ModelForm):
+    cop_fields = ('monto',)
+
     class Meta:
         model = Gasto
         fields = ['categoria', 'descripcion', 'monto', 'fecha']
@@ -113,7 +132,9 @@ class GastoForm(forms.ModelForm):
             'fecha': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
         }
 
-class NominaForm(forms.ModelForm):
+class NominaForm(COPInputNormalizationMixin, forms.ModelForm):
+    cop_fields = ('monto',)
+
     class Meta:
         model = Gasto
         fields = ['descripcion', 'monto', 'fecha']
@@ -143,7 +164,9 @@ class VentaEfectivoForm(forms.ModelForm):
             'observaciones': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
         }
 
-class DetalleVentaEfectivoForm(forms.ModelForm):
+class DetalleVentaEfectivoForm(COPInputNormalizationMixin, forms.ModelForm):
+    cop_fields = ('precio_por_kg',)
+
     class Meta:
         model = DetalleVentaEfectivo
         fields = ['clasificacion', 'kg_vendido', 'precio_por_kg']
@@ -170,7 +193,9 @@ class VentaCreditoForm(forms.ModelForm):
             'observaciones': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
         }
 
-class DetalleVentaCreditoForm(forms.ModelForm):
+class DetalleVentaCreditoForm(COPInputNormalizationMixin, forms.ModelForm):
+    cop_fields = ('precio_por_kg',)
+
     class Meta:
         model = DetalleVentaCredito
         fields = ['clasificacion', 'kg_vendido', 'precio_por_kg']
@@ -180,7 +205,9 @@ class DetalleVentaCreditoForm(forms.ModelForm):
             'precio_por_kg': forms.TextInput(attrs={'class': 'form-control price-cop', 'inputmode': 'numeric', 'autocomplete': 'off'}),
         }
 
-class PagoVentaCreditoForm(forms.ModelForm):
+class PagoVentaCreditoForm(COPInputNormalizationMixin, forms.ModelForm):
+    cop_fields = ('monto',)
+
     class Meta:
         model = PagoVentaCredito
         fields = ['monto', 'medio_pago', 'fecha', 'observaciones']

@@ -860,8 +860,8 @@
     <a href="{% url 'reporte_cartera' %}" class="nav-link {% if 'cartera' in request.path %}active{% endif %}">
       <i class="bi bi-file-earmark-text"></i> Cartera
     </a>
-    <a href="{% url 'reporte_proveedor' %}" class="nav-link {% if 'proveedor' in request.path %}active{% endif %}">
-      <i class="bi bi-building"></i> Proveedores
+    <a href="{% url 'reporte_proveedor' %}" class="nav-link {% if 'reportes/proveedores' in request.path %}active{% endif %}">
+      <i class="bi bi-building"></i> Deuda Proveedores
     </a>
     <div class="nav-section">Catálogo</div>
     <a href="{% url 'cliente_list' %}" class="nav-link {% if 'cliente' in request.path %}active{% endif %}">
@@ -870,8 +870,8 @@
     <a href="{% url 'producto_list' %}" class="nav-link {% if 'producto' in request.path %}active{% endif %}">
       <i class="bi bi-box"></i> Productos
     </a>
-    <a href="{% url 'proveedor_list' %}" class="nav-link {% if 'proveedor' in request.path %}active{% endif %}">
-      <i class="bi bi-shop"></i> Proveedores
+    <a href="{% url 'proveedor_list' %}" class="nav-link {% if '/proveedores/' in request.path and 'reportes/proveedores' not in request.path %}active{% endif %}">
+      <i class="bi bi-shop"></i> Gestionar Proveedores
     </a>
   </nav>
 </div>

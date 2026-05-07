@@ -1096,6 +1096,7 @@ def venta_credito_add_detalle_ajax(request, pk):
             
             # Refrescar la clasificación para obtener el stock actualizado
             detalle.clasificacion.refresh_from_db()
+            venta.refresh_from_db()
             
             # Retornar JSON con la nueva fila para agregar a la tabla
             response_data = {
@@ -1108,7 +1109,12 @@ def venta_credito_add_detalle_ajax(request, pk):
                     'total': float(detalle.total),
                     'precio_por_kg_display': f"${detalle.precio_por_kg:.0f}",
                     'total_display': f"${detalle.total:.0f}",
-                }
+                },
+                'resumen': {
+                    'total_venta': float(venta.total),
+                    'total_pagado': float(venta.total_pagado),
+                    'saldo_pendiente': float(venta.saldo_pendiente),
+                },
             }
             return JsonResponse(response_data)
         else:

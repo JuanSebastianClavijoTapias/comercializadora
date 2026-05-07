@@ -46,17 +46,17 @@
         <div class="p-3 rounded mb-3" style="background-color: var(--surface-color); border: 1px solid rgba(0,0,0,0.05);">
           <div class="d-flex justify-content-between align-items-center mb-2">
             <span class="text-muted fw-semibold">Total Venta:</span>
-            <span class="fw-bold" style="color: var(--text-main);">${{ venta.total|default:0|cop }}</span>
+            <span id="sale-total-amount" class="fw-bold" style="color: var(--text-main);">${{ venta.total|default:0|cop }}</span>
           </div>
           <div class="d-flex justify-content-between align-items-center">
             <span class="text-muted fw-semibold">Total Pagado:</span>
-            <span class="text-success fw-bold">${{ venta.total_pagado|default:0|cop }}</span>
+            <span id="sale-total-paid-amount" class="text-success fw-bold">${{ venta.total_pagado|default:0|cop }}</span>
           </div>
         </div>
 
-        <div class="p-3 rounded d-flex justify-content-between align-items-center shadow-sm" style="background: {% if venta.saldo_pendiente > 0 %}linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%){% else %}linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%){% endif %};">
-          <span class="fw-bold {% if venta.saldo_pendiente > 0 %}text-danger{% else %}text-success{% endif %}">Saldo Pendiente:</span>
-          <span class="fs-4 fw-bold {% if venta.saldo_pendiente > 0 %}text-danger{% else %}text-success{% endif %}">${{ venta.saldo_pendiente|default:0|cop }}</span>
+        <div id="sale-balance-card" class="p-3 rounded d-flex justify-content-between align-items-center shadow-sm" style="background: {% if venta.saldo_pendiente > 0 %}linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%){% else %}linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%){% endif %};">
+          <span id="sale-balance-label" class="fw-bold {% if venta.saldo_pendiente > 0 %}text-danger{% else %}text-success{% endif %}">Saldo Pendiente:</span>
+          <span id="sale-balance-amount" class="fs-4 fw-bold {% if venta.saldo_pendiente > 0 %}text-danger{% else %}text-success{% endif %}">${{ venta.saldo_pendiente|default:0|cop }}</span>
         </div>
       </div>
     </div>
@@ -202,7 +202,7 @@
             <!-- Resumen de Saldo -->
             <div class="p-3 mb-4 rounded text-center" style="background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%); border-left: 4px solid #9c27b0; border-radius: 8px;">
               <div class="small text-muted mb-2" style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px;">Saldo Pendiente</div>
-              <div class="fw-bold fs-4" style="color: {% if venta.saldo_pendiente > 0 %}#d32f2f{% else %}#4CAF50{% endif %};">${{ venta.saldo_pendiente|default:0|cop }}</div>
+              <div id="payments-balance-amount" class="fw-bold fs-4" style="color: {% if venta.saldo_pendiente > 0 %}#d32f2f{% else %}#4CAF50{% endif %};">${{ venta.saldo_pendiente|default:0|cop }}</div>
             </div>
             
             <!-- Tabla de Abonos -->
@@ -281,6 +281,53 @@
     const previewVal = document.getElementById('total_preview_val');
     const detallesTable = document.querySelector('table tbody');
     const formMessages = document.getElementById('form-messages');
+    const saleTotalAmount = document.getElementById('sale-total-amount');
+    const saleTotalPaidAmount = document.getElementById('sale-total-paid-amount');
+    const saleBalanceCard = document.getElementById('sale-balance-card');
+    const saleBalanceLabel = document.getElementById('sale-balance-label');
+    const saleBalanceAmount = document.getElementById('sale-balance-amount');
+    const paymentsBalanceAmount = document.getElementById('payments-balance-amount');
+
+    function formatCurrencyAmount(value) {
+      return '$' + Math.round(Number(value) || 0).toLocaleString('es-CO');
+    }
+
+    function updateSaleSummary(resumen) {
+      if (!resumen) return;
+
+      const saldoPendiente = Number(resumen.saldo_pendiente) || 0;
+      const tieneSaldoPendiente = saldoPendiente > 0;
+
+      if (saleTotalAmount) {
+        saleTotalAmount.textContent = formatCurrencyAmount(resumen.total_venta);
+      }
+
+      if (saleTotalPaidAmount) {
+        saleTotalPaidAmount.textContent = formatCurrencyAmount(resumen.total_pagado);
+      }
+
+      if (saleBalanceAmount) {
+        saleBalanceAmount.textContent = formatCurrencyAmount(saldoPendiente);
+        saleBalanceAmount.classList.toggle('text-danger', tieneSaldoPendiente);
+        saleBalanceAmount.classList.toggle('text-success', !tieneSaldoPendiente);
+      }
+
+      if (saleBalanceLabel) {
+        saleBalanceLabel.classList.toggle('text-danger', tieneSaldoPendiente);
+        saleBalanceLabel.classList.toggle('text-success', !tieneSaldoPendiente);
+      }
+
+      if (saleBalanceCard) {
+        saleBalanceCard.style.background = tieneSaldoPendiente
+          ? 'linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%)'
+          : 'linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%)';
+      }
+
+      if (paymentsBalanceAmount) {
+        paymentsBalanceAmount.textContent = formatCurrencyAmount(saldoPendiente);
+        paymentsBalanceAmount.style.color = tieneSaldoPendiente ? '#d32f2f' : '#4CAF50';
+      }
+    }
 
     // Cuando cambia la clasificación
     if (selectClasificacion) {
@@ -337,7 +384,7 @@
     function updateTotal() {
       if (!inputKg || !inputPrecio) return;
       const kg = parseFloat(inputKg.value) || 0;
-      const precio = parseFloat(inputPrecio.value) || 0;
+      const precio = parseCOP(inputPrecio.value);
       const total = kg * precio;
       
       if (total > 0) {
@@ -358,6 +405,9 @@
         e.preventDefault();
         
         const formData = new FormData(detalleForm);
+        detalleForm.querySelectorAll('input.price-cop').forEach(function(input) {
+          formData.set(input.name, String(parseCOP(input.value)));
+        });
         
         // Validar campos vacíos
         if (!selectClasificacion.value || !inputKg.value || !inputPrecio.value) {
@@ -381,6 +431,7 @@
           if (data.success) {
             // Agregar fila a la tabla
             addDetailRow(data.detalle);
+            updateSaleSummary(data.resumen);
             
             // Limpiar formulario
             detalleForm.reset();
