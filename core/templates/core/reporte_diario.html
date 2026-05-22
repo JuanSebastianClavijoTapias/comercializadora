@@ -282,6 +282,54 @@
 </div>
 {% endif %}
 
+<!-- HISTORIAL DE DÍAS -->
+<div class="row g-4 mt-0">
+  <div class="col-12">
+    <div class="card border-0 shadow-sm" style="border-radius: 12px; overflow: hidden;">
+      <div class="card-header border-bottom-0 bg-white py-3 d-flex align-items-center">
+        <div class="stat-icon-wrapper d-inline-flex me-3 shadow-sm" style="width: 32px; height: 32px; font-size: 1rem; background: rgba(255, 152, 0, 0.2); color: var(--orange-primary);">
+          <i class="bi bi-calendar3"></i>
+        </div>
+        <h6 class="mb-0 fw-bold" style="color: white;">Historial de los últimos 30 días</h6>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-sm align-middle mb-0">
+            <thead class="bg-light">
+              <tr>
+                <th class="ps-3 fw-bold small" style="color: var(--text-secondary);">FECHA</th>
+                <th class="text-end fw-bold small" style="color: var(--text-secondary);">VENTAS EFECTIVO</th>
+                <th class="text-end fw-bold small" style="color: var(--text-secondary);">COBROS CRÉDITO</th>
+                <th class="text-end fw-bold small" style="color: var(--text-secondary);">VENTAS CRÉDITO</th>
+                <th class="text-end fw-bold small" style="color: var(--text-secondary);">GASTOS</th>
+                <th class="text-end pe-3 fw-bold small" style="color: var(--text-secondary);">BALANCE</th>
+              </tr>
+            </thead>
+            <tbody>
+            {% for dia in historial_dias %}
+            <tr style="{% if dia.fecha|date:'Y-m-d' == fecha %}background: rgba(255,152,0,0.08);{% endif %}">
+              <td class="ps-3 small fw-semibold">
+                <a href="?fecha={{ dia.fecha|date:'Y-m-d' }}" style="color: var(--orange-primary); text-decoration: none;">
+                  {{ dia.fecha|date:"d/m/Y" }}
+                </a>
+              </td>
+              <td class="text-end fw-semibold text-success small">${{ dia.efectivo|cop }}</td>
+              <td class="text-end fw-semibold small" style="color: #00897B;">${{ dia.abonos|cop }}</td>
+              <td class="text-end fw-semibold small" style="color: #3f51b5;">${{ dia.credito|cop }}</td>
+              <td class="text-end fw-semibold text-danger small">${{ dia.gastos|cop }}</td>
+              <td class="text-end pe-3 fw-bold small {% if dia.balance >= 0 %}text-success{% else %}text-danger{% endif %}">${{ dia.balance|cop }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="text-center text-muted py-3 small">Sin registros en los últimos 30 días</td></tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 {% endblock %}
 
 

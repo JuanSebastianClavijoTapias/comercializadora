@@ -18,7 +18,7 @@
           {% csrf_token %}
           <div class="row g-3">
             {% for field in form %}
-              <div class="col-12 {% if field.name in 'fecha fecha_vencimiento cliente producto clasificacion kg_vendido precio_por_kg' %}col-md-6{% endif %}">
+              <div class="col-12 {% if field.name in 'fecha cliente producto clasificacion kg_vendido precio_por_kg' %}col-md-6{% endif %}">
                 <label class="form-label form-control-sm text-uppercase fw-semibold mb-1" style="color: var(--text-sec); letter-spacing: 0.5px;">{{ field.label }}</label>
                 
                 {% if field.name == 'fecha' %}

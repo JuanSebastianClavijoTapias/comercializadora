@@ -1186,6 +1186,7 @@ def pago_venta_delete(request, pk):
 # ---- REPORTES ----
 @login_required
 def reporte_diario(request):
+    from collections import defaultdict
     fecha = request.GET.get('fecha', str(date.today()))
     ventas_ef = VentaEfectivo.objects.filter(fecha=fecha)
     ventas_cr = VentaCredito.objects.filter(fecha=fecha)
@@ -1196,11 +1197,63 @@ def reporte_diario(request):
     total_abonos = sum(a.monto for a in abonos)
     total_gastos = sum(g.monto for g in gastos)
     balance = total_efectivo + total_abonos - total_gastos
+
+    # Historial de los últimos 30 días
+    thirty_days_ago = date.today() - timedelta(days=30)
+    ef_by_date = (
+        DetalleVentaEfectivo.objects
+        .filter(venta__fecha__gte=thirty_days_ago)
+        .values('venta__fecha')
+        .annotate(total=Sum(F('kg_vendido') * F('precio_por_kg')))
+    )
+    cr_by_date = (
+        DetalleVentaCredito.objects
+        .filter(venta__fecha__gte=thirty_days_ago)
+        .values('venta__fecha')
+        .annotate(total=Sum(F('kg_vendido') * F('precio_por_kg')))
+    )
+    abonos_by_date = (
+        PagoVentaCredito.objects
+        .filter(fecha__gte=thirty_days_ago)
+        .values('fecha')
+        .annotate(total=Sum('monto'))
+    )
+    gastos_by_date = (
+        Gasto.objects
+        .filter(fecha__gte=thirty_days_ago)
+        .values('fecha')
+        .annotate(total=Sum('monto'))
+    )
+    history_dict = defaultdict(lambda: {
+        'efectivo': Decimal('0'), 'credito': Decimal('0'),
+        'abonos': Decimal('0'), 'gastos': Decimal('0'),
+    })
+    for row in ef_by_date:
+        history_dict[row['venta__fecha']]['efectivo'] = row['total'] or Decimal('0')
+    for row in cr_by_date:
+        history_dict[row['venta__fecha']]['credito'] = row['total'] or Decimal('0')
+    for row in abonos_by_date:
+        history_dict[row['fecha']]['abonos'] = row['total'] or Decimal('0')
+    for row in gastos_by_date:
+        history_dict[row['fecha']]['gastos'] = row['total'] or Decimal('0')
+    historial_dias = sorted([
+        {
+            'fecha': d,
+            'efectivo': v['efectivo'],
+            'credito': v['credito'],
+            'abonos': v['abonos'],
+            'gastos': v['gastos'],
+            'balance': v['efectivo'] + v['abonos'] - v['gastos'],
+        }
+        for d, v in history_dict.items()
+    ], key=lambda x: x['fecha'], reverse=True)
+
     ctx = {
         'fecha': fecha, 'ventas_ef': ventas_ef, 'ventas_cr': ventas_cr,
         'gastos': gastos, 'abonos': abonos,
         'total_efectivo': total_efectivo, 'total_abonos': total_abonos,
         'total_credito': total_credito, 'total_gastos': total_gastos, 'balance': balance,
+        'historial_dias': historial_dias,
     }
     return render(request, 'core/reporte_diario.html', ctx)
 

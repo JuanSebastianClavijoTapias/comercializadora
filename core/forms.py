@@ -156,12 +156,10 @@ class WeeklyInventoryForm(forms.ModelForm):
 class VentaEfectivoForm(forms.ModelForm):
     class Meta:
         model = VentaEfectivo
-        fields = ['fecha', 'cliente', 'descripcion', 'observaciones']
+        fields = ['fecha', 'cliente']
         widgets = {
             'fecha': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'cliente': forms.Select(attrs={'class': 'form-select'}),
-            'descripcion': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Descripción opcional'}),
-            'observaciones': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
         }
 
 class DetalleVentaEfectivoForm(COPInputNormalizationMixin, forms.ModelForm):
@@ -185,12 +183,10 @@ class DetalleVentaEfectivoForm(COPInputNormalizationMixin, forms.ModelForm):
 class VentaCreditoForm(forms.ModelForm):
     class Meta:
         model = VentaCredito
-        fields = ['fecha', 'fecha_vencimiento', 'cliente', 'observaciones']
+        fields = ['fecha', 'cliente']
         widgets = {
             'cliente': forms.Select(attrs={'class': 'form-select'}),
             'fecha': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'fecha_vencimiento': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'observaciones': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
         }
 
 class DetalleVentaCreditoForm(COPInputNormalizationMixin, forms.ModelForm):
