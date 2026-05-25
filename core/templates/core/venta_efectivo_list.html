@@ -4,13 +4,13 @@
 {% block content %}
 
 <!-- TARJETAS DE ESTADÍSTICAS -->
-<div class="row row-cols-1 row-cols-md-3 g-3 mb-4">
+<div class="row row-cols-1 row-cols-md-2 g-3 mb-4">
   <div class="col">
     <div class="stat-card-white h-100">
       <div>
-        <div class="small fw-semibold">Ventas Hoy</div>
+        <div class="small fw-semibold">Total del Día</div>
         <div class="fs-4 fw-bold">${{ total|default:0|cop }}</div>
-        <div class="small">{{ num_ventas|default:0 }} Transacciones</div>
+        <div class="small">{{ num_ventas|default:0 }} registro{% if num_ventas != 1 %}s{% endif %}</div>
       </div>
       <div class="stat-icon-wrapper" style="background: rgba(76, 175, 80, 0.2); color: #4CAF50;">
         <i class="bi bi-cash-coin"></i>
@@ -20,24 +20,12 @@
   <div class="col">
     <div class="stat-card-white h-100">
       <div>
-        <div class="small fw-semibold">Kg Vendidos</div>
-        <div class="fs-4 fw-bold">{{ total_kg|default:0|floatformat:1 }}</div>
-        <div class="small">Kilogramos totales</div>
+        <div class="small fw-semibold">Fecha</div>
+        <div class="fs-4 fw-bold">{{ fecha }}</div>
+        <div class="small">Ventas del día seleccionado</div>
       </div>
       <div class="stat-icon-wrapper" style="background: rgba(255, 107, 53, 0.2); color: var(--orange-primary);">
-        <i class="bi bi-boxes"></i>
-      </div>
-    </div>
-  </div>
-  <div class="col">
-    <div class="stat-card-white h-100">
-      <div>
-        <div class="small fw-semibold">Precio Promedio</div>
-        <div class="fs-4 fw-bold">${{ precio_promedio|default:0|cop }}/kg</div>
-        <div class="small">Por kilogramo</div>
-      </div>
-      <div class="stat-icon-wrapper" style="background: rgba(63, 81, 181, 0.2); color: #3f51b5;">
-        <i class="bi bi-graph-up"></i>
+        <i class="bi bi-calendar-day"></i>
       </div>
     </div>
   </div>
@@ -65,46 +53,35 @@
             <thead class="bg-light">
               <tr>
                 <th class="ps-4 fw-bold small" style="color: var(--text-secondary);">PRODUCTO</th>
-                <th class="fw-bold small" style="color: var(--text-secondary);">CLASIFICACIÓN</th>
-                <th class="fw-bold small" style="color: var(--text-secondary);">CLIENTE</th>
-                <th class="fw-bold small text-end pe-2" style="color: var(--text-secondary);">KG</th>
-                <th class="fw-bold small text-end pe-2" style="color: var(--text-secondary);">$/KG</th>
-                <th class="fw-bold small text-end pe-2" style="color: var(--text-secondary);">MONTO</th>
+                <th class="fw-bold small text-end pe-2" style="color: var(--text-secondary);">TOTAL</th>
                 <th class="text-end pe-4 fw-bold small" style="color: var(--text-secondary);">ACCIONES</th>
               </tr>
             </thead>
             <tbody class="border-top-0">
             {% for v in ventas %}
-              {% for d in v.detalles.all %}
               <tr>
-                <td class="ps-4 fw-semibold" style="color: var(--text-main);">{{ d.clasificacion.producto.nombre }}</td>
-                <td class="text-muted small">{{ d.clasificacion.nombre }}</td>
-                <td>
-                  <span class="badge bg-light text-dark border px-2 py-1" style="border: 1px solid var(--border-light);">
-                    <i class="bi bi-person me-1" style="opacity: 0.5;"></i>{{ v.cliente.nombre|default:"General" }}
-                  </span>
-                </td>
-                <td class="text-end pe-2 fw-semibold" style="color: var(--text-main);">{{ d.kg_vendido }}</td>
-                <td class="text-end pe-2 text-muted small">${{ d.precio_por_kg|default:0|cop }}</td>
+                <td class="ps-4 fw-semibold" style="color: var(--text-main);">{{ v.producto.nombre|default:"—" }}</td>
                 <td class="text-end pe-2">
                   <span class="badge fw-bold px-2 py-1" style="background-color: rgba(76, 175, 80, 0.15); color: #2e7d32; border: 1px solid rgba(76, 175, 80, 0.3);">
-                    ${{ d.total|default:0|cop }}
+                    ${{ v.total|cop }}
                   </span>
                 </td>
                 <td class="text-end pe-4">
-                  <a href="{% url 'detalle_venta_efectivo_delete' d.pk %}" class="btn btn-sm" onclick="return confirm('¿Eliminar este producto?')" style="background-color: #ffebee; color: #d32f2f; border-radius: 6px; padding: 6px 10px; border: none;" title="Eliminar">
+                  <a href="{% url 'venta_efectivo_edit' v.pk %}" class="btn btn-sm me-1" style="background-color: #e3f2fd; color: #1565c0; border-radius: 6px; padding: 6px 10px; border: none;" title="Editar">
+                    <i class="bi bi-pencil"></i>
+                  </a>
+                  <a href="{% url 'venta_efectivo_delete' v.pk %}" class="btn btn-sm" style="background-color: #ffebee; color: #d32f2f; border-radius: 6px; padding: 6px 10px; border: none;" title="Eliminar">
                     <i class="bi bi-trash3"></i>
                   </a>
                 </td>
               </tr>
-              {% endfor %}
             {% empty %}
             <tr>
-              <td colspan="7" class="text-center text-muted py-4">
+              <td colspan="3" class="text-center text-muted py-4">
                 <div class="mb-3">
                   <i class="bi bi-inbox" style="font-size: 2rem; opacity: 0.3;"></i>
                 </div>
-                <p class="mb-0">No hay ventas registradas para este dia</p>
+                <p class="mb-0">No hay ventas registradas para este día</p>
                 <small class="text-muted">Haz clic en "Nueva Venta" para comenzar</small>
               </td>
             </tr>

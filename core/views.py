@@ -20,7 +20,7 @@ def get_week_monday(fecha):
     return fecha - timedelta(days=fecha.weekday())
 
 def get_week_summary_url(week_start):
-    return f"{reverse('inventario_weekly_summary')}?week={week_start.isoformat()}"
+    return f"{reverse('entrada_inventario_list')}?week={week_start.isoformat()}"
 
 def parse_week_start(raw_value):
     if not raw_value:
@@ -39,23 +39,6 @@ def get_or_create_weekly_inventory_for_monday(lunes):
         week_start=lunes,
         defaults={'initial_inventory_kg': Decimal('0')}
     )
-
-    should_seed = created or (
-        weekly.initial_inventory_kg == 0 and
-        lunes == get_week_monday(date.today()) and
-        date.today() == lunes
-    )
-    if should_seed and weekly.initial_inventory_kg == 0:
-        prev_weekly = WeeklyInventory.objects.filter(week_start=lunes - timedelta(days=7)).first()
-        if prev_weekly:
-            weekly.initial_inventory_kg = prev_weekly.total_inventory_kg
-            weekly.save()
-        elif lunes == get_week_monday(date.today()):
-            current_stock = sum(c.stock_kg for c in Clasificacion.objects.filter(activo=True)) or Decimal('0')
-            if current_stock > 0:
-                weekly.initial_inventory_kg = current_stock
-                weekly.save()
-
     return weekly, created
 
 def get_or_create_weekly_inventory(fecha):
@@ -65,13 +48,23 @@ def get_or_create_weekly_inventory(fecha):
 def get_week_inventory_data(fecha):
     lunes = get_week_monday(fecha)
     domingo = lunes + timedelta(days=6)
-    weekly, _ = get_or_create_weekly_inventory_for_monday(lunes)
+    weekly = WeeklyInventory.objects.filter(week_start=lunes).first()
 
+    if weekly:
+        initial_inventory_kg = weekly.initial_inventory_kg
+        total_inventory_kg = weekly.total_inventory_kg
+    else:
+        initial_inventory_kg = Decimal('0')
+        pesadas = PesadaEntrada.objects.filter(entrada__fecha__range=[lunes, domingo])
+        entradas_kg = sum(p.kg_neto for p in pesadas) or Decimal('0')
+        lotes = LoteClasificacion.objects.filter(viaje__fecha__range=[lunes, domingo])
+        viajes_kg = sum(l.kg_neto for l in lotes) or Decimal('0')
+        total_inventory_kg = entradas_kg + viajes_kg
     return {
         'week_monday': lunes,
         'week_sunday': domingo,
-        'initial_inventory_kg': weekly.initial_inventory_kg,
-        'total_inventory_kg': weekly.total_inventory_kg,
+        'initial_inventory_kg': initial_inventory_kg,
+        'total_inventory_kg': total_inventory_kg,
         'weekly_record': weekly,
     }
 
@@ -89,7 +82,7 @@ def get_current_week_inventory_data():
 
 def get_weekly_history():
     week_starts = set(WeeklyInventory.objects.values_list('week_start', flat=True))
-    for model in (Gasto, VentaEfectivo, VentaCredito, PagoVentaCredito, Viaje):
+    for model in (Gasto, VentaEfectivo, VentaCredito, PagoVentaCredito, Viaje, EntradaInventario):
         week_starts.update(model.objects.dates('fecha', 'week'))
 
     if not week_starts:
@@ -882,6 +875,22 @@ def weekly_inventory_edit(request, pk):
     })
 
 @login_required
+def weekly_inventory_delete(request, pk):
+    weekly = get_object_or_404(WeeklyInventory, pk=pk)
+    back_href = get_week_summary_url(weekly.week_start)
+
+    if request.method == 'POST':
+        weekly.delete()
+        messages.success(request, 'Semana eliminada del historial.')
+        return redirect(reverse('entrada_inventario_list'))
+
+    return render(request, 'core/confirm_delete.html', {
+        'obj': weekly,
+        'titulo': f'Eliminar semana {weekly.week_start.strftime("%d/%m/%Y")}',
+        'back_href': back_href,
+    })
+
+@login_required
 def nomina_edit(request, pk):
     nomina = get_object_or_404(
         Gasto.objects.select_related('categoria'),
@@ -928,17 +937,40 @@ def nomina_delete(request, pk):
 @login_required
 def venta_efectivo_create(request):
     if request.method == 'POST':
+        fecha_val = request.POST.get('fecha', '').strip()
+        if fecha_val:
+            existing = VentaEfectivo.objects.filter(fecha=fecha_val).first()
+            if existing:
+                messages.warning(request, 'Ya existe una venta para esa fecha. Puedes editarla aquí.')
+                return redirect('venta_efectivo_edit', pk=existing.pk)
         form = VentaEfectivoForm(request.POST)
         if form.is_valid():
-            venta = form.save()
-            messages.success(request, 'Venta en efectivo creada. Ahora agrega los productos vendidos.')
-            return redirect('venta_efectivo_detail', pk=venta.pk)
+            form.save()
+            messages.success(request, 'Venta en efectivo registrada.')
+            return redirect('venta_efectivo_list')
     else:
         form = VentaEfectivoForm(initial={'fecha': date.today()})
     return render(request, 'core/form_generic.html', {
         'form': form,
         'titulo': 'Nueva Venta en Efectivo',
         'back_url': 'venta_efectivo_list'
+    })
+
+@login_required
+def venta_efectivo_edit(request, pk):
+    obj = get_object_or_404(VentaEfectivo, pk=pk)
+    if request.method == 'POST':
+        form = VentaEfectivoForm(request.POST, instance=obj)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Venta actualizada.')
+            return redirect('venta_efectivo_list')
+    else:
+        form = VentaEfectivoForm(instance=obj)
+    return render(request, 'core/form_generic.html', {
+        'form': form,
+        'titulo': 'Editar Venta en Efectivo',
+        'back_url': 'venta_efectivo_list',
     })
 
 @login_required
@@ -1021,20 +1053,14 @@ def detalle_venta_efectivo_delete(request, pk):
 @login_required
 def venta_efectivo_list(request):
     fecha = request.GET.get('fecha', str(date.today()))
-    # Filtrar solo ventas que tengan detalles (no vacías)
-    ventas = VentaEfectivo.objects.filter(fecha=fecha).prefetch_related('detalles').annotate(num_detalles=models.Count('detalles')).filter(num_detalles__gt=0)
+    ventas = VentaEfectivo.objects.filter(fecha=fecha).select_related('producto').order_by('-pk')
     total = sum(v.total for v in ventas)
-    total_kg = sum(sum(d.kg_vendido for d in v.detalles.all()) for v in ventas)
-    precio_promedio = (total / total_kg) if total_kg > 0 else 0
     num_ventas = len(ventas)
-    
     ctx = {
         'ventas': ventas,
         'total': total,
-        'total_kg': total_kg,
-        'precio_promedio': precio_promedio,
         'num_ventas': num_ventas,
-        'fecha': fecha
+        'fecha': fecha,
     }
     return render(request, 'core/venta_efectivo_list.html', ctx)
 
@@ -1272,6 +1298,19 @@ def reporte_proveedor(request):
     return render(request, 'core/reporte_proveedor.html', {'viajes': viajes, 'pendientes': pendientes, 'total_deuda': total_deuda})
 
 # ---- RESUMEN SEMANAL ----
+
+def _week_has_data(lunes):
+    """Devuelve True si existe algún registro con fecha en esa semana."""
+    domingo = lunes + timedelta(days=6)
+    rango = [lunes, domingo]
+    return (
+        EntradaInventario.objects.filter(fecha__range=rango).exists() or
+        VentaEfectivo.objects.filter(fecha__range=rango).exists() or
+        VentaCredito.objects.filter(fecha__range=rango).exists() or
+        Gasto.objects.filter(fecha__range=rango).exists() or
+        WeeklyInventory.objects.filter(week_start=lunes).exists()
+    )
+
 @login_required
 def inventario_weekly_summary(request):
     """Vista para mostrar resumen, historial y edición de métricas semanales."""
@@ -1336,10 +1375,16 @@ def inventario_weekly_summary(request):
     desechos_semana = viajes_semana.filter(kg_podridos__gt=0)
     total_kg_podridos = sum(v.kg_podridos for v in desechos_semana) or Decimal('0')
 
-    compras_semana = LoteClasificacion.objects.filter(
-        viaje__fecha__range=[inicio_semana, fin_semana]
-    ).select_related('viaje__proveedor', 'clasificacion__producto').order_by('-viaje__fecha', '-id')
-    compras_semana_kg = sum(lote.kg_neto for lote in compras_semana) or Decimal('0')
+    compras_semana = EntradaInventario.objects.filter(
+        fecha__range=[inicio_semana, fin_semana]
+    ).select_related('proveedor', 'clasificacion').prefetch_related('pesadas').order_by('-fecha', '-id')
+    compras_semana_kg = sum(e.kg for e in compras_semana) or Decimal('0')
+    total_compras_semana = sum(e.total for e in compras_semana) or Decimal('0')
+
+    viajes_kg_semana = sum(
+        sum(l.kg_neto for l in v.lotes.all()) for v in viajes_semana
+    ) or Decimal('0')
+    total_kg_ingresado_semana = compras_semana_kg + viajes_kg_semana
 
     balance_neto = total_ventas_semana - total_gastos_semana - monto_nomina
     dias_nomina = [10, 20, 30]
@@ -1360,6 +1405,7 @@ def inventario_weekly_summary(request):
         'weekly_record': weekly_record,
         'current_week_start': current_week_start,
         'previous_week_start': inicio_semana - timedelta(days=7),
+        'previous_week_has_data': _week_has_data(inicio_semana - timedelta(days=7)),
         'next_week_start': next_week_start,
         'selected_week_is_current': inicio_semana == current_week_start,
         'total_gastos_semana': total_gastos_semana,
@@ -1383,6 +1429,11 @@ def inventario_weekly_summary(request):
         'initial_inventory_kg': weekly_inv['initial_inventory_kg'],
         'total_inventory_kg': weekly_inv['total_inventory_kg'],
         'compras_semana_kg': compras_semana_kg,
+        'total_compras_semana': total_compras_semana,
+        'viajes_semana': viajes_semana,
+        'total_viajes_semana': sum(v.precio_total_acordado for v in viajes_semana) or Decimal('0'),
+        'viajes_kg_semana': viajes_kg_semana,
+        'total_kg_ingresado_semana': total_kg_ingresado_semana,
         'gastos_semana': gastos_operativos_semana,
         'nominas_semana': nominas_semana,
         'ventas_efectivo_semana': ventas_efectivo_semana,
@@ -1395,3 +1446,244 @@ def inventario_weekly_summary(request):
     }
 
     return render(request, 'core/inventario_weekly_summary.html', ctx)
+
+
+# ---- ENTRADAS DE INVENTARIO ----
+@login_required
+def entrada_inventario_list(request):
+    return inventario_weekly_summary(request)
+
+
+@login_required
+def entrada_inventario_create(request):
+    proveedores = Proveedor.objects.order_by('nombre')
+    clasificaciones = Clasificacion.objects.select_related('producto').order_by('producto__nombre', 'nombre')
+
+    if request.method == 'POST':
+        form_type = request.POST.get('form_type', 'entrada')
+
+        if form_type == 'nomina':
+            nomina_form = NominaForm(request.POST)
+            desecho_form = DesechoForm()
+            if nomina_form.is_valid():
+                nomina = nomina_form.save(commit=False)
+                nomina.categoria = get_nomina_category()
+                nomina.save()
+                messages.success(request, 'Nómina registrada correctamente.')
+                return redirect('entrada_inventario_create')
+            return render(request, 'core/entrada_inventario_nueva.html', {
+                'proveedores': proveedores, 'clasificaciones': clasificaciones,
+                'fecha_default': date.today().isoformat(),
+                'nomina_form': nomina_form, 'desecho_form': desecho_form,
+            })
+
+        if form_type == 'desecho':
+            nomina_form = NominaForm(initial={'fecha': date.today()})
+            desecho_form = DesechoForm(request.POST)
+            if desecho_form.is_valid():
+                desecho_form.save()
+                messages.success(request, 'Desecho registrado correctamente.')
+                return redirect('entrada_inventario_create')
+            return render(request, 'core/entrada_inventario_nueva.html', {
+                'proveedores': proveedores, 'clasificaciones': clasificaciones,
+                'fecha_default': date.today().isoformat(),
+                'nomina_form': nomina_form, 'desecho_form': desecho_form,
+            })
+
+        # --- Entrada de inventario (default) ---
+        form_errors = []
+        fecha = request.POST.get('fecha', '').strip()
+        proveedor_id = request.POST.get('proveedor', '').strip()
+
+        if not fecha:
+            form_errors.append('La fecha es requerida.')
+        if not proveedor_id:
+            form_errors.append('El proveedor es requerido.')
+
+        # Parse pesada rows
+        rows = []
+        i = 0
+        while f'kg_bruto_{i}' in request.POST:
+            kg_val = request.POST.get(f'kg_bruto_{i}', '').strip()
+            if kg_val:
+                cid = request.POST.get(f'clasificacion_{i}', '').strip()
+                precio_raw = request.POST.get(f'precio_por_kg_{i}', '0').strip().replace('.', '')
+                try:
+                    precio_val = Decimal(precio_raw) if precio_raw else Decimal('0')
+                except InvalidOperation:
+                    precio_val = Decimal('0')
+                rows.append({
+                    'clasificacion_id': cid,
+                    'num_canastillas_negras': int(request.POST.get(f'num_canastillas_negras_{i}', 0) or 0),
+                    'num_canastillas_colores': int(request.POST.get(f'num_canastillas_colores_{i}', 0) or 0),
+                    'kg_bruto': kg_val,
+                })
+            i += 1
+
+        if not rows:
+            form_errors.append('Debes registrar al menos una pesada con Kg Bruto.')
+        for r in rows:
+            if not r['clasificacion_id']:
+                form_errors.append('Todas las filas deben tener una clasificación seleccionada.')
+                break
+
+        if not form_errors:
+            from collections import defaultdict
+            groups = defaultdict(list)
+            for row in rows:
+                groups[row['clasificacion_id']].append(row)
+
+            # Read precio per classification from receipt inputs
+            precios = {}
+            for cid in groups.keys():
+                precio_raw = request.POST.get(f'precio_clasif_{cid}', '0').strip().replace('.', '')
+                try:
+                    precio_val = Decimal(precio_raw) if precio_raw else Decimal('0')
+                    if precio_val > 0:
+                        precios[cid] = precio_val
+                except InvalidOperation:
+                    pass
+            try:
+                with transaction.atomic():
+                    last_pk = None
+                    for cid, group_rows in groups.items():
+                        entrada = EntradaInventario(
+                            fecha=fecha,
+                            proveedor_id=int(proveedor_id),
+                            clasificacion_id=int(cid),
+                            precio_por_kg=precios.get(cid, Decimal('0')),
+                        )
+                        entrada.full_clean()
+                        entrada.save()
+                        for row in group_rows:
+                            PesadaEntrada.objects.create(
+                                entrada=entrada,
+                                num_canastillas_negras=row['num_canastillas_negras'],
+                                num_canastillas_colores=row['num_canastillas_colores'],
+                                kg_bruto=Decimal(row['kg_bruto']),
+                            )
+                        last_pk = entrada.pk
+                messages.success(request, 'Entrada registrada correctamente.')
+                if last_pk and len(groups) == 1:
+                    return redirect('entrada_inventario_detail', pk=last_pk)
+                return redirect('entrada_inventario_list')
+            except Exception as e:
+                form_errors.append(f'Error al guardar: {e}')
+
+        return render(request, 'core/entrada_inventario_nueva.html', {
+            'proveedores': proveedores,
+            'clasificaciones': clasificaciones,
+            'form_errors': form_errors,
+            'fecha_default': request.POST.get('fecha', date.today().isoformat()),
+            'proveedor_selected': proveedor_id,
+            'nomina_form': NominaForm(initial={'fecha': date.today()}),
+            'desecho_form': DesechoForm(),
+        })
+
+    return render(request, 'core/entrada_inventario_nueva.html', {
+        'proveedores': proveedores,
+        'clasificaciones': clasificaciones,
+        'fecha_default': date.today().isoformat(),
+        'nomina_form': NominaForm(initial={'fecha': date.today()}),
+        'desecho_form': DesechoForm(),
+    })
+
+
+@login_required
+def entrada_inventario_detail(request, pk):
+    entrada = get_object_or_404(EntradaInventario.objects.select_related('proveedor', 'clasificacion__producto').prefetch_related('pesadas'), pk=pk)
+    pesadas = entrada.pesadas.all()
+
+    # Actualizar precio si se envía
+    if request.method == 'POST' and request.POST.get('form_type') == 'precio':
+        precio_form = EntradaInventarioForm(request.POST, instance=entrada)
+        if precio_form.is_valid():
+            precio_form.save()
+            messages.success(request, 'Datos de la entrada actualizados.')
+            return redirect('entrada_inventario_detail', pk=pk)
+    else:
+        precio_form = EntradaInventarioForm(instance=entrada)
+
+    kg_bruto_total = sum(p.kg_bruto for p in pesadas)
+    peso_total_canastillas = sum(p.peso_canastillas for p in pesadas)
+    kg_neto_total = entrada.kg
+    cant_neg = sum(p.num_canastillas_negras for p in pesadas)
+    cant_col = sum(p.num_canastillas_colores for p in pesadas)
+
+    return render(request, 'core/entrada_inventario_detail.html', {
+        'entrada': entrada,
+        'pesadas': pesadas,
+        'precio_form': precio_form,
+        'kg_bruto_total': kg_bruto_total,
+        'peso_total_canastillas': peso_total_canastillas,
+        'kg_neto_total': kg_neto_total,
+        'cant_neg': cant_neg,
+        'cant_col': cant_col,
+    })
+
+
+@login_required
+def pesada_entrada_add(request, pk):
+    entrada = get_object_or_404(EntradaInventario, pk=pk)
+    if request.method == 'POST':
+        if 'kg_bruto_0' in request.POST:
+            guardadas = 0
+            i = 0
+            while f'kg_bruto_{i}' in request.POST:
+                kg_bruto_val = request.POST.get(f'kg_bruto_{i}', '').strip()
+                if kg_bruto_val:
+                    data = {
+                        'num_canastillas_negras': request.POST.get(f'num_canastillas_negras_{i}', '') or 0,
+                        'num_canastillas_colores': request.POST.get(f'num_canastillas_colores_{i}', '') or 0,
+                        'kg_bruto': kg_bruto_val,
+                    }
+                    form = PesadaEntradaForm(data)
+                    if form.is_valid():
+                        p = form.save(commit=False)
+                        p.entrada = entrada
+                        p.save()
+                        guardadas += 1
+                i += 1
+            if guardadas:
+                messages.success(request, f'{guardadas} pesada{"s" if guardadas > 1 else ""} registrada{"s" if guardadas > 1 else ""}.')
+            else:
+                messages.warning(request, 'No se ingresó ningún Kg Bruto válido.')
+    return redirect('entrada_inventario_detail', pk=pk)
+
+
+@login_required
+def pesada_entrada_delete(request, pk):
+    pesada = get_object_or_404(PesadaEntrada, pk=pk)
+    entrada_pk = pesada.entrada_id
+    pesada.delete()
+    messages.success(request, 'Pesada eliminada.')
+    return redirect('entrada_inventario_detail', pk=entrada_pk)
+
+
+@login_required
+def entrada_inventario_edit(request, pk):
+    entrada = get_object_or_404(EntradaInventario, pk=pk)
+    form = EntradaInventarioForm(request.POST or None, instance=entrada)
+    if form.is_valid():
+        form.save()
+        messages.success(request, 'Entrada actualizada.')
+        return redirect('entrada_inventario_detail', pk=pk)
+    return render(request, 'core/form_generic.html', {
+        'form': form,
+        'titulo': 'Editar Entrada de Inventario',
+        'back_url': 'entrada_inventario_list',
+    })
+
+
+@login_required
+def entrada_inventario_delete(request, pk):
+    entrada = get_object_or_404(EntradaInventario, pk=pk)
+    if request.method == 'POST':
+        entrada.delete()
+        messages.success(request, 'Entrada eliminada.')
+        return redirect('entrada_inventario_list')
+    return render(request, 'core/confirm_delete.html', {
+        'obj': entrada,
+        'titulo': 'Eliminar Entrada de Inventario',
+        'back_href': reverse('entrada_inventario_list'),
+    })

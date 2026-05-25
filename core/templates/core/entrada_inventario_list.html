@@ -1,0 +1,130 @@
+{% extends 'core/base.html' %}
+{% load cop_filters %}
+{% block title %}Entradas de Inventario{% endblock %}
+{% block page_title %}<i class="bi bi-box-seam me-2"></i>Entradas de Inventario{% endblock %}
+
+{% block content %}
+
+<!-- ESTADÍSTICAS -->
+<div class="row row-cols-1 row-cols-md-3 g-3 mb-4">
+  <div class="col">
+    <div class="stat-card-white h-100">
+      <div>
+        <div class="small fw-semibold">Total Entradas</div>
+        <div class="fs-4 fw-bold">{{ entradas|length }}</div>
+        <div class="small">Registros</div>
+      </div>
+      <div class="stat-icon-wrapper" style="background: rgba(2,136,209,0.15); color: #0288D1;">
+        <i class="bi bi-archive"></i>
+      </div>
+    </div>
+  </div>
+  <div class="col">
+    <div class="stat-card-white h-100">
+      <div>
+        <div class="small fw-semibold">Total Kg Ingresados</div>
+        <div class="fs-4 fw-bold">{{ total_kg|floatformat:2 }} kg</div>
+        <div class="small">Acumulado</div>
+      </div>
+      <div class="stat-icon-wrapper" style="background: rgba(76,175,80,0.15); color: #388E3C;">
+        <i class="bi bi-speedometer2"></i>
+      </div>
+    </div>
+  </div>
+  <div class="col">
+    <div class="stat-card-white h-100">
+      <div>
+        <div class="small fw-semibold">Valor Total</div>
+        <div class="fs-4 fw-bold">${{ total_valor|cop }}</div>
+        <div class="small">Suma de totales</div>
+      </div>
+      <div class="stat-icon-wrapper" style="background: rgba(255,107,53,0.15); color: var(--orange-primary);">
+        <i class="bi bi-currency-dollar"></i>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="d-flex justify-content-end mb-3">
+  <a href="{% url 'entrada_inventario_create' %}" class="btn text-white fw-semibold" style="background: linear-gradient(135deg, #0288D1 0%, #01579B 100%); border: none; border-radius: 8px; box-shadow: 0 4px 12px rgba(2,136,209,0.25);">
+    <i class="bi bi-plus-lg me-2"></i>Nueva Entrada
+  </a>
+</div>
+
+<!-- TABLA DE ENTRADAS -->
+<div class="card border-0 shadow-sm" style="border-radius: 14px; overflow: hidden;">
+  <div class="card-header py-3 bg-white border-bottom d-flex justify-content-between align-items-center">
+    <h6 class="mb-0 fw-bold">Historial de Entradas</h6>
+    <span class="badge rounded-pill" style="background: rgba(2,136,209,0.12); color: #0288D1;">{{ entradas|length }} registros</span>
+  </div>
+  <div class="card-body p-0">
+    {% if entradas %}
+    <div class="table-responsive">
+      <table class="table table-hover mb-0 align-middle" style="font-size: 0.88rem;">
+        <thead style="background: var(--bg-base); color: var(--text-sec);">
+          <tr>
+            <th class="ps-3 py-3">Fecha</th>
+            <th>Proveedor</th>
+            <th>Clasificación</th>
+            <th class="text-end">Pesadas</th>
+            <th class="text-end">Kg Neto</th>
+            <th class="text-end">Precio/kg</th>
+            <th class="text-end">Total</th>
+            <th class="text-center">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for entrada in entradas %}
+          <tr>
+            <td class="ps-3 text-muted small">{{ entrada.fecha|date:"d/m/Y" }}</td>
+            <td class="fw-semibold">{{ entrada.proveedor.nombre }}</td>
+            <td>
+              <span class="badge rounded-pill" style="background: rgba(76,175,80,0.12); color: #388E3C; font-size: 0.8rem;">
+                {{ entrada.clasificacion.producto.nombre }} — {{ entrada.clasificacion.nombre }}
+              </span>
+            </td>
+            <td class="text-end text-muted">{{ entrada.pesadas.count }}</td>
+            <td class="text-end fw-semibold">{{ entrada.kg|floatformat:2 }} kg</td>
+            <td class="text-end text-muted">{% if entrada.precio_por_kg > 0 %}${{ entrada.precio_por_kg|cop }}{% else %}<span class="text-warning small">Sin precio</span>{% endif %}</td>
+            <td class="text-end fw-bold" style="color: #0288D1;">{% if entrada.precio_por_kg > 0 %}${{ entrada.total|cop }}{% else %}–{% endif %}</td>
+            <td class="text-center">
+              <div class="d-flex justify-content-center gap-1">
+                <a href="{% url 'entrada_inventario_detail' entrada.pk %}" class="btn btn-sm btn-outline-primary" style="border-radius: 6px; padding: 0.2rem 0.5rem;" title="Ver / agregar pesadas">
+                  <i class="bi bi-eye"></i>
+                </a>
+                <a href="{% url 'entrada_inventario_delete' entrada.pk %}" class="btn btn-sm btn-outline-danger" style="border-radius: 6px; padding: 0.2rem 0.5rem;" title="Eliminar"
+                   onclick="return confirm('¿Eliminar esta entrada y todas sus pesadas?')">
+                  <i class="bi bi-trash"></i>
+                </a>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot style="background: var(--bg-base); font-weight: 700;">
+          <tr>
+            <td colspan="4" class="ps-3 py-3 text-end small text-muted text-uppercase">Totales</td>
+            <td class="text-end">{{ total_kg|floatformat:2 }} kg</td>
+            <td></td>
+            <td class="text-end" style="color: #0288D1;">${{ total_valor|cop }}</td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-center py-5 text-muted">
+      <i class="bi bi-box-seam fs-1 d-block mb-3" style="opacity: 0.3;"></i>
+      <p class="mb-2">No hay entradas de inventario registradas.</p>
+      <a href="{% url 'entrada_inventario_create' %}" class="btn btn-primary btn-sm">
+        <i class="bi bi-plus-lg me-1"></i>Crear primera entrada
+      </a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}
+
+
+    

@@ -153,14 +153,67 @@ class WeeklyInventoryForm(forms.ModelForm):
             'initial_inventory_kg': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0'}),
         }
 
-class VentaEfectivoForm(forms.ModelForm):
+
+class DesechoForm(forms.ModelForm):
     class Meta:
-        model = VentaEfectivo
-        fields = ['fecha', 'cliente']
+        model = DesechoInventario
+        fields = ['fecha', 'clasificacion', 'kg', 'observaciones']
         widgets = {
             'fecha': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'cliente': forms.Select(attrs={'class': 'form-select'}),
+            'clasificacion': forms.Select(attrs={'class': 'form-select'}),
+            'kg': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0', 'placeholder': '0.00'}),
+            'observaciones': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Motivo (opcional)'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['clasificacion'].queryset = Clasificacion.objects.filter(
+            activo=True
+        ).select_related('producto').order_by('producto__nombre', 'nombre')
+
+class EntradaInventarioForm(COPInputNormalizationMixin, forms.ModelForm):
+    cop_fields = ('precio_por_kg',)
+
+    class Meta:
+        model = EntradaInventario
+        fields = ['fecha', 'proveedor', 'clasificacion', 'precio_por_kg', 'observaciones']
+        widgets = {
+            'fecha': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'proveedor': forms.Select(attrs={'class': 'form-select'}),
+            'clasificacion': forms.Select(attrs={'class': 'form-select'}),
+            'precio_por_kg': forms.TextInput(attrs={'class': 'form-control price-cop', 'inputmode': 'numeric', 'autocomplete': 'off', 'placeholder': 'Precio por kg'}),
+            'observaciones': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Observaciones opcionales...'}),
+        }
+
+
+class PesadaEntradaForm(forms.ModelForm):
+    class Meta:
+        model = PesadaEntrada
+        fields = ['num_canastillas_negras', 'num_canastillas_colores', 'kg_bruto']
+        widgets = {
+            'num_canastillas_negras': forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'min': '0', 'placeholder': '0'}),
+            'num_canastillas_colores': forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'min': '0', 'placeholder': '0'}),
+            'kg_bruto': forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'min': '0', 'step': '0.01', 'placeholder': '0.00'}),
+        }
+
+class VentaEfectivoForm(COPInputNormalizationMixin, forms.ModelForm):
+    cop_fields = ('total_dia',)
+
+    class Meta:
+        model = VentaEfectivo
+        fields = ['fecha', 'producto', 'total_dia']
+        widgets = {
+            'fecha': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'producto': forms.Select(attrs={'class': 'form-select'}),
+            'total_dia': forms.TextInput(attrs={'class': 'form-control price-cop', 'inputmode': 'numeric', 'placeholder': 'Total del día'}),
+        }
+        labels = {
+            'total_dia': 'Total del día',
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['producto'].queryset = Producto.objects.filter(activo=True).order_by('nombre')
 
 class DetalleVentaEfectivoForm(COPInputNormalizationMixin, forms.ModelForm):
     cop_fields = ('precio_por_kg',)

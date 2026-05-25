@@ -73,9 +73,11 @@
   </a>
 
   <div class="weekly-toolbar d-flex flex-wrap gap-2">
+    {% if previous_week_has_data %}
     <a href="?week={{ previous_week_start|date:'Y-m-d' }}" class="btn btn-outline-secondary btn-sm">
       <i class="bi bi-chevron-left me-1"></i>Semana anterior
     </a>
+    {% endif %}
     {% if next_week_start %}
     <a href="?week={{ next_week_start|date:'Y-m-d' }}" class="btn btn-outline-secondary btn-sm">
       Semana siguiente<i class="bi bi-chevron-right ms-1"></i>
@@ -86,8 +88,13 @@
       <i class="bi bi-calendar-week me-1"></i>Semana actual
     </a>
     {% endif %}
+    {% if weekly_record %}
     <a href="{% url 'weekly_inventory_edit' weekly_record.pk %}" class="btn btn-outline-primary btn-sm">
       <i class="bi bi-pencil-square me-1"></i>Editar inventario
+    </a>
+    {% endif %}
+    <a href="{% url 'entrada_inventario_create' %}" class="btn btn-sm text-white" style="background:linear-gradient(135deg,#0288D1 0%,#01579B 100%);border:none;">
+      <i class="bi bi-plus-lg me-1"></i>Nueva Entrada
     </a>
   </div>
 </div>
@@ -113,8 +120,10 @@
   </div>
 
   <div class="text-md-end small text-muted">
+    {% if weekly_record %}
     <div>Registro semanal actualizado</div>
     <strong>{{ weekly_record.updated_at|date:"d/m/Y H:i" }}</strong>
+    {% endif %}
   </div>
 </div>
 
@@ -252,10 +261,25 @@
         <div>
           <div class="small fw-semibold" style="color: white;">Inventario Total</div>
           <div class="fs-4 fw-bold" style="color: white;">{{ total_inventory_kg|floatformat:0 }} kg</div>
-          <div class="small" style="color: rgba(255,255,255,0.9);">{{ compras_semana_kg|floatformat:0 }} kg comprados</div>
+          <div class="small" style="color: rgba(255,255,255,0.9);">{{ total_kg_ingresado_semana|floatformat:0 }} kg ingresados</div>
         </div>
         <div class="stat-icon-wrapper" style="background: rgba(255,255,255,0.25); color: white;">
           <i class="bi bi-stack"></i>
+        </div>
+      </div>
+    </button>
+  </div>
+
+  <div class="col">
+    <button type="button" class="stat-card-white weekly-card-trigger h-100" data-bs-toggle="modal" data-bs-target="#modalViajes" style="background: linear-gradient(135deg, #E65100 0%, #BF360C 100%);">
+      <div class="d-flex justify-content-between align-items-start gap-3">
+        <div>
+          <div class="small fw-semibold" style="color: white;">Compras (Viajes)</div>
+          <div class="fs-4 fw-bold" style="color: white;">${{ total_viajes_semana|cop }}</div>
+          <div class="small" style="color: rgba(255,255,255,0.9);">{{ viajes_semana|length }} viaje{{ viajes_semana|length|pluralize:"s" }}</div>
+        </div>
+        <div class="stat-icon-wrapper" style="background: rgba(255,255,255,0.25); color: white;">
+          <i class="bi bi-truck"></i>
         </div>
       </div>
     </button>
@@ -297,10 +321,12 @@
                 </td>
                 <td>
                   {% if item.record %}
-                  <div class="fw-semibold">{{ item.initial_inventory_kg|floatformat:0 }} kg</div>
-                  <div class="small text-muted">Total: {{ item.total_inventory_kg|floatformat:0 }} kg</div>
+                  <div class="fw-semibold">{{ item.total_inventory_kg|floatformat:0 }} kg</div>
+                  {% if item.initial_inventory_kg %}
+                  <div class="small text-muted">Inicial: {{ item.initial_inventory_kg|floatformat:0 }} kg</div>
+                  {% endif %}
                   {% else %}
-                  <span class="text-muted">Se crea al abrir la semana</span>
+                  <span class="text-muted">Sin ajuste manual</span>
                   {% endif %}
                 </td>
                 <td>
@@ -314,6 +340,9 @@
                     {% if item.record %}
                     <a href="{% url 'weekly_inventory_edit' item.record.pk %}" class="btn btn-outline-secondary" title="Editar inventario">
                       <i class="bi bi-pencil"></i>
+                    </a>
+                    <a href="{% url 'weekly_inventory_delete' item.record.pk %}" class="btn btn-outline-danger" title="Eliminar semana">
+                      <i class="bi bi-trash3"></i>
                     </a>
                     {% endif %}
                   </div>
@@ -337,47 +366,7 @@
   </div>
 
   <div class="col-lg-5" id="nominas-section">
-    <div class="card border-0 shadow-sm weekly-form-card" style="border-radius: 16px; overflow: hidden;">
-      <div class="card-header py-3" style="background: linear-gradient(135deg, #F57C00 0%, #FB8C00 100%);">
-        <h6 class="mb-0 fw-bold text-white"><i class="bi bi-person-lines-fill me-2"></i>Agregar Nómina a la Semana</h6>
-      </div>
-      <div class="card-body p-4">
-        <form method="post" class="row g-3">
-          {% csrf_token %}
-          <input type="hidden" name="form_type" value="nomina">
-
-          <div class="col-12">
-            <label class="form-label fw-semibold small text-uppercase">Descripción</label>
-            {{ nomina_form.descripcion }}
-            {% if nomina_form.descripcion.errors %}<div class="text-danger small mt-1">{{ nomina_form.descripcion.errors }}</div>{% endif %}
-          </div>
-
-          <div class="col-md-6">
-            <label class="form-label fw-semibold small text-uppercase">Monto</label>
-            {{ nomina_form.monto }}
-            {% if nomina_form.monto.errors %}<div class="text-danger small mt-1">{{ nomina_form.monto.errors }}</div>{% endif %}
-          </div>
-
-          <div class="col-md-6">
-            <label class="form-label fw-semibold small text-uppercase">Fecha</label>
-            {{ nomina_form.fecha }}
-            {% if nomina_form.fecha.errors %}<div class="text-danger small mt-1">{{ nomina_form.fecha.errors }}</div>{% endif %}
-          </div>
-
-          <div class="col-12">
-            <button type="submit" class="btn btn-warning w-100 fw-semibold text-white">
-              <i class="bi bi-plus-lg me-1"></i>Guardar nómina
-            </button>
-          </div>
-        </form>
-
-        <div class="weekly-mini-note p-3 mt-3 small text-muted">
-          Las nóminas se guardan como gastos con categoría <strong>Nómina</strong> para que aparezcan en el historial, balance y modales del resumen semanal.
-        </div>
-      </div>
-    </div>
-
-    <div class="card border-0 shadow-sm mt-4" style="border-radius: 16px; overflow: hidden;">
+    <div class="card border-0 shadow-sm" style="border-radius: 16px; overflow: hidden;">
       <div class="card-header py-3 bg-white border-bottom-0 d-flex justify-content-between align-items-center">
         <h6 class="mb-0 fw-bold"><i class="bi bi-list-check me-2"></i>Nóminas Registradas</h6>
         <span class="badge rounded-pill text-bg-warning">${{ monto_nomina|cop }}</span>
@@ -409,6 +398,114 @@
         {% endfor %}
       </div>
     </div>
+  </div>
+</div>
+
+<div class="card border-0 shadow-sm mb-4" style="border-radius: 16px; overflow: hidden;">
+  <div class="card-header py-3 d-flex justify-content-between align-items-center" style="background: linear-gradient(135deg, #E65100 0%, #BF360C 100%);">
+    <h6 class="mb-0 fw-bold text-white"><i class="bi bi-truck me-2"></i>Compras a Proveedores (Viajes)</h6>
+    <div class="d-flex gap-2 align-items-center">
+      <span class="badge rounded-pill text-bg-light">{{ viajes_semana|length }} viaje{{ viajes_semana|length|pluralize:"s" }}</span>
+      <span class="badge rounded-pill" style="background:rgba(255,255,255,0.25);color:white;">${{ total_viajes_semana|cop }}</span>
+    </div>
+  </div>
+  <div class="card-body p-0">
+    {% if viajes_semana %}
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0" style="font-size:0.88rem;">
+        <thead class="bg-light">
+          <tr>
+            <th class="ps-3 py-3">Fecha</th>
+            <th>Proveedor</th>
+            <th>Producto</th>
+            <th class="text-end">Precio Acordado</th>
+            <th class="text-end">Pagado</th>
+            <th class="text-end pe-3">Saldo</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for viaje in viajes_semana %}
+          <tr>
+            <td class="ps-3 text-muted small">{{ viaje.fecha|date:"d/m/Y" }}</td>
+            <td class="fw-semibold">{{ viaje.proveedor }}</td>
+            <td>{{ viaje.producto }}</td>
+            <td class="text-end fw-semibold" style="color:#E65100;">${{ viaje.precio_total_acordado|cop }}</td>
+            <td class="text-end text-success">${{ viaje.total_pagado|cop }}</td>
+            <td class="text-end fw-bold pe-3 {% if viaje.saldo_pendiente > 0 %}text-danger{% else %}text-success{% endif %}">
+              {% if viaje.saldo_pendiente > 0 %}-${{ viaje.saldo_pendiente|cop }}{% else %}Pagado{% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot class="table-light">
+          <tr>
+            <td colspan="3" class="ps-3 fw-bold">Total semana</td>
+            <td class="text-end fw-bold" style="color:#E65100;">${{ total_viajes_semana|cop }}</td>
+            <td></td>
+            <td class="pe-3"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+    {% else %}
+    <div class="weekly-empty-state">
+      <i class="bi bi-truck fs-1 d-block mb-2"></i>
+      No hay viajes registrados en esta semana.
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card border-0 shadow-sm mb-4" style="border-radius: 16px; overflow: hidden;">
+  <div class="card-header py-3 d-flex justify-content-between align-items-center" style="background: linear-gradient(135deg, #0288D1 0%, #01579B 100%);">
+    <h6 class="mb-0 fw-bold text-white"><i class="bi bi-clipboard-check me-2"></i>Inventario Semanal (Conteo)</h6>
+    <div class="d-flex gap-2 align-items-center">
+      <span class="badge rounded-pill text-bg-light">{{ compras_semana_kg|floatformat:0 }} kg</span>
+      <span class="badge rounded-pill" style="background:rgba(255,255,255,0.25);color:white;">${{ total_compras_semana|cop }}</span>
+    </div>
+  </div>
+  <div class="card-body p-0">
+    {% if compras_semana %}
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0" style="font-size:0.88rem;">
+        <thead class="bg-light">
+          <tr>
+            <th class="ps-3 py-3">Fecha</th>
+            <th>Proveedor</th>
+            <th>Clasificación</th>
+            <th class="text-end">Kg netos</th>
+            <th class="text-end">Precio/kg</th>
+            <th class="text-end pe-3">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for entrada in compras_semana %}
+          <tr>
+            <td class="ps-3 text-muted small">{{ entrada.fecha|date:"d/m/Y" }}</td>
+            <td class="fw-semibold">{{ entrada.proveedor }}</td>
+            <td>{{ entrada.clasificacion }}</td>
+            <td class="text-end text-primary fw-semibold">{{ entrada.kg|floatformat:2 }} kg</td>
+            <td class="text-end">${{ entrada.precio_por_kg|cop }}</td>
+            <td class="text-end fw-bold pe-3" style="color:#E91E63;">${{ entrada.total|cop }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot class="table-light">
+          <tr>
+            <td colspan="3" class="ps-3 fw-bold">Total semana</td>
+            <td class="text-end fw-bold text-primary">{{ compras_semana_kg|floatformat:2 }} kg</td>
+            <td></td>
+            <td class="text-end fw-bold pe-3" style="color:#E91E63;">${{ total_compras_semana|cop }}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+    {% else %}
+    <div class="weekly-empty-state">
+      <i class="bi bi-box-seam fs-1 d-block mb-2"></i>
+      No hay entradas registradas en esta semana.
+    </div>
+    {% endif %}
   </div>
 </div>
 
@@ -763,7 +860,11 @@
           <div class="col-md-6">
             <div class="modal-summary-pill h-100">
               <div class="small text-muted">Última actualización</div>
+              {% if weekly_record %}
               <div class="fs-6 fw-bold">{{ weekly_record.updated_at|date:"d/m/Y H:i" }}</div>
+              {% else %}
+              <div class="fs-6 fw-bold text-muted">Sin registro manual</div>
+              {% endif %}
             </div>
           </div>
         </div>
@@ -789,6 +890,10 @@
           <div class="col-md-4"><div class="modal-summary-pill"><div class="small text-muted">Compras registradas</div><div class="fs-5 fw-bold text-primary">{{ compras_semana_kg|floatformat:0 }} kg</div></div></div>
           <div class="col-md-4"><div class="modal-summary-pill"><div class="small text-muted">Inventario total</div><div class="fs-5 fw-bold text-success">{{ total_inventory_kg|floatformat:0 }} kg</div></div></div>
         </div>
+        <div class="row g-3 mb-3">
+          <div class="col-md-6"><div class="modal-summary-pill"><div class="small text-muted">Total pagado en compras</div><div class="fs-5 fw-bold" style="color:#E91E63;">${{ total_compras_semana|cop }}</div></div></div>
+        </div>
+        </div>
         <div class="table-responsive">
           <table class="table table-hover align-middle">
             <thead>
@@ -797,18 +902,77 @@
                 <th>Proveedor</th>
                 <th>Clasificación</th>
                 <th class="text-end">Kg netos</th>
+                <th class="text-end">Precio/kg</th>
+                <th class="text-end">Total</th>
               </tr>
             </thead>
             <tbody>
-              {% for lote in compras_semana %}
+              {% for entrada in compras_semana %}
               <tr>
-                <td>{{ lote.viaje.fecha|date:"d/m/Y" }}</td>
-                <td>{{ lote.viaje.proveedor }}</td>
-                <td>{{ lote.clasificacion }}</td>
-                <td class="text-end fw-semibold text-primary">{{ lote.kg_neto|floatformat:2 }} kg</td>
+                <td>{{ entrada.fecha|date:"d/m/Y" }}</td>
+                <td>{{ entrada.proveedor }}</td>
+                <td>{{ entrada.clasificacion }}</td>
+                <td class="text-end fw-semibold text-primary">{{ entrada.kg|floatformat:2 }} kg</td>
+                <td class="text-end">${{ entrada.precio_por_kg|cop }}</td>
+                <td class="text-end fw-semibold" style="color:#E91E63;">${{ entrada.total|cop }}</td>
               </tr>
               {% empty %}
-              <tr><td colspan="4" class="text-center text-muted py-4">No hay compras registradas en esta semana.</td></tr>
+              <tr><td colspan="6" class="text-center text-muted py-4">No hay entradas registradas en esta semana.</td></tr>
+              {% endfor %}
+              {% if compras_semana %}
+              <tr class="table-light fw-bold">
+                <td colspan="3" class="text-end">Total semana</td>
+                <td class="text-end text-primary">{{ compras_semana_kg|floatformat:2 }} kg</td>
+                <td></td>
+                <td class="text-end" style="color:#E91E63;">${{ total_compras_semana|cop }}</td>
+              </tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="modalViajes" tabindex="-1" aria-labelledby="modalViajesLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalViajesLabel"><i class="bi bi-truck me-2"></i>Compras a Proveedores (Viajes)</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row g-3 mb-3">
+          <div class="col-md-6"><div class="modal-summary-pill"><div class="small text-muted">Total compras semana</div><div class="fs-5 fw-bold" style="color:#E65100;">${{ total_viajes_semana|cop }}</div></div></div>
+          <div class="col-md-6"><div class="modal-summary-pill"><div class="small text-muted">Viajes registrados</div><div class="fs-5 fw-bold">{{ viajes_semana|length }}</div></div></div>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Proveedor</th>
+                <th>Producto</th>
+                <th class="text-end">Precio Acordado</th>
+                <th class="text-end">Pagado</th>
+                <th class="text-end">Saldo</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for viaje in viajes_semana %}
+              <tr>
+                <td>{{ viaje.fecha|date:"d/m/Y" }}</td>
+                <td>{{ viaje.proveedor }}</td>
+                <td>{{ viaje.producto }}</td>
+                <td class="text-end fw-semibold" style="color:#E65100;">${{ viaje.precio_total_acordado|cop }}</td>
+                <td class="text-end text-success">${{ viaje.total_pagado|cop }}</td>
+                <td class="text-end fw-bold {% if viaje.saldo_pendiente > 0 %}text-danger{% else %}text-success{% endif %}">
+                  {% if viaje.saldo_pendiente > 0 %}-${{ viaje.saldo_pendiente|cop }}{% else %}Pagado{% endif %}
+                </td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="6" class="text-center text-muted py-4">No hay viajes registrados en esta semana.</td></tr>
               {% endfor %}
             </tbody>
           </table>

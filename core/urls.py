@@ -1,4 +1,5 @@
 from django.urls import path
+from django.views.generic import RedirectView
 from . import views
 
 urlpatterns = [
@@ -44,6 +45,7 @@ urlpatterns = [
     # Ventas Efectivo
     path('ventas/efectivo/', views.venta_efectivo_list, name='venta_efectivo_list'),
     path('ventas/efectivo/nueva/', views.venta_efectivo_create, name='venta_efectivo_create'),
+    path('ventas/efectivo/<int:pk>/editar/', views.venta_efectivo_edit, name='venta_efectivo_edit'),
     path('ventas/efectivo/<int:pk>/', views.venta_efectivo_detail, name='venta_efectivo_detail'),
     path('ventas/efectivo/<int:pk>/eliminar/', views.venta_efectivo_delete, name='venta_efectivo_delete'),
     path('ventas/efectivo/detalle/<int:pk>/eliminar/', views.detalle_venta_efectivo_delete, name='detalle_venta_efectivo_delete'),
@@ -60,9 +62,19 @@ urlpatterns = [
     path('reportes/diario/', views.reporte_diario, name='reporte_diario'),
     path('reportes/cartera/', views.reporte_cartera, name='reporte_cartera'),
     path('reportes/proveedores/', views.reporte_proveedor, name='reporte_proveedor'),
-    # Resumen Semanal
-    path('inventario/semanal/', views.inventario_weekly_summary, name='inventario_weekly_summary'),
+    # Entradas de Inventario
+    path('inventario/entradas/', views.entrada_inventario_list, name='entrada_inventario_list'),
+    path('inventario/entradas/nueva/', views.entrada_inventario_create, name='entrada_inventario_create'),
+    path('inventario/entradas/<int:pk>/', views.entrada_inventario_detail, name='entrada_inventario_detail'),
+    path('inventario/entradas/<int:pk>/editar/', views.entrada_inventario_edit, name='entrada_inventario_edit'),
+    path('inventario/entradas/<int:pk>/eliminar/', views.entrada_inventario_delete, name='entrada_inventario_delete'),
+    path('inventario/entradas/<int:pk>/pesada/', views.pesada_entrada_add, name='pesada_entrada_add'),
+    path('inventario/pesadas-entrada/<int:pk>/eliminar/', views.pesada_entrada_delete, name='pesada_entrada_delete'),
+    # Inventario semanal (edición y nóminas — accesibles desde /inventario/entradas/)
     path('inventario/semanal/<int:pk>/editar/', views.weekly_inventory_edit, name='weekly_inventory_edit'),
+    path('inventario/semanal/<int:pk>/eliminar/', views.weekly_inventory_delete, name='weekly_inventory_delete'),
     path('inventario/semanal/nominas/<int:pk>/editar/', views.nomina_edit, name='nomina_edit'),
     path('inventario/semanal/nominas/<int:pk>/eliminar/', views.nomina_delete, name='nomina_delete'),
+    # Redirect antiguo módulo semanal → inventario/entradas/
+    path('inventario/semanal/', RedirectView.as_view(pattern_name='entrada_inventario_list', permanent=True)),
 ]

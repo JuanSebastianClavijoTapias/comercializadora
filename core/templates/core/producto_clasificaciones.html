@@ -19,7 +19,8 @@
             <tr>
               <th>#</th>
               <th>Nombre de Clasificación</th>
-              <th style="width:180px;">Stock (Kg) <span class="text-danger">*</span></th>
+              <th>Stock Actual</th>
+              <th style="width:180px;">Nuevo valor <span class="text-danger">*</span></th>
               <th>Estado</th>
               <th>Acciones</th>
             </tr>
@@ -30,17 +31,26 @@
             <td class="text-muted">{{ c.orden }}</td>
             <td class="fw-semibold">{{ c.nombre }}</td>
             <td>
+              {% if c.stock_kg > 50 %}
+                <span class="badge bg-success fs-6">{{ c.stock_kg|floatformat:1 }} kg</span>
+              {% elif c.stock_kg > 0 %}
+                <span class="badge bg-warning text-dark fs-6">{{ c.stock_kg|floatformat:1 }} kg</span>
+              {% else %}
+                <span class="badge bg-danger fs-6">0 kg</span>
+              {% endif %}
+            </td>
+            <td>
               <input type="number" step="0.01" min="0"
                      name="stock_{{ c.pk }}"
                      value="{{ c.stock_kg|floatformat:2 }}"
-                     class="form-control form-control-sm {% if c.stock_kg <= 0 %}border-danger{% elif c.stock_kg < 50 %}border-warning{% endif %}"
+                     class="form-control form-control-sm"
                      style="max-width:150px;">
             </td>
             <td><span class="badge {% if c.activo %}bg-success{% else %}bg-secondary{% endif %}">{% if c.activo %}Activa{% else %}Inactiva{% endif %}</span></td>
             <td><a href="{% url 'clasificacion_edit' c.pk %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil me-1"></i>Editar</a></td>
           </tr>
           {% empty %}
-          <tr><td colspan="5" class="text-center text-muted py-4">Sin clasificaciones</td></tr>
+          <tr><td colspan="6" class="text-center text-muted py-4">Sin clasificaciones</td></tr>
           {% endfor %}
           </tbody>
         </table>
