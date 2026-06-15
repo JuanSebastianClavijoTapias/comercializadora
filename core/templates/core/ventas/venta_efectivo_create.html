@@ -1,0 +1,282 @@
+{% extends 'core/base.html' %}
+{% block title %}{{ titulo }}{% endblock %}
+{% block page_title %}{{ titulo }}{% endblock %}
+{% block content %}
+
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="card border-0 shadow-sm" style="border-radius: 12px; overflow: hidden;">
+      <div class="card-header py-3 border-bottom-0" style="background: linear-gradient(135deg, var(--orange-primary) 0%, #e65100 100%);">
+        <h5 class="mb-0 fw-bold" style="color: white;">
+          <i class="bi bi-cash-coin me-2"></i>Registrar Venta en Efectivo
+        </h5>
+      </div>
+      <div class="card-body p-4">
+        <form method="post" id="ventaForm" novalidate>
+          {% csrf_token %}
+
+          <!-- Fecha -->
+          <div class="mb-3">
+            <label class="form-label form-control-sm text-uppercase fw-semibold mb-1" style="color: var(--text-sec); letter-spacing: 0.5px;">Fecha</label>
+            <div class="d-flex align-items-center">
+              <input type="date" name="fecha" id="id_fecha" class="form-control" value="{{ fecha|default:'' }}" style="max-width: 200px;">
+              <button type="button" class="btn btn-outline-secondary btn-sm ms-2" id="btn_hoy">Hoy</button>
+            </div>
+            {% if errores_generales %}
+              {% for error in errores_generales %}
+                {% if 'Fecha' in error %}
+                <div class="text-danger small mt-1">{{ error }}</div>
+                {% endif %}
+              {% endfor %}
+            {% endif %}
+          </div>
+
+          <!-- Header de filas -->
+          <div class="row g-2 mb-2 d-none d-md-flex" style="font-size: 0.7rem; color: var(--text-sec); letter-spacing: 0.5px;">
+            <div class="col-md-4"><span class="text-uppercase fw-semibold">Producto</span></div>
+            <div class="col-md-2"><span class="text-uppercase fw-semibold">Cantidad (kg)</span></div>
+            <div class="col-md-3"><span class="text-uppercase fw-semibold">Precio/kg</span></div>
+            <div class="col-md-2"><span class="text-uppercase fw-semibold">Subtotal</span></div>
+            <div class="col-md-1"></div>
+          </div>
+
+          <!-- Contenedor de filas -->
+          <div id="filas-container">
+            {% for fila in filas %}
+            <div class="fila-producto row g-2 mb-3 p-3 rounded border" data-fila-index="{{ forloop.counter0 }}">
+              <!-- Producto -->
+              <div class="col-md-4">
+                <label class="form-label d-md-none text-uppercase fw-semibold small" style="color: var(--text-sec);">Producto</label>
+                <select name="producto[]" class="form-select input-producto" required>
+                  <option value="">-- Seleccione --</option>
+                  {% for p in productos %}
+                  <option value="{{ p.pk }}" {% if fila.producto|stringformat:"s" == p.pk|stringformat:"s" %}selected{% endif %}>{{ p.nombre }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+
+              <!-- Kg -->
+              <div class="col-md-2">
+                <label class="form-label d-md-none text-uppercase fw-semibold small" style="color: var(--text-sec);">Cantidad (kg)</label>
+                <input type="number" name="kg_vendido[]" class="form-control input-kg" step="0.01" min="0.01" placeholder="Ej: 3.00" value="{{ fila.kg_vendido }}" required>
+              </div>
+
+              <!-- Precio -->
+              <div class="col-md-3">
+                <label class="form-label d-md-none text-uppercase fw-semibold small" style="color: var(--text-sec);">Precio/kg</label>
+                <div class="input-group">
+                  <span class="input-group-text fw-bold" style="background: var(--orange-primary); color: white; border: none;">$</span>
+                  <input type="text" name="precio_por_kg[]" class="form-control price-cop input-precio" inputmode="numeric" autocomplete="off" placeholder="Ej: 2.500" value="{{ fila.precio_por_kg }}" required>
+                </div>
+              </div>
+
+              <!-- Subtotal -->
+              <div class="col-md-2 d-flex flex-column justify-content-center">
+                <label class="form-label d-md-none text-uppercase fw-semibold small" style="color: var(--text-sec);">Subtotal</label>
+                <div class="subtotal-display fw-bold text-success" style="font-size: 1rem;">$0</div>
+              </div>
+
+              <!-- Eliminar -->
+              <div class="col-md-1 d-flex align-items-center justify-content-md-end">
+                <button type="button" class="btn btn-sm btn-outline-danger btn-eliminar-fila" title="Eliminar producto">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </div>
+
+              <!-- Errores por fila -->
+              {% for error_fila in errores_filas %}
+                {% if error_fila.fila == forloop.parentloop.counter0 %}
+                <div class="col-12 mt-2">
+                  {% for error in error_fila.errores %}
+                  <div class="text-danger small"><i class="bi bi-exclamation-circle me-1"></i>{{ error }}</div>
+                  {% endfor %}
+                </div>
+                {% endif %}
+              {% endfor %}
+            </div>
+            {% endfor %}
+          </div>
+
+          <!-- Errores generales -->
+          {% if errores_generales %}
+          <div class="alert alert-danger py-2 px-3 mb-3" role="alert">
+            {% for error in errores_generales %}
+            <div class="small"><i class="bi bi-exclamation-triangle me-1"></i>{{ error }}</div>
+            {% endfor %}
+          </div>
+          {% endif %}
+
+          <!-- Botón agregar fila -->
+          <div class="mb-3">
+            <button type="button" id="btn-agregar-fila" class="btn btn-outline-primary fw-semibold" style="border-radius: 8px;">
+              <i class="bi bi-plus-circle me-1"></i> Agregar otro producto
+            </button>
+          </div>
+
+          <!-- Total general -->
+          <div class="mt-4 p-3 rounded border" style="background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); border-color: #4CAF50 !important;">
+            <div class="d-flex justify-content-between align-items-center">
+              <span class="text-uppercase fw-bold" style="color: #1b5e20; font-size: 0.85rem; letter-spacing: 0.5px;">Total a Cobrar</span>
+              <span class="fs-3 fw-bold" style="color: #2e7d32;" id="total_general">$0</span>
+            </div>
+          </div>
+
+          <div class="d-flex align-items-center gap-3 mt-4 pt-3 border-top" style="border-color: rgba(0,0,0,0.05) !important;">
+            <button type="submit" class="btn fw-bold px-4 py-2" style="background: var(--orange-primary); color: white; border: none;">
+              <i class="bi bi-check2 me-1"></i> Guardar Venta
+            </button>
+            <a href="{% url 'venta_efectivo_list' %}" class="btn btn-outline-secondary py-2 border-0 fw-semibold" style="color: var(--text-sec);">
+              <i class="bi bi-x-circle me-1"></i> Cancelar
+            </a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const filasContainer = document.getElementById('filas-container');
+    const btnAgregar = document.getElementById('btn-agregar-fila');
+    const totalGeneral = document.getElementById('total_general');
+    const btnHoy = document.getElementById('btn_hoy');
+    const fechaInput = document.getElementById('id_fecha');
+    const ventaForm = document.getElementById('ventaForm');
+
+    function formatCOP(numero) {
+      return '$' + Math.round(numero).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    }
+
+    function parseCOPLocal(valor) {
+      if (!valor) return 0;
+      const limpio = String(valor).replace(/\./g, '').replace(',', '.');
+      const numero = parseFloat(limpio);
+      return isNaN(numero) ? 0 : numero;
+    }
+
+    function calcularSubtotal(fila) {
+      const kgInput = fila.querySelector('.input-kg');
+      const precioInput = fila.querySelector('.input-precio');
+      const subtotalDisplay = fila.querySelector('.subtotal-display');
+
+      const kg = parseFloat(kgInput.value) || 0;
+      const precio = parseCOPLocal(precioInput.value);
+      const subtotal = kg * precio;
+
+      subtotalDisplay.textContent = formatCOP(subtotal);
+      return subtotal;
+    }
+
+    function actualizarTotalGeneral() {
+      const filas = filasContainer.querySelectorAll('.fila-producto');
+      let total = 0;
+      filas.forEach(fila => {
+        total += calcularSubtotal(fila);
+      });
+      totalGeneral.textContent = formatCOP(total);
+    }
+
+    function inicializarFila(fila) {
+      const kgInput = fila.querySelector('.input-kg');
+      const precioInput = fila.querySelector('.input-precio');
+      const btnEliminar = fila.querySelector('.btn-eliminar-fila');
+
+      kgInput.addEventListener('input', () => {
+        calcularSubtotal(fila);
+        actualizarTotalGeneral();
+      });
+
+      precioInput.addEventListener('input', () => {
+        calcularSubtotal(fila);
+        actualizarTotalGeneral();
+      });
+
+      btnEliminar.addEventListener('click', () => {
+        const filas = filasContainer.querySelectorAll('.fila-producto');
+        if (filas.length > 1) {
+          fila.remove();
+          actualizarTotalGeneral();
+        } else {
+          alert('Debe haber al menos un producto en la venta.');
+        }
+      });
+    }
+
+    function agregarFila() {
+      const filas = filasContainer.querySelectorAll('.fila-producto');
+      const primeraFila = filas[0];
+      const nuevaFila = primeraFila.cloneNode(true);
+
+      // Limpiar valores
+      nuevaFila.querySelector('.input-producto').value = '';
+      nuevaFila.querySelector('.input-kg').value = '';
+      nuevaFila.querySelector('.input-precio').value = '';
+      nuevaFila.querySelector('.subtotal-display').textContent = '$0';
+
+      // Actualizar índice
+      nuevaFila.dataset.filaIndex = filas.length;
+
+      // Limpiar errores previos si existen
+      const erroresPrevios = nuevaFila.querySelectorAll('.text-danger');
+      erroresPrevios.forEach(el => el.remove());
+      nuevaFila.classList.remove('border-danger');
+
+      filasContainer.appendChild(nuevaFila);
+      inicializarFila(nuevaFila);
+
+      // Enfocar select de producto
+      nuevaFila.querySelector('.input-producto').focus();
+    }
+
+    // Inicializar filas existentes
+    filasContainer.querySelectorAll('.fila-producto').forEach(fila => {
+      inicializarFila(fila);
+    });
+
+    // Botón agregar fila
+    btnAgregar.addEventListener('click', agregarFila);
+
+    // Botón Hoy
+    if (btnHoy && fechaInput) {
+      btnHoy.addEventListener('click', () => {
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        fechaInput.value = `${yyyy}-${mm}-${dd}`;
+      });
+    }
+
+    // Validación antes de enviar
+    ventaForm.addEventListener('submit', function(e) {
+      const filas = filasContainer.querySelectorAll('.fila-producto');
+      let formularioValido = true;
+
+      filas.forEach(fila => {
+        const producto = fila.querySelector('.input-producto');
+        const kg = fila.querySelector('.input-kg');
+        const precio = fila.querySelector('.input-precio');
+
+        const filaValida = producto.value && kg.value && precio.value && parseFloat(kg.value) > 0;
+
+        if (!filaValida) {
+          formularioValido = false;
+          fila.classList.add('border-danger');
+        } else {
+          fila.classList.remove('border-danger');
+        }
+      });
+
+      if (!formularioValido) {
+        e.preventDefault();
+        alert('Complete correctamente todos los productos. La cantidad debe ser mayor a 0.');
+      }
+    });
+
+    // Calcular totales iniciales
+    actualizarTotalGeneral();
+  });
+</script>
+
+{% endblock %}

@@ -260,7 +260,7 @@
       <div class="d-flex justify-content-between align-items-start gap-3">
         <div>
           <div class="small fw-semibold" style="color: white;">Inventario Total</div>
-          <div class="fs-4 fw-bold" style="color: white;">{{ total_inventory_kg|floatformat:0 }} kg</div>
+          <div class="fs-4 fw-bold" style="color: white;">{{ stock_valorizado.total_kg|floatformat:0 }} kg</div>
           <div class="small" style="color: rgba(255,255,255,0.9);">{{ total_kg_ingresado_semana|floatformat:0 }} kg ingresados</div>
         </div>
         <div class="stat-icon-wrapper" style="background: rgba(255,255,255,0.25); color: white;">
@@ -320,13 +320,9 @@
                   </div>
                 </td>
                 <td>
-                  {% if item.record %}
                   <div class="fw-semibold">{{ item.total_inventory_kg|floatformat:0 }} kg</div>
                   {% if item.initial_inventory_kg %}
                   <div class="small text-muted">Inicial: {{ item.initial_inventory_kg|floatformat:0 }} kg</div>
-                  {% endif %}
-                  {% else %}
-                  <span class="text-muted">Sin ajuste manual</span>
                   {% endif %}
                 </td>
                 <td>
@@ -334,8 +330,12 @@
                 </td>
                 <td class="text-end pe-4">
                   <div class="btn-group btn-group-sm" role="group">
-                    <a href="?week={{ item.week_start|date:'Y-m-d' }}" class="btn btn-outline-primary" title="Ver semana">
+                    <button type="button" class="btn btn-outline-primary" title="Ver resumen"
+                            data-bs-toggle="modal" data-bs-target="#modalWeek_{{ item.week_start|date:'Y_m_d' }}">
                       <i class="bi bi-eye"></i>
+                    </button>
+                    <a href="?week={{ item.week_start|date:'Y-m-d' }}" class="btn btn-outline-secondary" title="Ir a esta semana">
+                      <i class="bi bi-box-arrow-in-right"></i>
                     </a>
                     {% if item.record %}
                     <a href="{% url 'weekly_inventory_edit' item.record.pk %}" class="btn btn-outline-secondary" title="Editar inventario">
@@ -888,7 +888,7 @@
         <div class="row g-3 mb-3">
           <div class="col-md-4"><div class="modal-summary-pill"><div class="small text-muted">Inventario inicial</div><div class="fs-5 fw-bold">{{ initial_inventory_kg|floatformat:0 }} kg</div></div></div>
           <div class="col-md-4"><div class="modal-summary-pill"><div class="small text-muted">Compras registradas</div><div class="fs-5 fw-bold text-primary">{{ compras_semana_kg|floatformat:0 }} kg</div></div></div>
-          <div class="col-md-4"><div class="modal-summary-pill"><div class="small text-muted">Inventario total</div><div class="fs-5 fw-bold text-success">{{ total_inventory_kg|floatformat:0 }} kg</div></div></div>
+          <div class="col-md-4"><div class="modal-summary-pill"><div class="small text-muted">Inventario total (stock)</div><div class="fs-5 fw-bold text-success">{{ stock_valorizado.total_kg|floatformat:0 }} kg</div></div></div>
         </div>
         <div class="row g-3 mb-3">
           <div class="col-md-6"><div class="modal-summary-pill"><div class="small text-muted">Total pagado en compras</div><div class="fs-5 fw-bold" style="color:#E91E63;">${{ total_compras_semana|cop }}</div></div></div>
@@ -981,4 +981,152 @@
     </div>
   </div>
 </div>
+
+{% for item in weekly_history %}
+<div class="modal fade" id="modalWeek_{{ item.week_start|date:'Y_m_d' }}" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header" style="background: linear-gradient(135deg, #1E3A8A 0%, #2563EB 100%);">
+        <h5 class="modal-title text-white">
+          <i class="bi bi-calendar-week me-2"></i>
+          {{ item.week_start|date:"d/m/Y" }} — {{ item.week_end|date:"d/m/Y" }}
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+
+        {# ── Inventario ── #}
+        <h6 class="fw-bold mb-2"><i class="bi bi-box-seam me-1"></i>Inventario</h6>
+        <div class="row g-2 mb-3">
+          <div class="col-6 col-md-3">
+            <div class="modal-summary-pill text-center">
+              <div class="small text-muted">Inicial</div>
+              <div class="fw-bold">{{ item.initial_inventory_kg|floatformat:0 }} kg</div>
+            </div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="modal-summary-pill text-center">
+              <div class="small text-muted">Viajes (kg)</div>
+              <div class="fw-bold text-primary">{{ item.viajes_kg|floatformat:0 }} kg</div>
+            </div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="modal-summary-pill text-center">
+              <div class="small text-muted">Entradas (kg)</div>
+              <div class="fw-bold text-primary">{{ item.entradas_kg|floatformat:0 }} kg</div>
+            </div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="modal-summary-pill text-center">
+              <div class="small text-muted">Total</div>
+              <div class="fw-bold text-success">{{ item.total_inventory_kg|floatformat:0 }} kg</div>
+            </div>
+          </div>
+        </div>
+
+        {# ── Viajes ── #}
+        <h6 class="fw-bold mb-2"><i class="bi bi-truck me-1"></i>Compras a Proveedores ({{ item.viajes_count }} viaje{{ item.viajes_count|pluralize:"s" }})</h6>
+        {% if item.viajes_list %}
+        <div class="table-responsive mb-3">
+          <table class="table table-sm table-hover align-middle mb-0" style="font-size:0.85rem;">
+            <thead class="bg-light">
+              <tr><th>Proveedor</th><th>Producto</th><th class="text-end">Precio Acordado</th><th class="text-end">Pagado</th><th class="text-end">Saldo</th></tr>
+            </thead>
+            <tbody>
+              {% for viaje in item.viajes_list %}
+              <tr>
+                <td>{{ viaje.proveedor }}</td>
+                <td>{{ viaje.producto }}</td>
+                <td class="text-end" style="color:#E65100;">${{ viaje.precio_total_acordado|cop }}</td>
+                <td class="text-end text-success">${{ viaje.total_pagado|cop }}</td>
+                <td class="text-end fw-bold {% if viaje.saldo_pendiente > 0 %}text-danger{% else %}text-success{% endif %}">
+                  {% if viaje.saldo_pendiente > 0 %}-${{ viaje.saldo_pendiente|cop }}{% else %}Pagado{% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+              <tr class="table-light fw-bold">
+                <td colspan="2">Total</td>
+                <td class="text-end" style="color:#E65100;">${{ item.viajes_total|cop }}</td>
+                <td></td><td></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <p class="text-muted small mb-3">Sin viajes esta semana.</p>
+        {% endif %}
+
+        {# ── Ventas & Gastos ── #}
+        <div class="row g-2 mb-3">
+          <div class="col-md-4">
+            <div class="modal-summary-pill text-center">
+              <div class="small text-muted">Ventas Totales</div>
+              <div class="fw-bold text-success">${{ item.total_ventas|cop }}</div>
+              <div class="small text-muted">{{ item.ventas_ef_count }} ef. · {{ item.ventas_cr_count }} cr.</div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="modal-summary-pill text-center">
+              <div class="small text-muted">Gastos (inc. nómina)</div>
+              <div class="fw-bold text-danger">${{ item.gastos_total|cop }}</div>
+              <div class="small text-muted">Nómina: ${{ item.nomina_total|cop }}</div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="modal-summary-pill text-center">
+              <div class="small text-muted">Balance</div>
+              <div class="fw-bold" style="color:{% if item.balance >= 0 %}#2E7D32{% else %}#C62828{% endif %};">
+                {% if item.balance > 0 %}+{% endif %}${{ item.balance|cop }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {# ── Stock actual valorizado ── #}
+        <h6 class="fw-bold mb-2"><i class="bi bi-currency-dollar me-1"></i>Valor del Stock Actual</h6>
+        {% if stock_valorizado.items %}
+        <div class="table-responsive mb-2">
+          <table class="table table-sm table-hover align-middle mb-0" style="font-size:0.85rem;">
+            <thead class="bg-light">
+              <tr>
+                <th>Clasificación</th>
+                <th class="text-end">Stock (kg)</th>
+                <th class="text-end">Último precio/kg</th>
+                <th class="text-end">Valor</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for c in stock_valorizado.items %}
+              <tr>
+                <td>{{ c.producto.nombre }} — {{ c.nombre }}</td>
+                <td class="text-end">{{ c.stock_kg|floatformat:1 }} kg</td>
+                <td class="text-end text-muted">${{ c.ultimo_precio|default:0|cop }}</td>
+                <td class="text-end fw-semibold text-success">${{ c.valor_stock|cop }}</td>
+              </tr>
+              {% endfor %}
+              <tr class="table-light fw-bold">
+                <td class="text-end">Total</td>
+                <td class="text-end">{{ stock_valorizado.total_kg|floatformat:1 }} kg</td>
+                <td class="text-end text-muted">—</td>
+                <td class="text-end text-success">${{ stock_valorizado.total|cop }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <p class="text-muted small mb-2">Sin stock registrado con precio.</p>
+        {% endif %}
+
+      </div>
+      <div class="modal-footer">
+        <a href="?week={{ item.week_start|date:'Y-m-d' }}" class="btn btn-primary btn-sm">
+          <i class="bi bi-box-arrow-in-right me-1"></i>Ir a esta semana
+        </a>
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endfor %}
+
 {% endblock %}

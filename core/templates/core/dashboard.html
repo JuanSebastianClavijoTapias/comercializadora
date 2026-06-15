@@ -657,7 +657,7 @@
               <tr>
                 <th>Tipo</th>
                 <th>Cliente</th>
-                <th>Clasificación</th>
+                <th>Producto</th>
                 <th class="text-end">Kg Vendido</th>
                 <th class="text-end">Monto</th>
               </tr>
@@ -673,7 +673,7 @@
                   {% endif %}
                 </td>
                 <td><strong>{{ venta.cliente }}</strong></td>
-                <td>{{ venta.clasificacion }}</td>
+                <td>{{ venta.producto }}</td>
                 <td class="text-end">{{ venta.kg_vendido|floatformat:2 }}</td>
                 <td class="text-end text-success fw-bold">${{ venta.monto|cop }}</td>
               </tr>

@@ -212,17 +212,17 @@ class VentaEfectivo(models.Model):
 
 class DetalleVentaEfectivo(models.Model):
     venta = models.ForeignKey(VentaEfectivo, on_delete=models.CASCADE, related_name='detalles', verbose_name='Venta')
-    clasificacion = models.ForeignKey(Clasificacion, on_delete=models.CASCADE, verbose_name='Clasificación')
+    producto = models.ForeignKey(Producto, on_delete=models.CASCADE, verbose_name='Producto')
     kg_vendido = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Kg vendido')
-    precio_por_kg = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Precio por kg')
-    
+    precio_por_kg = models.DecimalField(max_digits=10, decimal_places=2, default=0, null=True, blank=True, verbose_name='Precio por kg')
+
     @property
     def total(self):
-        return self.kg_vendido * self.precio_por_kg
-    
+        return self.kg_vendido * (self.precio_por_kg or Decimal('0'))
+
     def __str__(self):
-        return f"{self.clasificacion} - {self.kg_vendido} kg @ ${self.precio_por_kg}/kg"
-    
+        return f"{self.producto.nombre} - {self.kg_vendido} kg"
+
     class Meta:
         verbose_name = 'Detalle de Venta Efectivo'
         verbose_name_plural = 'Detalles de Ventas Efectivo'
@@ -291,48 +291,6 @@ def actualiza_stock_lote_delete(sender, instance, **kwargs):
     if instance.clasificacion:
         instance.clasificacion.stock_kg = F('stock_kg') - instance.kg_neto
         instance.clasificacion.save(update_fields=['stock_kg'])
-
-@receiver(pre_save, sender=VentaEfectivo)
-def captura_anterior_venta_efectivo(sender, instance, **kwargs):
-    if instance.pk:
-        orig = VentaEfectivo.objects.get(pk=instance.pk)
-        instance._old_kg_vendido = orig.kg_vendido
-    else:
-        instance._old_kg_vendido = Decimal('0')
-
-@receiver(pre_save, sender=DetalleVentaEfectivo)
-def captura_anterior_detalle_venta_efectivo(sender, instance, **kwargs):
-    if instance.pk:
-        orig = DetalleVentaEfectivo.objects.get(pk=instance.pk)
-        instance._old_kg_vendido = orig.kg_vendido
-    else:
-        instance._old_kg_vendido = Decimal('0')
-
-@receiver(post_save, sender=DetalleVentaEfectivo)
-def actualiza_stock_detalle_venta_efectivo_save(sender, instance, created, **kwargs):
-    # Cuando se crea o actualiza un detalle, restar/actualizar el stock
-    if instance.clasificacion:
-        if created:
-            # Venta nueva: restar kg del stock
-            instance.clasificacion.stock_kg = F('stock_kg') - instance.kg_vendido
-        else:
-            # Actualización: calcular la diferencia
-            diff = instance.kg_vendido - getattr(instance, '_old_kg_vendido', instance.kg_vendido)
-            if diff != 0:
-                instance.clasificacion.stock_kg = F('stock_kg') - diff
-        instance.clasificacion.save(update_fields=['stock_kg'])
-
-@receiver(post_delete, sender=DetalleVentaEfectivo)
-def actualiza_stock_detalle_venta_efectivo_delete(sender, instance, **kwargs):
-    # Cuando se elimina un detalle, devolver los kg al stock
-    if instance.clasificacion:
-        instance.clasificacion.stock_kg = F('stock_kg') + instance.kg_vendido
-        instance.clasificacion.save(update_fields=['stock_kg'])
-
-@receiver(post_save, sender=VentaEfectivo)
-def actualiza_stock_venta_efectivo_save(sender, instance, created, **kwargs):
-    # La lógica de stock se maneja en DetalleVentaEfectivo
-    pass
 
 @receiver(pre_save, sender=DetalleVentaCredito)
 def captura_anterior_venta_credito(sender, instance, **kwargs):

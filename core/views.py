@@ -2,7 +2,8 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse
-from django.db.models import Sum, Q, F, Count
+from django.db.models import Sum, Q, F, Count, Value, DecimalField
+from django.db.models.functions import Coalesce
 from django.utils import timezone
 from django.db import transaction
 from django.urls import reverse
@@ -35,11 +36,21 @@ def get_nomina_category():
     return categoria
 
 def get_or_create_weekly_inventory_for_monday(lunes):
-    weekly, created = WeeklyInventory.objects.get_or_create(
+    # Si ya existe, devuélvelo sin tocar
+    try:
+        weekly = WeeklyInventory.objects.get(week_start=lunes)
+        return weekly, False
+    except WeeklyInventory.DoesNotExist:
+        pass
+    # Al crear uno nuevo, tomar como inventario inicial la suma actual de stock
+    stock_inicial = Clasificacion.objects.aggregate(
+        total=Sum('stock_kg')
+    )['total'] or Decimal('0')
+    weekly = WeeklyInventory.objects.create(
         week_start=lunes,
-        defaults={'initial_inventory_kg': Decimal('0')}
+        initial_inventory_kg=stock_inicial,
     )
-    return weekly, created
+    return weekly, True
 
 def get_or_create_weekly_inventory(fecha):
     """Obtiene o crea el registro de inventario para la semana de la fecha dada"""
@@ -96,19 +107,45 @@ def get_weekly_history():
     for week_start in sorted({get_week_monday(week) for week in week_starts}, reverse=True):
         week_end = week_start + timedelta(days=6)
         record = weekly_records.get(week_start)
+
+        gastos_semana = Gasto.objects.filter(fecha__range=[week_start, week_end]).select_related('categoria')
         nomina_total = sum(
-            gasto.monto for gasto in Gasto.objects.filter(
-                fecha__range=[week_start, week_end],
-                categoria__nombre__iexact=NOMINA_CATEGORY_NAME,
-            )
+            g.monto for g in gastos_semana if g.categoria.nombre.lower() == NOMINA_CATEGORY_NAME.lower()
         ) or Decimal('0')
+        gastos_total = sum(g.monto for g in gastos_semana) or Decimal('0')
+
+        viajes_w = Viaje.objects.filter(fecha__range=[week_start, week_end]).select_related('proveedor', 'producto')
+        viajes_total = sum(v.precio_total_acordado for v in viajes_w) or Decimal('0')
+
+        ventas_ef = VentaEfectivo.objects.filter(fecha__range=[week_start, week_end])
+        ventas_cr = VentaCredito.objects.filter(fecha__range=[week_start, week_end])
+        total_ventas = (sum(v.total for v in ventas_ef) + sum(v.total for v in ventas_cr)) or Decimal('0')
+
+        pesadas_w = PesadaEntrada.objects.filter(entrada__fecha__range=[week_start, week_end])
+        entradas_kg = sum(p.kg_neto for p in pesadas_w) or Decimal('0')
+
+        lotes_w = LoteClasificacion.objects.filter(viaje__fecha__range=[week_start, week_end])
+        viajes_kg = sum(l.kg_neto for l in lotes_w) or Decimal('0')
+
+        total_inv_kg = (record.total_inventory_kg if record else (entradas_kg + viajes_kg))
+
         history.append({
             'week_start': week_start,
             'week_end': week_end,
             'record': record,
-            'initial_inventory_kg': record.initial_inventory_kg if record else None,
-            'total_inventory_kg': record.total_inventory_kg if record else None,
+            'initial_inventory_kg': record.initial_inventory_kg if record else Decimal('0'),
+            'total_inventory_kg': total_inv_kg,
             'nomina_total': nomina_total,
+            'gastos_total': gastos_total,
+            'viajes_total': viajes_total,
+            'viajes_count': len(viajes_w),
+            'viajes_list': list(viajes_w),
+            'entradas_kg': entradas_kg,
+            'viajes_kg': viajes_kg,
+            'total_ventas': total_ventas,
+            'ventas_ef_count': len(ventas_ef),
+            'ventas_cr_count': len(ventas_cr),
+            'balance': total_ventas - gastos_total,
         })
     return history
 
@@ -145,7 +182,7 @@ def dashboard(request):
     for ve in ventas_efectivo_hoy:
         # Solo incluir si tiene detalles
         if ve.detalles.exists():
-            productos = ', '.join([d.clasificacion.producto.nombre for d in ve.detalles.all()])
+            productos = ', '.join([d.producto.nombre for d in ve.detalles.all()])
             ultimas_ventas.append({
                 'tipo': 'Efectivo',
                 'cliente': str(ve.cliente) if ve.cliente else 'General',
@@ -245,7 +282,7 @@ def dashboard(request):
     
     # 3. VENDIDO: Suma de kg_vendido de todas las ventas de hoy
     # 3a. Ventas en efectivo del día
-    detalles_efectivo_mandarina = [d for v in ventas_efectivo_hoy for d in v.detalles.all() if d.clasificacion.producto == producto_mandarina] if producto_mandarina else []
+    detalles_efectivo_mandarina = [d for v in ventas_efectivo_hoy for d in v.detalles.all() if d.producto == producto_mandarina] if producto_mandarina else []
     kg_vendido_efectivo = sum(d.kg_vendido for d in detalles_efectivo_mandarina)
     
     # 3b. Ventas a crédito del día - filtrar por clasificación.producto, no por venta.producto
@@ -263,7 +300,7 @@ def dashboard(request):
         detalles_ventas.append({
             'tipo': 'Efectivo',
             'cliente': detalle.venta.cliente.nombre if detalle.venta.cliente else 'General',
-            'clasificacion': detalle.clasificacion.nombre if detalle.clasificacion else 'N/A',
+            'producto': detalle.producto.nombre if detalle.producto else 'N/A',
             'kg_vendido': detalle.kg_vendido,
             'monto': detalle.total
         })
@@ -346,7 +383,7 @@ def proveedor_list(request):
     num_proveedores = proveedores.count()
     num_activos = proveedores.filter(activo=True).count()
     num_inactivos = proveedores.filter(activo=False).count()
-    return render(request, 'core/proveedor_list.html', {
+    return render(request, 'core/catalogo/proveedor_list.html', {
         'proveedores': proveedores, 'q': q,
         'num_proveedores': num_proveedores, 'num_activos': num_activos, 'num_inactivos': num_inactivos
     })
@@ -358,7 +395,7 @@ def proveedor_create(request):
         form.save()
         messages.success(request, 'Proveedor creado exitosamente.')
         return redirect('proveedor_list')
-    return render(request, 'core/form_generic.html', {'form': form, 'titulo': 'Nuevo Proveedor', 'back_url': 'proveedor_list'})
+    return render(request, 'core/genericos/form_generic.html', {'form': form, 'titulo': 'Nuevo Proveedor', 'back_url': 'proveedor_list'})
 
 @login_required
 def proveedor_edit(request, pk):
@@ -368,7 +405,7 @@ def proveedor_edit(request, pk):
         form.save()
         messages.success(request, 'Proveedor actualizado.')
         return redirect('proveedor_list')
-    return render(request, 'core/form_generic.html', {'form': form, 'titulo': f'Editar: {obj.nombre}', 'back_url': 'proveedor_list'})
+    return render(request, 'core/genericos/form_generic.html', {'form': form, 'titulo': f'Editar: {obj.nombre}', 'back_url': 'proveedor_list'})
 
 @login_required
 def proveedor_delete(request, pk):
@@ -377,7 +414,7 @@ def proveedor_delete(request, pk):
         obj.delete()
         messages.success(request, 'Proveedor eliminado.')
         return redirect('proveedor_list')
-    return render(request, 'core/confirm_delete.html', {'obj': obj, 'titulo': 'Eliminar Proveedor', 'back_url': 'proveedor_list'})
+    return render(request, 'core/genericos/confirm_delete.html', {'obj': obj, 'titulo': 'Eliminar Proveedor', 'back_url': 'proveedor_list'})
 
 # ---- CLIENTES ----
 @login_required
@@ -387,7 +424,7 @@ def cliente_list(request):
     num_clientes = clientes.count()
     num_activos = clientes.filter(activo=True).count()
     num_inactivos = clientes.filter(activo=False).count()
-    return render(request, 'core/cliente_list.html', {
+    return render(request, 'core/catalogo/cliente_list.html', {
         'clientes': clientes, 'q': q,
         'num_clientes': num_clientes, 'num_activos': num_activos, 'num_inactivos': num_inactivos
     })
@@ -399,7 +436,7 @@ def cliente_create(request):
         form.save()
         messages.success(request, 'Cliente creado exitosamente.')
         return redirect('cliente_list')
-    return render(request, 'core/form_generic.html', {'form': form, 'titulo': 'Nuevo Cliente', 'back_url': 'cliente_list'})
+    return render(request, 'core/genericos/form_generic.html', {'form': form, 'titulo': 'Nuevo Cliente', 'back_url': 'cliente_list'})
 
 @login_required
 def cliente_edit(request, pk):
@@ -409,7 +446,7 @@ def cliente_edit(request, pk):
         form.save()
         messages.success(request, 'Cliente actualizado.')
         return redirect('cliente_list')
-    return render(request, 'core/form_generic.html', {'form': form, 'titulo': f'Editar: {obj.nombre}', 'back_url': 'cliente_list'})
+    return render(request, 'core/genericos/form_generic.html', {'form': form, 'titulo': f'Editar: {obj.nombre}', 'back_url': 'cliente_list'})
 
 @login_required
 def cliente_delete(request, pk):
@@ -418,7 +455,7 @@ def cliente_delete(request, pk):
         obj.delete()
         messages.success(request, 'Cliente eliminado.')
         return redirect('cliente_list')
-    return render(request, 'core/confirm_delete.html', {'obj': obj, 'titulo': 'Eliminar Cliente', 'back_url': 'cliente_list'})
+    return render(request, 'core/genericos/confirm_delete.html', {'obj': obj, 'titulo': 'Eliminar Cliente', 'back_url': 'cliente_list'})
 
 # ---- PRODUCTOS ----
 @login_required
@@ -427,7 +464,7 @@ def producto_list(request):
     num_productos = productos.count()
     num_activos = productos.filter(activo=True).count()
     num_descuento = productos.filter(tiene_descuento_gobierno=True).count()
-    return render(request, 'core/producto_list.html', {
+    return render(request, 'core/catalogo/producto_list.html', {
         'productos': productos,
         'num_productos': num_productos, 'num_activos': num_activos, 'num_descuento': num_descuento
     })
@@ -441,7 +478,7 @@ def producto_create(request):
             Clasificacion.objects.create(producto=prod, nombre=f'Clasificación {i}', orden=i)
         messages.success(request, 'Producto creado con 6 clasificaciones por defecto.')
         return redirect('producto_clasificaciones', pk=prod.pk)
-    return render(request, 'core/form_generic.html', {'form': form, 'titulo': 'Nuevo Producto', 'back_url': 'producto_list'})
+    return render(request, 'core/genericos/form_generic.html', {'form': form, 'titulo': 'Nuevo Producto', 'back_url': 'producto_list'})
 
 @login_required
 def producto_edit(request, pk):
@@ -451,7 +488,7 @@ def producto_edit(request, pk):
         form.save()
         messages.success(request, 'Producto actualizado.')
         return redirect('producto_list')
-    return render(request, 'core/form_generic.html', {'form': form, 'titulo': f'Editar: {obj.nombre}', 'back_url': 'producto_list'})
+    return render(request, 'core/genericos/form_generic.html', {'form': form, 'titulo': f'Editar: {obj.nombre}', 'back_url': 'producto_list'})
 
 @login_required
 def producto_delete(request, pk):
@@ -460,13 +497,13 @@ def producto_delete(request, pk):
         obj.delete()
         messages.success(request, 'Producto eliminado.')
         return redirect('producto_list')
-    return render(request, 'core/confirm_delete.html', {'obj': obj, 'titulo': 'Eliminar Producto', 'back_url': 'producto_list'})
+    return render(request, 'core/genericos/confirm_delete.html', {'obj': obj, 'titulo': 'Eliminar Producto', 'back_url': 'producto_list'})
 
 @login_required
 def producto_clasificaciones(request, pk):
     producto = get_object_or_404(Producto, pk=pk)
     clasificaciones = producto.clasificaciones.all()
-    return render(request, 'core/producto_clasificaciones.html', {'producto': producto, 'clasificaciones': clasificaciones})
+    return render(request, 'core/catalogo/producto_clasificaciones.html', {'producto': producto, 'clasificaciones': clasificaciones})
 
 @login_required
 def producto_stock_update(request, pk):
@@ -496,7 +533,7 @@ def clasificacion_edit(request, pk):
         form.save()
         messages.success(request, 'Clasificación actualizada.')
         return redirect('producto_clasificaciones', pk=obj.producto.pk)
-    return render(request, 'core/form_generic.html', {'form': form, 'titulo': f'Editar Clasificación', 'back_url': None, 'back_pk': obj.producto.pk})
+    return render(request, 'core/genericos/form_generic.html', {'form': form, 'titulo': f'Editar Clasificación', 'back_url': None, 'back_pk': obj.producto.pk})
 
 # ---- CATEGORIAS GASTO ----
 @login_required
@@ -507,7 +544,7 @@ def categoria_gasto_list(request):
         form.save()
         messages.success(request, 'Categoría creada.')
         return redirect('categoria_gasto_list')
-    return render(request, 'core/categoria_gasto_list.html', {'categorias': categorias, 'form': form})
+    return render(request, 'core/gastos/categoria_gasto_list.html', {'categorias': categorias, 'form': form})
 
 @login_required
 def categoria_gasto_edit(request, pk):
@@ -517,7 +554,7 @@ def categoria_gasto_edit(request, pk):
         form.save()
         messages.success(request, 'Categoría actualizada.')
         return redirect('categoria_gasto_list')
-    return render(request, 'core/form_generic.html', {'form': form, 'titulo': f'Editar: {obj.nombre}', 'back_url': 'categoria_gasto_list'})
+    return render(request, 'core/genericos/form_generic.html', {'form': form, 'titulo': f'Editar: {obj.nombre}', 'back_url': 'categoria_gasto_list'})
 
 @login_required
 def categoria_gasto_delete(request, pk):
@@ -526,7 +563,7 @@ def categoria_gasto_delete(request, pk):
         obj.delete()
         messages.success(request, 'Categoría eliminada.')
         return redirect('categoria_gasto_list')
-    return render(request, 'core/confirm_delete.html', {'obj': obj, 'titulo': 'Eliminar Categoría', 'back_url': 'categoria_gasto_list'})
+    return render(request, 'core/genericos/confirm_delete.html', {'obj': obj, 'titulo': 'Eliminar Categoría', 'back_url': 'categoria_gasto_list'})
 
 # ---- VIAJES ----
 @login_required
@@ -536,7 +573,7 @@ def viaje_list(request):
     total_kg = sum(v.total_kg_neto for v in viajes)
     total_costo = sum(v.total_valor for v in viajes)
     saldo_pendiente = sum(v.saldo_pendiente for v in viajes)
-    return render(request, 'core/viaje_list.html', {
+    return render(request, 'core/viajes/viaje_list.html', {
         'viajes': viajes,
         'num_viajes': num_viajes, 'total_kg': total_kg,
         'total_costo': total_costo, 'saldo_pendiente': saldo_pendiente
@@ -549,7 +586,7 @@ def viaje_create(request):
         viaje = form.save()
         messages.success(request, 'Viaje registrado. Ahora ingrese las pesadas del viaje.')
         return redirect('viaje_detail', pk=viaje.pk)
-    return render(request, 'core/form_generic.html', {'form': form, 'titulo': 'Registrar Nuevo Viaje', 'back_url': 'viaje_list'})
+    return render(request, 'core/genericos/form_generic.html', {'form': form, 'titulo': 'Registrar Nuevo Viaje', 'back_url': 'viaje_list'})
 
 @login_required
 def viaje_detail(request, pk):
@@ -627,7 +664,7 @@ def viaje_detail(request, pk):
         'peso_total_canastillas': float(peso_total_canastillas),
         'neto_final': float(neto_final),
     }
-    return render(request, 'core/viaje_detail.html', ctx)
+    return render(request, 'core/viajes/viaje_detail.html', ctx)
 
 @login_required
 def pesada_add(request, pk):
@@ -739,7 +776,7 @@ def viaje_delete(request, pk):
         viaje.delete()
         messages.success(request, 'Viaje eliminado satisfactoriamente.')
         return redirect('viaje_list')
-    return render(request, 'core/confirm_delete.html', {'obj': viaje, 'tipo': 'Viaje', 'cancel_url': 'viaje_list'})
+    return render(request, 'core/genericos/confirm_delete.html', {'obj': viaje, 'tipo': 'Viaje', 'cancel_url': 'viaje_list'})
 
 @login_required
 def viaje_detalles_edit(request, pk):
@@ -750,7 +787,7 @@ def viaje_detalles_edit(request, pk):
         form.save()
         messages.success(request, 'Detalles del viaje actualizados correctamente.')
         return redirect('viaje_detail', pk=pk)
-    return render(request, 'core/form_generic.html', {
+    return render(request, 'core/genericos/form_generic.html', {
         'form': form, 
         'titulo': f'Editar Detalles - {viaje}', 
         'back_url': 'viaje_detail',
@@ -833,7 +870,7 @@ def gasto_list(request):
         form.save()
         messages.success(request, 'Gasto registrado.')
         return redirect(f'/gastos/?fecha={fecha}')
-    return render(request, 'core/gasto_list.html', {
+    return render(request, 'core/gastos/gasto_list.html', {
         'gastos': gastos, 'total': total, 'form': form, 'fecha': fecha,
         'num_gastos': num_gastos, 'gasto_promedio': gasto_promedio, 'gasto_maximo': gasto_maximo
     })
@@ -846,7 +883,7 @@ def gasto_edit(request, pk):
         form.save()
         messages.success(request, 'Gasto actualizado.')
         return redirect('gasto_list')
-    return render(request, 'core/form_generic.html', {'form': form, 'titulo': 'Editar Gasto', 'back_url': 'gasto_list'})
+    return render(request, 'core/genericos/form_generic.html', {'form': form, 'titulo': 'Editar Gasto', 'back_url': 'gasto_list'})
 
 @login_required
 def gasto_delete(request, pk):
@@ -855,7 +892,7 @@ def gasto_delete(request, pk):
         obj.delete()
         messages.success(request, 'Gasto eliminado.')
         return redirect('gasto_list')
-    return render(request, 'core/confirm_delete.html', {'obj': obj, 'titulo': 'Eliminar Gasto', 'back_url': 'gasto_list'})
+    return render(request, 'core/genericos/confirm_delete.html', {'obj': obj, 'titulo': 'Eliminar Gasto', 'back_url': 'gasto_list'})
 
 @login_required
 def weekly_inventory_edit(request, pk):
@@ -868,7 +905,7 @@ def weekly_inventory_edit(request, pk):
         messages.success(request, 'Inventario semanal actualizado.')
         return redirect(back_href)
 
-    return render(request, 'core/form_generic.html', {
+    return render(request, 'core/genericos/form_generic.html', {
         'form': form,
         'titulo': f'Editar inventario semanal {weekly.week_start.strftime("%d/%m/%Y")}',
         'back_href': back_href,
@@ -884,7 +921,7 @@ def weekly_inventory_delete(request, pk):
         messages.success(request, 'Semana eliminada del historial.')
         return redirect(reverse('entrada_inventario_list'))
 
-    return render(request, 'core/confirm_delete.html', {
+    return render(request, 'core/genericos/confirm_delete.html', {
         'obj': weekly,
         'titulo': f'Eliminar semana {weekly.week_start.strftime("%d/%m/%Y")}',
         'back_href': back_href,
@@ -907,7 +944,7 @@ def nomina_edit(request, pk):
         messages.success(request, 'Nómina actualizada.')
         return redirect(get_week_summary_url(get_week_monday(nomina.fecha)))
 
-    return render(request, 'core/form_generic.html', {
+    return render(request, 'core/genericos/form_generic.html', {
         'form': form,
         'titulo': 'Editar nómina',
         'back_href': back_href,
@@ -927,33 +964,160 @@ def nomina_delete(request, pk):
         messages.success(request, 'Nómina eliminada.')
         return redirect(back_href)
 
-    return render(request, 'core/confirm_delete.html', {
+    return render(request, 'core/genericos/confirm_delete.html', {
         'obj': nomina,
         'titulo': 'Eliminar nómina',
         'back_href': back_href,
     })
 
 # ---- VENTAS EFECTIVO ----
+def _normalizar_precio_cop(valor):
+    """Convierte un precio con formato colombiano (2.500) a Decimal (2500)."""
+    if not valor:
+        return ''
+    return str(valor).replace('.', '').replace(',', '.').strip()
+
+
 @login_required
 def venta_efectivo_create(request):
+    productos = Producto.objects.filter(activo=True).order_by('nombre')
+    hoy = date.today()
+
     if request.method == 'POST':
-        fecha_val = request.POST.get('fecha', '').strip()
-        if fecha_val:
-            existing = VentaEfectivo.objects.filter(fecha=fecha_val).first()
-            if existing:
-                messages.warning(request, 'Ya existe una venta para esa fecha. Puedes editarla aquí.')
-                return redirect('venta_efectivo_edit', pk=existing.pk)
-        form = VentaEfectivoForm(request.POST)
-        if form.is_valid():
-            form.save()
-            messages.success(request, 'Venta en efectivo registrada.')
-            return redirect('venta_efectivo_list')
-    else:
-        form = VentaEfectivoForm(initial={'fecha': date.today()})
-    return render(request, 'core/form_generic.html', {
-        'form': form,
+        fecha_str = request.POST.get('fecha', '').strip()
+        productos_ids = request.POST.getlist('producto[]')
+        kg_list = request.POST.getlist('kg_vendido[]')
+        precio_list = request.POST.getlist('precio_por_kg[]')
+
+        # Normalizar precios COP
+        precio_list = [_normalizar_precio_cop(p) for p in precio_list]
+
+        errores_generales = []
+        errores_filas = []
+        filas_validas = []
+
+        # Validar fecha
+        fecha = hoy
+        if fecha_str:
+            try:
+                fecha = date.fromisoformat(fecha_str)
+            except ValueError:
+                errores_generales.append('Fecha no válida.')
+
+        # Validar que haya al menos una fila
+        if len(productos_ids) == 0:
+            errores_generales.append('Debe agregar al menos un producto.')
+
+        # Validar longitudes consistentes
+        if not (len(productos_ids) == len(kg_list) == len(precio_list)):
+            errores_generales.append('Datos inconsistentes. Intente de nuevo.')
+
+        if not errores_generales:
+            for i, (prod_id, kg_str, precio_str) in enumerate(zip(productos_ids, kg_list, precio_list)):
+                fila_errores = []
+
+                if not prod_id:
+                    fila_errores.append('Seleccione un producto.')
+                if not kg_str:
+                    fila_errores.append('Ingrese la cantidad en kg.')
+                if not precio_str:
+                    fila_errores.append('Ingrese el precio por kg.')
+
+                producto = None
+                kg_vendido = None
+                precio_por_kg = None
+
+                if prod_id:
+                    try:
+                        producto = Producto.objects.get(pk=prod_id, activo=True)
+                    except Producto.DoesNotExist:
+                        fila_errores.append('Producto no válido.')
+
+                if kg_str:
+                    try:
+                        kg_vendido = Decimal(kg_str)
+                        if kg_vendido <= 0:
+                            fila_errores.append('La cantidad debe ser mayor a 0.')
+                    except (ValueError, TypeError, InvalidOperation):
+                        fila_errores.append('Ingrese un número válido.')
+
+                if precio_str:
+                    try:
+                        precio_por_kg = Decimal(precio_str)
+                        if precio_por_kg < 0:
+                            fila_errores.append('El precio no puede ser negativo.')
+                    except (ValueError, TypeError, InvalidOperation):
+                        fila_errores.append('Ingrese un precio válido.')
+
+                if fila_errores:
+                    errores_filas.append({
+                        'fila': i,
+                        'errores': fila_errores,
+                    })
+                else:
+                    filas_validas.append({
+                        'producto': producto,
+                        'kg_vendido': kg_vendido,
+                        'precio_por_kg': precio_por_kg,
+                    })
+
+        hay_errores = errores_generales or errores_filas or not filas_validas
+
+        if hay_errores:
+            if not errores_generales and not filas_validas:
+                errores_generales.append('Ninguna fila es válida. Corrija los errores.')
+
+            # Preparar datos de filas para re-renderizar
+            filas_post = []
+            for i in range(len(productos_ids)):
+                filas_post.append({
+                    'producto': productos_ids[i] if i < len(productos_ids) else '',
+                    'kg_vendido': kg_list[i] if i < len(kg_list) else '',
+                    'precio_por_kg': request.POST.getlist('precio_por_kg[]')[i] if i < len(request.POST.getlist('precio_por_kg[]')) else '',
+                })
+
+            return render(request, 'core/ventas/venta_efectivo_create.html', {
+                'titulo': 'Nueva Venta en Efectivo',
+                'productos': productos,
+                'fecha': fecha_str or hoy.isoformat(),
+                'filas': filas_post,
+                'errores_generales': errores_generales,
+                'errores_filas': errores_filas,
+            })
+
+        # Crear venta y detalles en transacción atómica
+        with transaction.atomic():
+            venta = VentaEfectivo.objects.create(
+                fecha=fecha,
+                producto=None,
+            )
+            detalles = []
+            for fila in filas_validas:
+                detalles.append(DetalleVentaEfectivo(
+                    venta=venta,
+                    producto=fila['producto'],
+                    kg_vendido=fila['kg_vendido'],
+                    precio_por_kg=fila['precio_por_kg'],
+                ))
+            DetalleVentaEfectivo.objects.bulk_create(detalles)
+
+        total = sum(f['kg_vendido'] * f['precio_por_kg'] for f in filas_validas)
+        nombres_unicos = sorted(set(f['producto'].nombre for f in filas_validas))
+        resumen_nombres = ', '.join(nombres_unicos[:3])
+        if len(nombres_unicos) > 3:
+            resumen_nombres += f' y {len(nombres_unicos) - 3} más'
+
+        messages.success(
+            request,
+            f'Venta registrada: {len(filas_validas)} producto(s) ({resumen_nombres}) — Total: ${total:,.0f}'
+        )
+        return redirect('venta_efectivo_list')
+
+    return render(request, 'core/ventas/venta_efectivo_create.html', {
         'titulo': 'Nueva Venta en Efectivo',
-        'back_url': 'venta_efectivo_list'
+        'productos': productos,
+        'fecha': hoy.isoformat(),
+        'filas': [{'producto': '', 'kg_vendido': '', 'precio_por_kg': ''}],
     })
 
 @login_required
@@ -967,7 +1131,7 @@ def venta_efectivo_edit(request, pk):
             return redirect('venta_efectivo_list')
     else:
         form = VentaEfectivoForm(instance=obj)
-    return render(request, 'core/form_generic.html', {
+    return render(request, 'core/genericos/form_generic.html', {
         'form': form,
         'titulo': 'Editar Venta en Efectivo',
         'back_url': 'venta_efectivo_list',
@@ -1026,20 +1190,16 @@ def venta_efectivo_detail(request, pk):
             detalle = detalle_form.save(commit=False)
             detalle.venta = venta
             
-            # Validar stock
-            if detalle.kg_vendido > detalle.clasificacion.stock_kg:
-                messages.error(request, f'No hay suficiente stock. Disponible: {detalle.clasificacion.stock_kg} kg')
-            else:
-                detalle.save()
-                messages.success(request, f'Producto agregado: {detalle.clasificacion} - {detalle.kg_vendido} kg')
-                return redirect('venta_efectivo_detail', pk=venta.pk)
+            detalle.save()
+            messages.success(request, f'Producto agregado: {detalle.producto.nombre} - {detalle.kg_vendido} kg')
+            return redirect('venta_efectivo_detail', pk=venta.pk)
     
     ctx = {
         'venta': venta,
         'detalles': detalles,
         'detalle_form': detalle_form
     }
-    return render(request, 'core/venta_efectivo_detail.html', ctx)
+    return render(request, 'core/ventas/venta_efectivo_detail.html', ctx)
 
 @login_required
 def detalle_venta_efectivo_delete(request, pk):
@@ -1062,7 +1222,7 @@ def venta_efectivo_list(request):
         'num_ventas': num_ventas,
         'fecha': fecha,
     }
-    return render(request, 'core/venta_efectivo_list.html', ctx)
+    return render(request, 'core/ventas/venta_efectivo_list.html', ctx)
 
 @login_required
 def venta_efectivo_delete(request, pk):
@@ -1071,7 +1231,7 @@ def venta_efectivo_delete(request, pk):
         obj.delete()
         messages.success(request, 'Venta eliminada.')
         return redirect('venta_efectivo_list')
-    return render(request, 'core/confirm_delete.html', {'obj': obj, 'titulo': 'Eliminar Venta Efectivo', 'back_url': 'venta_efectivo_list'})
+    return render(request, 'core/genericos/confirm_delete.html', {'obj': obj, 'titulo': 'Eliminar Venta Efectivo', 'back_url': 'venta_efectivo_list'})
 
 # ---- VENTAS CREDITO ----
 @login_required
@@ -1088,7 +1248,7 @@ def venta_credito_list(request):
         'total_pagado': total_pagado,
         'total_pendiente': total_pendiente
     }
-    return render(request, 'core/venta_credito_list.html', ctx)
+    return render(request, 'core/ventas/venta_credito_list.html', ctx)
 
 @login_required
 def venta_credito_create(request):
@@ -1101,7 +1261,7 @@ def venta_credito_create(request):
             return redirect('venta_credito_detail', pk=venta.pk)
     else:
         form = VentaCreditoForm(initial={'fecha': date.today()})
-    return render(request, 'core/form_generic.html', {
+    return render(request, 'core/genericos/form_generic.html', {
         'form': form,
         'titulo': 'Nueva Venta a Crédito',
         'back_url': 'venta_credito_list'
@@ -1159,7 +1319,7 @@ def venta_credito_detail(request, pk):
         'venta': venta, 'detalles': detalles, 'pagos': pagos,
         'detalle_form': detalle_form, 'pago_form': pago_form,
     }
-    return render(request, 'core/venta_credito_detail.html', ctx)
+    return render(request, 'core/ventas/venta_credito_detail.html', ctx)
 
 @login_required
 def venta_credito_delete(request, pk):
@@ -1176,7 +1336,7 @@ def venta_credito_delete(request, pk):
             return redirect(next_url)
         return redirect('venta_credito_list')
     
-    return render(request, 'core/confirm_delete.html', {'obj': obj, 'titulo': 'Eliminar Venta a Crédito', 'back_url': 'venta_credito_list'})
+    return render(request, 'core/genericos/confirm_delete.html', {'obj': obj, 'titulo': 'Eliminar Venta a Crédito', 'back_url': 'venta_credito_list'})
 
 @login_required
 def venta_credito_pago_add(request, pk):
@@ -1230,7 +1390,7 @@ def reporte_diario(request):
         DetalleVentaEfectivo.objects
         .filter(venta__fecha__gte=thirty_days_ago)
         .values('venta__fecha')
-        .annotate(total=Sum(F('kg_vendido') * F('precio_por_kg')))
+        .annotate(total=Sum(F('kg_vendido') * Coalesce(F('precio_por_kg'), Value(0, output_field=DecimalField()))))
     )
     cr_by_date = (
         DetalleVentaCredito.objects
@@ -1281,21 +1441,21 @@ def reporte_diario(request):
         'total_credito': total_credito, 'total_gastos': total_gastos, 'balance': balance,
         'historial_dias': historial_dias,
     }
-    return render(request, 'core/reporte_diario.html', ctx)
+    return render(request, 'core/reportes/reporte_diario.html', ctx)
 
 @login_required
 def reporte_cartera(request):
     ventas = VentaCredito.objects.select_related('cliente', 'producto').all()
     pendientes = [v for v in ventas if v.saldo_pendiente > 0]
     total_cartera = sum(v.saldo_pendiente for v in pendientes)
-    return render(request, 'core/reporte_cartera.html', {'pendientes': pendientes, 'total_cartera': total_cartera})
+    return render(request, 'core/reportes/reporte_cartera.html', {'pendientes': pendientes, 'total_cartera': total_cartera})
 
 @login_required
 def reporte_proveedor(request):
     viajes = Viaje.objects.select_related('proveedor', 'producto').all()
     pendientes = [v for v in viajes if v.saldo_pendiente > 0]
     total_deuda = sum(v.saldo_pendiente for v in pendientes)
-    return render(request, 'core/reporte_proveedor.html', {'viajes': viajes, 'pendientes': pendientes, 'total_deuda': total_deuda})
+    return render(request, 'core/reportes/reporte_proveedor.html', {'viajes': viajes, 'pendientes': pendientes, 'total_deuda': total_deuda})
 
 # ---- RESUMEN SEMANAL ----
 
@@ -1310,6 +1470,27 @@ def _week_has_data(lunes):
         Gasto.objects.filter(fecha__range=rango).exists() or
         WeeklyInventory.objects.filter(week_start=lunes).exists()
     )
+
+
+def _get_stock_valorizado():
+    """Devuelve las clasificaciones con stock > 0 y su último precio de compra."""
+    from django.db.models import Subquery, OuterRef
+    latest_precio = EntradaInventario.objects.filter(
+        clasificacion=OuterRef('pk')
+    ).order_by('-fecha', '-id').values('precio_por_kg')[:1]
+    items = list(
+        Clasificacion.objects
+        .filter(stock_kg__gt=0)
+        .select_related('producto')
+        .annotate(ultimo_precio=Subquery(latest_precio))
+        .order_by('producto__nombre', 'orden')
+    )
+    for c in items:
+        precio = c.ultimo_precio or Decimal('0')
+        c.valor_stock = c.stock_kg * precio
+    total_valor = sum(c.valor_stock for c in items)
+    total_kg = sum(c.stock_kg for c in items)
+    return {'items': items, 'total': total_valor, 'total_kg': total_kg}
 
 @login_required
 def inventario_weekly_summary(request):
@@ -1350,7 +1531,7 @@ def inventario_weekly_summary(request):
 
     ventas_efectivo_semana = VentaEfectivo.objects.filter(
         fecha__range=[inicio_semana, fin_semana]
-    ).select_related('cliente').prefetch_related('detalles__clasificacion').order_by('-fecha', '-id')
+    ).select_related('cliente').prefetch_related('detalles__producto').order_by('-fecha', '-id')
     total_efectivo_semana = sum(v.total for v in ventas_efectivo_semana) or Decimal('0')
     num_ventas_efectivo = ventas_efectivo_semana.count()
     promedio_efectivo = total_efectivo_semana / num_ventas_efectivo if num_ventas_efectivo else Decimal('0')
@@ -1443,9 +1624,10 @@ def inventario_weekly_summary(request):
         'compras_semana': compras_semana,
         'weekly_history': get_weekly_history(),
         'nomina_form': nomina_form,
+        'stock_valorizado': _get_stock_valorizado(),
     }
 
-    return render(request, 'core/inventario_weekly_summary.html', ctx)
+    return render(request, 'core/inventario/inventario_weekly_summary.html', ctx)
 
 
 # ---- ENTRADAS DE INVENTARIO ----
@@ -1471,7 +1653,7 @@ def entrada_inventario_create(request):
                 nomina.save()
                 messages.success(request, 'Nómina registrada correctamente.')
                 return redirect('entrada_inventario_create')
-            return render(request, 'core/entrada_inventario_nueva.html', {
+            return render(request, 'core/inventario/entrada_inventario_nueva.html', {
                 'proveedores': proveedores, 'clasificaciones': clasificaciones,
                 'fecha_default': date.today().isoformat(),
                 'nomina_form': nomina_form, 'desecho_form': desecho_form,
@@ -1484,7 +1666,7 @@ def entrada_inventario_create(request):
                 desecho_form.save()
                 messages.success(request, 'Desecho registrado correctamente.')
                 return redirect('entrada_inventario_create')
-            return render(request, 'core/entrada_inventario_nueva.html', {
+            return render(request, 'core/inventario/entrada_inventario_nueva.html', {
                 'proveedores': proveedores, 'clasificaciones': clasificaciones,
                 'fecha_default': date.today().isoformat(),
                 'nomina_form': nomina_form, 'desecho_form': desecho_form,
@@ -1570,7 +1752,7 @@ def entrada_inventario_create(request):
             except Exception as e:
                 form_errors.append(f'Error al guardar: {e}')
 
-        return render(request, 'core/entrada_inventario_nueva.html', {
+        return render(request, 'core/inventario/entrada_inventario_nueva.html', {
             'proveedores': proveedores,
             'clasificaciones': clasificaciones,
             'form_errors': form_errors,
@@ -1580,7 +1762,7 @@ def entrada_inventario_create(request):
             'desecho_form': DesechoForm(),
         })
 
-    return render(request, 'core/entrada_inventario_nueva.html', {
+    return render(request, 'core/inventario/entrada_inventario_nueva.html', {
         'proveedores': proveedores,
         'clasificaciones': clasificaciones,
         'fecha_default': date.today().isoformat(),
@@ -1610,7 +1792,7 @@ def entrada_inventario_detail(request, pk):
     cant_neg = sum(p.num_canastillas_negras for p in pesadas)
     cant_col = sum(p.num_canastillas_colores for p in pesadas)
 
-    return render(request, 'core/entrada_inventario_detail.html', {
+    return render(request, 'core/inventario/entrada_inventario_detail.html', {
         'entrada': entrada,
         'pesadas': pesadas,
         'precio_form': precio_form,
@@ -1668,7 +1850,7 @@ def entrada_inventario_edit(request, pk):
         form.save()
         messages.success(request, 'Entrada actualizada.')
         return redirect('entrada_inventario_detail', pk=pk)
-    return render(request, 'core/form_generic.html', {
+    return render(request, 'core/genericos/form_generic.html', {
         'form': form,
         'titulo': 'Editar Entrada de Inventario',
         'back_url': 'entrada_inventario_list',
@@ -1682,7 +1864,7 @@ def entrada_inventario_delete(request, pk):
         entrada.delete()
         messages.success(request, 'Entrada eliminada.')
         return redirect('entrada_inventario_list')
-    return render(request, 'core/confirm_delete.html', {
+    return render(request, 'core/genericos/confirm_delete.html', {
         'obj': entrada,
         'titulo': 'Eliminar Entrada de Inventario',
         'back_href': reverse('entrada_inventario_list'),

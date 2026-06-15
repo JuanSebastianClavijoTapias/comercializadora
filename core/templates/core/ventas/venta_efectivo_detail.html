@@ -54,67 +54,44 @@
       <div class="card-header bg-white py-2 px-3 border-bottom-0" style="background: linear-gradient(135deg, var(--orange-primary) 0%, #e65100 100%);">
         <h6 class="mb-0 fw-bold small" style="color: white; letter-spacing: 0.5px; font-size: 0.9rem;"><i class="bi bi-plus-circle me-2"></i>AGREGAR PRODUCTO</h6>
       </div>
-      
+
       <div class="card-body p-3">
         <form method="post" class="row g-2 align-items-end">
           {% csrf_token %}
-          
-          <!-- Clasificación -->
+
+          <!-- Producto -->
           <div class="col-md-4">
-            <label class="form-label form-control-sm text-uppercase fw-semibold" style="color: var(--text-sec); letter-spacing: 0.5px; font-size: 0.7rem; margin-bottom: 0.35rem;">Clasificación</label>
-            {{ detalle_form.clasificacion }}
+            <label class="form-label form-control-sm text-uppercase fw-semibold" style="color: var(--text-sec); letter-spacing: 0.5px; font-size: 0.7rem; margin-bottom: 0.35rem;">Producto</label>
+            {{ detalle_form.producto }}
           </div>
-          
-          <!-- Stock Disponible -->
-          <div class="col-md-3">
-            <div class="p-8 rounded-2 text-center d-flex flex-column justify-content-center" style="background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%); border: 1px solid var(--orange-primary); min-height: 38px;">
-              <div class="text-uppercase fw-bold" style="color: #e65100; font-size: 0.65rem; letter-spacing: 0.5px; margin-bottom: 0.2rem;">Stock Dispo.</div>
-              <div class="fw-bold" style="color: #d84315; font-size: 1rem;" id="stock_disponible">-</div>
-            </div>
-          </div>
-          
-          <!-- Stock Restante -->
-          <div class="col-md-3">
-            <div class="p-8 rounded-2 text-center d-flex flex-column justify-content-center" style="background: linear-gradient(135deg, #ffe0b2 0%, #ffb74d 100%); border: 1px solid #ff9800; min-height: 38px;">
-              <div class="text-uppercase fw-bold" style="color: #e65100; font-size: 0.65rem; letter-spacing: 0.5px; margin-bottom: 0.2rem;">Restante</div>
-              <div class="fw-bold" style="color: #d84315; font-size: 1rem;" id="stock_restante">-</div>
-            </div>
-          </div>
-          
-          <!-- Botón Agregar -->
-          <div class="col-md-1">
-            <button type="submit" name="detalle_submit" class="btn w-100 py-2 d-flex justify-content-center fw-semibold" style="background: linear-gradient(135deg, var(--orange-primary) 0%, #e65100 100%); color: white; border: none; border-radius: 6px; font-size: 1rem;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
-              <i class="bi bi-plus-lg"></i>
-            </button>
-          </div>
-          
+
           <!-- Kg a Vender -->
           <div class="col-md-3">
             <label class="form-label form-control-sm text-uppercase fw-semibold" style="color: var(--text-sec); letter-spacing: 0.5px; font-size: 0.7rem; margin-bottom: 0.35rem;">Kg</label>
             {{ detalle_form.kg_vendido }}
           </div>
-          
+
           <!-- Precio por Kg -->
           <div class="col-md-3">
             <label class="form-label form-control-sm text-uppercase fw-semibold" style="color: var(--text-sec); letter-spacing: 0.5px; font-size: 0.7rem; margin-bottom: 0.35rem;">Precio /kg</label>
             {{ detalle_form.precio_por_kg }}
           </div>
-          
+
+          <!-- Botón Agregar -->
+          <div class="col-md-2">
+            <button type="submit" name="detalle_submit" class="btn w-100 py-2 d-flex justify-content-center fw-semibold" style="background: linear-gradient(135deg, var(--orange-primary) 0%, #e65100 100%); color: white; border: none; border-radius: 6px; font-size: 1rem;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+              <i class="bi bi-plus-lg"></i>
+            </button>
+          </div>
+
           <!-- Total Producto -->
-          <div class="col-md-3">
+          <div class="col-md-4 offset-md-8">
             <div class="p-2 rounded-2 text-center" style="background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); border: 1px solid #4CAF50;">
               <div class="text-uppercase fw-bold" style="color: #1b5e20; font-size: 0.65rem; letter-spacing: 0.5px; margin-bottom: 0.25rem;">Total Prod.</div>
               <div class="fw-bold" style="color: #2e7d32; font-size: 1rem;">$<span id="total_producto">0</span></div>
             </div>
           </div>
         </form>
-        
-        <!-- Validaciones -->
-        <div id="stock_info" style="display: none; margin-top: 0.5rem;">
-          <div class="alert mb-0 py-2 px-2 rounded-2 small" style="border-left: 2px solid var(--orange-primary); font-size: 0.8rem;" id="info_alert">
-            <i class="bi me-1"></i><span id="info_text"></span>
-          </div>
-        </div>
       </div>
     </div>
   </div>
@@ -130,7 +107,7 @@
       <table class="table table-sm table-hover align-middle mb-0" style="font-size: 0.85rem;">
         <thead class="bg-light">
           <tr style="background: #f9f9f9;">
-            <th class="ps-3 fw-bold" style="font-size: 0.75rem; color: #666;">Clasificación</th>
+            <th class="ps-3 fw-bold" style="font-size: 0.75rem; color: #666;">Producto</th>
             <th class="fw-bold text-center" style="font-size: 0.75rem; color: #666;">Kg</th>
             <th class="fw-bold text-center" style="font-size: 0.75rem; color: #666;">$/Kg</th>
             <th class="fw-bold text-end pe-2" style="font-size: 0.75rem; color: #666;">Subtotal</th>
@@ -141,8 +118,7 @@
         {% for d in detalles %}
         <tr style="border-bottom: 1px solid #f0f0f0;">
           <td class="ps-3 py-2">
-            <div class="fw-semibold" style="font-size: 0.9rem;">{{ d.clasificacion.nombre }}</div>
-            <div class="small text-muted" style="font-size: 0.75rem;">{{ d.clasificacion.producto.nombre }}</div>
+            <div class="fw-semibold" style="font-size: 0.9rem;">{{ d.producto.nombre }}</div>
           </td>
           <td class="text-center py-2 fw-semibold">{{ d.kg_vendido }}</td>
           <td class="text-center py-2 text-muted small">${{ d.precio_por_kg|cop }}</td>
@@ -176,7 +152,7 @@
   <div class="card-header py-2 px-3 border-bottom-0" style="background: linear-gradient(135deg, var(--orange-primary) 0%, #e65100 100%);">
     <h6 class="mb-0 fw-bold small" style="color: white; letter-spacing: 0.5px; font-size: 0.9rem;"><i class="bi bi-credit-card me-2"></i>PROCESAMIENTO DE PAGO</h6>
   </div>
-  
+
   <div class="card-body p-3">
     <!-- Fila 1: Resumen de Totales -->
     <div class="row g-2 mb-4">
@@ -188,7 +164,7 @@
           </div>
         </div>
       </div>
-      
+
       <div class="col-6">
         <div class="p-3 rounded-2 text-center" style="background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%); border: 1px solid #ff9800;">
           <div class="text-uppercase fw-bold small" style="color: #e65100; font-size: 0.7rem; letter-spacing: 0.5px; margin-bottom: 0.2rem;">Pagado</div>
@@ -198,7 +174,7 @@
         </div>
       </div>
     </div>
-    
+
     <!-- Fila 2: Entrada de Datos -->
     <div class="row g-2 mb-4">
       <div class="col-md-6">
@@ -208,7 +184,7 @@
           <option value="transferencia">💳 Transferencia</option>
         </select>
       </div>
-      
+
       <div class="col-md-6">
         <label class="form-label form-control-sm text-uppercase fw-semibold" style="color: var(--text-sec); letter-spacing: 0.5px; font-size: 0.7rem; margin-bottom: 0.35rem;">Monto Pagado</label>
         <div class="input-group" style="border: 1px solid var(--orange-primary); border-radius: 6px; overflow: hidden;">
@@ -217,7 +193,7 @@
         </div>
       </div>
     </div>
-    
+
     <!-- Fila 3: Estado de Pago -->
     <div id="payment_status" class="mb-3" style="display: none;">
       <div class="alert mb-0 py-2 px-3 rounded-2 small" style="border-left: 3px solid var(--orange-primary); font-size: 0.8rem;">
@@ -242,79 +218,22 @@
 
 <!-- JavaScript para Cálculos Dinámicos -->
 <script>
-  const clasificacionesStock = {
-    {% for d in detalle_form.clasificacion.field.queryset %}
-      "{{ d.pk }}": {
-        "nombre": "{{ d.nombre }}",
-        "stock": {{ d.stock_kg|safe }},
-        "producto": "{{ d.producto.nombre }}"
-      }{{ forloop.last|yesno:''|add:','|slice:"-1" }}{% if not forloop.last %},{% endif %}
-    {% endfor %}
-  };
-
   const kgInput = document.getElementById('id_kg_vendido');
   const precioInput = document.getElementById('id_precio_por_kg');
-  const clasificacionSelect = document.getElementById('id_clasificacion');
   const montoPagadoInput = document.getElementById('monto_pagado');
   const medioPagoSelect = document.getElementById('medio_pago');
-  const btnRegistrar = document.getElementById('btn_registrar');
   const formFinalizarVenta = document.getElementById('finalizar_venta_form');
 
-  clasificacionSelect.addEventListener('change', function() {
-    const clasificacionId = this.value;
-    const stockElement = document.getElementById('stock_disponible');
-    const stockRestanteElement = document.getElementById('stock_restante');
-    const infoElement = document.getElementById('stock_info');
+  function parseCOP(value) {
+    if (!value) return 0;
+    return parseFloat(String(value).replace(/\./g, '').replace(',', '.')) || 0;
+  }
 
-    if (clasificacionId && clasificacionesStock[clasificacionId]) {
-      const stock = clasificacionesStock[clasificacionId].stock;
-      stockElement.textContent = stock.toLocaleString('es-AR', {minimumFractionDigits: 2});
-      kgInput.value = '';
-      precioInput.value = '';
-      updateCalculations();
-      infoElement.style.display = 'none';
-    } else {
-      stockElement.textContent = '-';
-      stockRestanteElement.textContent = '-';
-      infoElement.style.display = 'none';
-    }
-  });
-
-  function updateCalculations() {
-    const clasificacionId = clasificacionSelect.value;
+  function updateProductTotal() {
     const kg = parseFloat(kgInput.value) || 0;
     const precio = parseCOP(precioInput.value);
-
-    if (clasificacionId && clasificacionesStock[clasificacionId]) {
-      const stock = clasificacionesStock[clasificacionId].stock;
-      const stockRestante = stock - kg;
-      const totalProducto = (kg * precio).toFixed(2);
-
-      document.getElementById('stock_restante').textContent = stockRestante.toLocaleString('es-AR', {minimumFractionDigits: 2});
-      document.getElementById('total_producto').textContent = parseFloat(totalProducto).toLocaleString('es-AR', {minimumFractionDigits: 0});
-
-      const infoElement = document.getElementById('stock_info');
-      const infoText = document.getElementById('info_text');
-      const infoAlert = document.getElementById('info_alert');
-      
-      if (stockRestante < 0) {
-        infoElement.style.display = 'block';
-        infoText.textContent = '⚠️ La cantidad vendida supera el stock disponible';
-        infoAlert.style.borderLeftColor = '#d32f2f';
-        infoAlert.style.backgroundColor = '#ffebee';
-        infoAlert.style.color = '#c62828';
-      } else if (kg > 0 && stockRestante < (stock * 0.1)) {
-        infoElement.style.display = 'block';
-        infoText.textContent = '⚠️ Stock bajo - Quedarán ' + stockRestante.toLocaleString('es-AR', {minimumFractionDigits: 1}) + ' kg';
-        infoAlert.style.borderLeftColor = 'var(--orange-primary)';
-        infoAlert.style.backgroundColor = '#fff3e0';
-        infoAlert.style.color = '#e65100';
-      } else {
-        infoElement.style.display = 'none';
-      }
-    }
-
-    updatePaymentCalculations();
+    const totalProducto = (kg * precio).toFixed(2);
+    document.getElementById('total_producto').textContent = parseFloat(totalProducto).toLocaleString('es-AR', {minimumFractionDigits: 0});
   }
 
   function updatePaymentCalculations() {
@@ -323,7 +242,6 @@
     const cambio = Math.max(0, pagado - total);
 
     document.getElementById('resumen_pagado').textContent = pagado.toLocaleString('es-AR', {minimumFractionDigits: 0});
-    document.getElementById('resumen_cambio').textContent = cambio.toLocaleString('es-AR', {minimumFractionDigits: 0});
 
     const paymentStatus = document.getElementById('payment_status');
     const paymentMessage = document.getElementById('payment_message');
@@ -337,7 +255,7 @@
         infoAlert.style.backgroundColor = '#e8f5e9';
         infoAlert.style.color = '#1b5e20';
         paymentIcon.className = 'bi bi-check-circle-fill';
-        paymentMessage.innerHTML = 'Pago completo ✓';
+        paymentMessage.innerHTML = 'Pago completo ✓' + (cambio > 0 ? ' — Cambio: $' + cambio.toLocaleString('es-AR', {minimumFractionDigits: 0}) : '');
       } else {
         const falta = (total - pagado).toLocaleString('es-AR', {minimumFractionDigits: 0});
         infoAlert.style.borderLeftColor = 'var(--orange-primary)';
@@ -357,12 +275,13 @@
     document.getElementById('hidden_monto_pagado').value = String(montoPagadoInput.value).replace(/\./g, '') || '0';
   });
 
-  kgInput.addEventListener('input', updateCalculations);
-  precioInput.addEventListener('input', updateCalculations);
+  kgInput.addEventListener('input', updateProductTotal);
+  precioInput.addEventListener('input', updateProductTotal);
   montoPagadoInput.addEventListener('input', updatePaymentCalculations);
   medioPagoSelect.addEventListener('change', updatePaymentCalculations);
 
-  updateCalculations();
+  updateProductTotal();
+  updatePaymentCalculations();
 </script>
 
 {% endblock %}

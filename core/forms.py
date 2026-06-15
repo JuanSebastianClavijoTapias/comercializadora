@@ -220,18 +220,18 @@ class DetalleVentaEfectivoForm(COPInputNormalizationMixin, forms.ModelForm):
 
     class Meta:
         model = DetalleVentaEfectivo
-        fields = ['clasificacion', 'kg_vendido', 'precio_por_kg']
+        fields = ['producto', 'kg_vendido', 'precio_por_kg']
         widgets = {
-            'clasificacion': forms.Select(attrs={'class': 'form-select'}),
+            'producto': forms.Select(attrs={'class': 'form-select'}),
             'kg_vendido': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': 'Kg a vender'}),
             'precio_por_kg': forms.TextInput(attrs={'class': 'form-control price-cop', 'inputmode': 'numeric', 'autocomplete': 'off', 'placeholder': 'Precio por kg'}),
         }
-    
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['clasificacion'].queryset = Clasificacion.objects.filter(
+        self.fields['producto'].queryset = Producto.objects.filter(
             activo=True
-        ).order_by('producto', 'orden')
+        ).order_by('nombre')
 
 class VentaCreditoForm(forms.ModelForm):
     class Meta:

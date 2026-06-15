@@ -54,7 +54,7 @@ class VentaCreditoAdmin(admin.ModelAdmin):
 class DetalleVentaEfectivoInline(admin.TabularInline):
     model = DetalleVentaEfectivo
     extra = 1
-    fields = ['clasificacion', 'kg_vendido', 'precio_por_kg']
+    fields = ['producto', 'kg_vendido', 'precio_por_kg']
     readonly_fields = []
 
 @admin.register(VentaEfectivo)
@@ -64,4 +64,4 @@ class VentaEfectivoAdmin(admin.ModelAdmin):
 
 @admin.register(DetalleVentaEfectivo)
 class DetalleVentaEfectivoAdmin(admin.ModelAdmin):
-    list_display = ['venta', 'clasificacion', 'kg_vendido', 'precio_por_kg', 'total']
+    list_display = ['venta', 'producto', 'kg_vendido', 'precio_por_kg', 'total']
