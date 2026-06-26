@@ -1,0 +1,171 @@
+[
+{
+  "model": "auth.user",
+  "pk": 1,
+  "fields": {
+    "password": "pbkdf2_sha256$600000$cVOxx4z6c7W6VJSGFqTe21$a8OCMmB4IwVamDtDStiv7jaFFMrVS1Vfx0WDBo0hiMM=",
+    "last_login": "2026-05-24T18:10:23.664-05:00",
+    "is_superuser": true,
+    "username": "admin",
+    "first_name": "",
+    "last_name": "",
+    "email": "",
+    "is_staff": true,
+    "is_active": true,
+    "date_joined": "2026-05-06T17:42:21.755-05:00",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 2,
+  "fields": {
+    "password": "pbkdf2_sha256$600000$e1G6VPoDhIusGiA5vahIJe$kdiJXrSZtusHO2gXQ14ldrm8vzbpHuB09TMBZxjDZsg=",
+    "last_login": "2026-06-15T18:03:26.736-05:00",
+    "is_superuser": true,
+    "username": "admin1",
+    "first_name": "",
+    "last_name": "",
+    "email": "",
+    "is_staff": true,
+    "is_active": true,
+    "date_joined": "2026-05-18T16:13:32.825-05:00",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "core.producto",
+  "pk": 1,
+  "fields": {
+    "nombre": "pepe",
+    "tiene_descuento_gobierno": false,
+    "porcentaje_descuento": "0.00",
+    "activo": true
+  }
+},
+{
+  "model": "core.producto",
+  "pk": 8,
+  "fields": {
+    "nombre": "Mandarina Primera",
+    "tiene_descuento_gobierno": false,
+    "porcentaje_descuento": "0.00",
+    "activo": true
+  }
+},
+{
+  "model": "core.producto",
+  "pk": 10,
+  "fields": {
+    "nombre": "Mandarina",
+    "tiene_descuento_gobierno": false,
+    "porcentaje_descuento": "0.00",
+    "activo": true
+  }
+},
+{
+  "model": "core.producto",
+  "pk": 11,
+  "fields": {
+    "nombre": "Limón",
+    "tiene_descuento_gobierno": false,
+    "porcentaje_descuento": "0.00",
+    "activo": true
+  }
+},
+{
+  "model": "core.clasificacion",
+  "pk": 1,
+  "fields": {
+    "producto": 1,
+    "nombre": "Clasificación 1",
+    "orden": 1,
+    "stock_kg": "0.00",
+    "activo": true
+  }
+},
+{
+  "model": "core.clasificacion",
+  "pk": 2,
+  "fields": {
+    "producto": 1,
+    "nombre": "Clasificación 2",
+    "orden": 2,
+    "stock_kg": "0.00",
+    "activo": true
+  }
+},
+{
+  "model": "core.clasificacion",
+  "pk": 3,
+  "fields": {
+    "producto": 1,
+    "nombre": "Clasificación 3",
+    "orden": 3,
+    "stock_kg": "0.00",
+    "activo": true
+  }
+},
+{
+  "model": "core.clasificacion",
+  "pk": 4,
+  "fields": {
+    "producto": 1,
+    "nombre": "Clasificación 4",
+    "orden": 4,
+    "stock_kg": "0.00",
+    "activo": true
+  }
+},
+{
+  "model": "core.clasificacion",
+  "pk": 5,
+  "fields": {
+    "producto": 1,
+    "nombre": "Clasificación 5",
+    "orden": 5,
+    "stock_kg": "0.00",
+    "activo": true
+  }
+},
+{
+  "model": "core.clasificacion",
+  "pk": 6,
+  "fields": {
+    "producto": 1,
+    "nombre": "Clasificación 6",
+    "orden": 6,
+    "stock_kg": "0.00",
+    "activo": true
+  }
+},
+{
+  "model": "core.categoriagasto",
+  "pk": 1,
+  "fields": {
+    "nombre": "Pagos a Proveedores"
+  }
+},
+{
+  "model": "core.proveedor",
+  "pk": 3,
+  "fields": {
+    "nombre": "sill",
+    "telefono": "00000",
+    "direccion": "",
+    "activo": true
+  }
+},
+{
+  "model": "core.cliente",
+  "pk": 1,
+  "fields": {
+    "nombre": "sebas",
+    "telefono": "00000",
+    "direccion": "",
+    "activo": true
+  }
+}
+]
