@@ -124,9 +124,8 @@ class GastoForm(COPInputNormalizationMixin, forms.ModelForm):
 
     class Meta:
         model = Gasto
-        fields = ['categoria', 'descripcion', 'monto', 'fecha']
+        fields = ['descripcion', 'monto', 'fecha']
         widgets = {
-            'categoria': forms.Select(attrs={'class': 'form-select'}),
             'descripcion': forms.TextInput(attrs={'class': 'form-control'}),
             'monto': forms.TextInput(attrs={'class': 'form-control price-cop', 'inputmode': 'numeric', 'autocomplete': 'off'}),
             'fecha': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
@@ -197,18 +196,20 @@ class PesadaEntradaForm(forms.ModelForm):
         }
 
 class VentaEfectivoForm(COPInputNormalizationMixin, forms.ModelForm):
-    cop_fields = ('total_dia',)
+    cop_fields = ('total_dia', 'kg_vendido')
 
     class Meta:
         model = VentaEfectivo
-        fields = ['fecha', 'producto', 'total_dia']
+        fields = ['fecha', 'producto', 'kg_vendido', 'total_dia']
         widgets = {
             'fecha': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'producto': forms.Select(attrs={'class': 'form-select'}),
+            'kg_vendido': forms.TextInput(attrs={'class': 'form-control price-cop', 'inputmode': 'numeric', 'placeholder': 'Ej: 3.00'}),
             'total_dia': forms.TextInput(attrs={'class': 'form-control price-cop', 'inputmode': 'numeric', 'placeholder': 'Total del día'}),
         }
         labels = {
             'total_dia': 'Total del día',
+            'kg_vendido': 'Kg vendidos del día',
         }
 
     def __init__(self, *args, **kwargs):

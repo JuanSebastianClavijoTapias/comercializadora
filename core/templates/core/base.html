@@ -6,6 +6,7 @@
 <title>{% block title %}FrutaSystem{% endblock %}</title>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/choices.js@10.2.0/public/assets/styles/choices.min.css" rel="stylesheet">
 <!-- Chart.js para gráficos -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
 <!-- Google Fonts: Poppins & Inter -->
@@ -905,6 +906,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/choices.js@10.2.0/public/assets/scripts/choices.min.js"></script>
 <script>
   const sidebar = document.getElementById('sidebar');
   const overlay = document.getElementById('sidebarOverlay');
@@ -950,7 +952,8 @@
 // ===== FORMATO MONEDA COLOMBIANA (price-cop) =====
 (function() {
   function formatCOP(val) {
-    const digits = String(val).replace(/\D/g, '');
+    const intPart = String(val).split('.')[0];
+    const digits = intPart.replace(/\D/g, '');
     if (!digits) return '';
     return parseInt(digits, 10).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
   }

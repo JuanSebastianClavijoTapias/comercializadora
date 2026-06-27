@@ -150,7 +150,7 @@ class PagoProveedor(models.Model):
         verbose_name = 'Pago a Proveedor'; verbose_name_plural = 'Pagos a Proveedores'; ordering = ['-fecha']
 
 class Gasto(models.Model):
-    categoria = models.ForeignKey(CategoriaGasto, on_delete=models.CASCADE, verbose_name='Categoría')
+    categoria = models.ForeignKey(CategoriaGasto, null=True, blank=True, on_delete=models.SET_NULL, verbose_name='Categoría')
     descripcion = models.CharField(max_length=300, verbose_name='Descripción')
     monto = models.DecimalField(max_digits=12, decimal_places=2, verbose_name='Monto')
     fecha = models.DateField(verbose_name='Fecha')
@@ -190,6 +190,7 @@ class WeeklyInventory(models.Model):
 class VentaEfectivo(models.Model):
     fecha = models.DateField(verbose_name='Fecha')
     producto = models.ForeignKey(Producto, on_delete=models.SET_NULL, related_name='ventas_efectivo', verbose_name='Producto', null=True, blank=True)
+    kg_vendido = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name='Kg vendidos del día')
     total_dia = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True, verbose_name='Total del día')
     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, related_name='ventas_efectivo', verbose_name='Cliente', null=True, blank=True)
     descripcion = models.CharField(max_length=300, blank=True, verbose_name='Descripción')
@@ -199,7 +200,7 @@ class VentaEfectivo(models.Model):
     def total(self):
         if self.total_dia is not None:
             return self.total_dia
-        return sum(d.total for d in self.detalles.all())
+        return Decimal('0')
     
     def __str__(self):
         producto_str = self.producto.nombre if self.producto else 'General'

@@ -150,7 +150,7 @@
           <table class="table table-sm align-middle mb-0">
             <thead class="bg-light">
               <tr>
-                <th class="ps-3 fw-bold small" style="color: var(--text-secondary);">CATEGOR�?A</th>
+                <th class="ps-3 fw-bold small" style="color: var(--text-secondary);">FECHA</th>
                 <th class="fw-bold small" style="color: var(--text-secondary);">DESCRIPCIÓN</th>
                 <th class="text-end pe-3 fw-bold small" style="color: var(--text-secondary);">MONTO</th>
               </tr>
@@ -158,9 +158,7 @@
             <tbody>
             {% for g in gastos %}
             <tr>
-              <td class="ps-3">
-                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-2 py-1 small">{{ g.categoria }}</span>
-              </td>
+              <td class="ps-3 small">{{ g.fecha|date:"d/m/Y" }}</td>
               <td class="small">{{ g.descripcion }}</td>
               <td class="text-end pe-3 fw-semibold text-danger">${{ g.monto|default:0|cop }}</td>
             </tr>

@@ -63,7 +63,7 @@
 
   <!-- COLUMNA PESADAS -->
   <div class="col-lg-7">
-    <div class="card h-100">
+    <div class="card mb-3">
       <div class="card-header d-flex justify-content-between align-items-center">
         <span><i class="bi bi-speedometer2 me-2"></i>Pesadas del Viaje</span>
         <span class="badge" style="background:rgba(255,255,255,0.25); font-size:0.8rem;">
@@ -234,6 +234,74 @@
 
       </div>
     </div>
+
+    <!-- CLASIFICAR KG NETO -->
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-list-check me-2"></i>Clasificar Kg Neto por Calidad</span>
+        <span class="badge bg-primary" id="kilos_restantes_badge">Calculando...</span>
+      </div>
+      <div class="card-body p-0">
+        <form method="post" id="clasificaciones_form">
+          {% csrf_token %}
+          <input type="hidden" name="guardar_clasificaciones" value="1">
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead>
+                <tr>
+                  <th>Clasificacion</th>
+                  <th style="width:200px;">Kg Neto Clasificado</th>
+                  <th style="width:120px;" class="text-muted text-end small">% del total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for cd in clases_data %}
+                <tr>
+                  <td class="align-middle fw-medium">{{ cd.clasificacion.nombre }}</td>
+                  <td>
+                    <input type="number" step="0.01" min="0"
+                           name="kg_neto_{{ cd.clasificacion.id }}"
+                           class="form-control form-control-sm neto-input"
+                           value="{{ cd.kg_neto }}"
+                           placeholder="0.00">
+                  </td>
+                  <td class="text-end align-middle">
+                    <span class="pct-label text-muted small">{{ cd.kg_neto|floatformat:1 }} kg</span>
+                  </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="3" class="text-center text-muted py-3">No hay clasificaciones activas para este producto.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+          <div class="px-3 pt-3 pb-1">
+            <div class="d-flex justify-content-between align-items-center mb-1" style="font-size:0.83rem;">
+              <span class="text-muted">Distribuido: <strong id="total_kg_distribuido" class="text-dark">0.00 kg</strong></span>
+              <span class="text-muted">Disponible: <strong>{{ neto_final|floatformat:2 }} kg</strong></span>
+              <span id="restante_label" class="fw-bold">—</span>
+            </div>
+            <div class="progress" style="height:10px; border-radius:6px;">
+              <div id="barra_progreso" class="progress-bar" role="progressbar"
+                   style="width:0%; border-radius:6px; transition:width 0.2s;"></div>
+            </div>
+          </div>
+
+          <div class="p-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <span class="text-danger small fw-bold" id="error_msg" style="display:none;">
+              <i class="bi bi-exclamation-triangle me-1"></i>Ha excedido los Kg Neto disponibles!
+            </span>
+            <span class="text-success small fw-bold" id="ok_msg" style="display:none;">
+              <i class="bi bi-check-circle me-1"></i>Distribucion completa
+            </span>
+            <button type="submit" class="btn btn-success ms-auto" id="btn_guardar_clas">
+              <i class="bi bi-save me-1"></i>Guardar Clasificaciones
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
 
   <!-- RESUMEN CALCULO -->
@@ -275,6 +343,19 @@
             <span class="fw-bold"><i class="bi bi-check-circle me-2"></i>Kg Neto a Pagar</span>
             <span class="fw-bold" style="font-size:1.4rem;">{{ neto_final|floatformat:2 }} kg</span>
           </div>
+          {% if lotes %}
+          <div class="mt-2 pt-2 border-top" style="border-color:rgba(255,255,255,0.25);">
+            <div class="small fw-semibold mb-1" style="opacity:0.85;"><i class="bi bi-list-ul me-1"></i>Desglose por clasificacion:</div>
+            <div class="row g-1">
+              {% for lote in lotes %}
+              <div class="col-6 d-flex justify-content-between small">
+                <span style="opacity:0.9;">{{ lote.clasificacion.nombre }}:</span>
+                <span class="fw-bold">{{ lote.kg_neto|floatformat:2 }} kg</span>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+          {% endif %}
         </div>
 
         <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
@@ -298,102 +379,6 @@
 
 </div>
 
-<!-- CLASIFICAR KG NETO -->
-<div class="card mb-3">
-  <div class="card-header d-flex justify-content-between align-items-center">
-    <span><i class="bi bi-list-check me-2"></i>Clasificar Kg Neto por Calidad</span>
-    <span class="badge bg-primary" id="kilos_restantes_badge">Calculando...</span>
-  </div>
-  <div class="card-body p-0">
-    {% if lotes|length > 0 %}
-      <div class="text-center py-4" style="background:rgba(76,175,80,0.06);">
-        <i class="bi bi-check-circle" style="font-size:2.5rem; color:#4CAF50;"></i>
-        <p class="mt-2 mb-0 fw-bold text-success">Clasificaciones guardadas exitosamente</p>
-      </div>
-      <div class="table-responsive">
-        <table class="table table-hover mb-0">
-          <thead><tr><th>Clasificacion</th><th>Kg Neto</th></tr></thead>
-          <tbody>
-            {% for lote in lotes %}
-            <tr>
-              <td class="fw-medium">{{ lote.clasificacion.nombre }}</td>
-              <td>{{ lote.kg_neto|floatformat:2 }} kg</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-          <tfoot>
-            <tr>
-              <th class="text-end">Total Distribuido:</th>
-              <th>{{ total_kg_neto|floatformat:2 }} kg</th>
-            </tr>
-          </tfoot>
-        </table>
-      </div>
-    {% else %}
-    <form method="post" id="clasificaciones_form">
-      {% csrf_token %}
-      <input type="hidden" name="guardar_clasificaciones" value="1">
-      <div class="table-responsive">
-        <table class="table table-hover mb-0">
-          <thead>
-            <tr>
-              <th>Clasificacion</th>
-              <th style="width:200px;">Kg Neto Clasificado</th>
-              <th style="width:120px;" class="text-muted text-end small">% del total</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for cd in clases_data %}
-            <tr>
-              <td class="align-middle fw-medium">{{ cd.clasificacion.nombre }}</td>
-              <td>
-                <input type="number" step="0.01" min="0"
-                       name="kg_neto_{{ cd.clasificacion.id }}"
-                       class="form-control form-control-sm neto-input"
-                       value="{{ cd.kg_neto }}"
-                       placeholder="0.00">
-              </td>
-              <td class="text-end align-middle">
-                <span class="pct-label text-muted small">—</span>
-              </td>
-            </tr>
-            {% empty %}
-            <tr><td colspan="3" class="text-center text-muted py-3">No hay clasificaciones activas para este producto.</td></tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-
-      <!-- Barra de progreso en tiempo real -->
-      <div class="px-3 pt-3 pb-1">
-        <div class="d-flex justify-content-between align-items-center mb-1" style="font-size:0.83rem;">
-          <span class="text-muted">Distribuido: <strong id="total_kg_distribuido" class="text-dark">0.00 kg</strong></span>
-          <span class="text-muted">Disponible: <strong>{{ neto_final|floatformat:2 }} kg</strong></span>
-          <span id="restante_label" class="fw-bold">—</span>
-        </div>
-        <div class="progress" style="height:10px; border-radius:6px;">
-          <div id="barra_progreso" class="progress-bar" role="progressbar"
-               style="width:0%; border-radius:6px; transition:width 0.2s;"></div>
-        </div>
-      </div>
-
-      <div class="p-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
-        <span class="text-danger small fw-bold" id="error_msg" style="display:none;">
-          <i class="bi bi-exclamation-triangle me-1"></i>Ha excedido los Kg Neto disponibles!
-        </span>
-        <span class="text-success small fw-bold" id="ok_msg" style="display:none;">
-          <i class="bi bi-check-circle me-1"></i>Distribución completa
-        </span>
-        <button type="submit" class="btn btn-success ms-auto" id="btn_guardar_clas">
-          <i class="bi bi-save me-1"></i>Guardar Clasificaciones
-        </button>
-      </div>
-    </form>
-    {% endif %}
-  </div>
-</div>
-
-<!-- PAGOS AL PROVEEDOR -->
 <div class="card">
   <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
     <span><i class="bi bi-cash me-2"></i>Pagos al Proveedor</span>

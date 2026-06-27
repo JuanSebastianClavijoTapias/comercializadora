@@ -1,0 +1,77 @@
+<div class="row g-3">
+  <div class="col-6">
+    <div class="card border-0 shadow-sm" style="border-radius: 12px; overflow: hidden;">
+      <div class="card-header py-2 bg-white border-bottom-0 d-flex align-items-center">
+        <div class="stat-icon-wrapper d-inline-flex me-2 shadow-sm" style="width: 28px; height: 28px; font-size: 0.85rem; background: rgba(211, 47, 47, 0.2); color: #d32f2f;">
+          <i class="bi bi-cash-stack"></i>
+        </div>
+        <h6 class="mb-0 fw-bold small" style="color: white;">Monto</h6>
+      </div>
+      <div class="card-body text-center py-3">
+        <div class="fs-4 fw-bold text-danger">${{ gasto.monto|cop }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6">
+    <div class="card border-0 shadow-sm" style="border-radius: 12px; overflow: hidden;">
+      <div class="card-header py-2 bg-white border-bottom-0 d-flex align-items-center">
+        <div class="stat-icon-wrapper d-inline-flex me-2 shadow-sm" style="width: 28px; height: 28px; font-size: 0.85rem; background: rgba(63, 81, 181, 0.2); color: #3f51b5;">
+          <i class="bi bi-calendar3"></i>
+        </div>
+        <h6 class="mb-0 fw-bold small" style="color: white;">Fecha</h6>
+      </div>
+      <div class="card-body text-center py-3">
+        <div class="fs-6 fw-semibold">{{ gasto.fecha|date:"d/m/Y" }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-12">
+    <div class="card border-0 shadow-sm" style="border-radius: 12px; overflow: hidden;">
+      <div class="card-header py-2 bg-white border-bottom-0 d-flex align-items-center">
+        <div class="stat-icon-wrapper d-inline-flex me-2 shadow-sm" style="width: 28px; height: 28px; font-size: 0.85rem; background: rgba(255, 152, 0, 0.2); color: var(--orange-primary);">
+          <i class="bi bi-card-text"></i>
+        </div>
+        <h6 class="mb-0 fw-bold small" style="color: white;">Descripcion</h6>
+      </div>
+      <div class="card-body py-3 px-3">
+        <p class="mb-0 small">{{ gasto.descripcion }}</p>
+      </div>
+    </div>
+  </div>
+  {% if gasto.categoria %}
+  <div class="col-6">
+    <div class="card border-0 shadow-sm" style="border-radius: 12px; overflow: hidden;">
+      <div class="card-header py-2 bg-white border-bottom-0 d-flex align-items-center">
+        <div class="stat-icon-wrapper d-inline-flex me-2 shadow-sm" style="width: 28px; height: 28px; font-size: 0.85rem; background: rgba(76, 175, 80, 0.2); color: #4caf50;">
+          <i class="bi bi-tag"></i>
+        </div>
+        <h6 class="mb-0 fw-bold small" style="color: white;">Categoria</h6>
+      </div>
+      <div class="card-body text-center py-3">
+        <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-2 py-1">{{ gasto.categoria.nombre }}</span>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+  {% if gasto.pago_proveedor %}
+  <div class="col-6">
+    <div class="card border-0 shadow-sm" style="border-radius: 12px; overflow: hidden;">
+      <div class="card-header py-2 bg-white border-bottom-0 d-flex align-items-center">
+        <div class="stat-icon-wrapper d-inline-flex me-2 shadow-sm" style="width: 28px; height: 28px; font-size: 0.85rem; background: rgba(255, 107, 53, 0.2); color: var(--orange-primary);">
+          <i class="bi bi-link-45deg"></i>
+        </div>
+        <h6 class="mb-0 fw-bold small" style="color: white;">Pago Vinculado</h6>
+      </div>
+      <div class="card-body text-center py-3">
+        <div class="fw-semibold small">{{ gasto.pago_proveedor.viaje.proveedor.nombre }}</div>
+        <div class="small text-muted mt-1">{{ gasto.pago_proveedor.viaje.producto.nombre }} - {{ gasto.pago_proveedor.viaje.fecha|date:"d/m/Y" }}</div>
+        <div class="mt-2">
+          <a href="{% url 'viaje_detail' gasto.pago_proveedor.viaje.pk %}" class="btn btn-sm" style="background: var(--orange-primary); color: white; border-radius: 8px; border: none; padding: 3px 10px; font-size: 0.75rem;">
+            <i class="bi bi-box-arrow-up-right me-1"></i> Ver Viaje
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>

@@ -83,10 +83,6 @@
     <div class="card border-0 shadow-sm mb-3" style="border-radius: 12px; background: var(--bg-light);">
       <div class="card-body p-3">
         <div class="row g-2 align-items-end">
-          <div class="col-md-6">
-            <label class="form-label fw-semibold small" style="color: var(--text-secondary);">Categoría</label>
-            <input type="text" class="form-control" placeholder="Filtrar por categoría..." style="border-radius: 8px; border: 1px solid var(--border-light); padding: 0.5rem 0.75rem; font-size: 0.9rem;">
-          </div>
           <div class="col-md-4">
             <label class="form-label fw-semibold small" style="color: var(--text-secondary);">Fecha</label>
             <input type="date" value="{{ fecha }}" class="form-control" style="border-radius: 8px; border: 1px solid var(--border-light); padding: 0.5rem 0.75rem; font-size: 0.9rem;">
@@ -115,7 +111,7 @@
           <table class="table table-hover align-middle mb-0">
             <thead class="bg-light">
               <tr>
-                <th class="ps-4 fw-bold small" style="color: var(--text-secondary);">CATEGOR�?A</th>
+                <th class="ps-4 fw-bold small" style="color: var(--text-secondary);">FECHA</th>
                 <th class="fw-bold small" style="color: var(--text-secondary);">DESCRIPCIÓN</th>
                 <th class="fw-bold small text-end pe-2" style="color: var(--text-secondary);">MONTO</th>
                 <th class="text-end pe-4 fw-bold small" style="color: var(--text-secondary);">ACCIONES</th>
@@ -124,21 +120,22 @@
             <tbody class="border-top-0">
             {% for g in gastos %}
             <tr>
-              <td class="ps-4">
-                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-2 py-1">
-                  {{ g.categoria }}
-                </span>
-              </td>
-              <td class="text-muted small">{{ g.descripcion }}</td>
+              <td class="ps-4 small">{{ g.fecha|date:"d/m/Y" }}</td>
+               <td class="text-muted small" style="max-width: 200px;">
+                <span class="d-inline-block text-truncate w-100">{{ g.descripcion }}</span>
+               </td>
               <td class="text-end pe-2 fw-bold text-danger">${{ g.monto|default:0|cop }}</td>
               <td class="text-end pe-4">
                 <div class="btn-group btn-group-sm" role="group">
-                  <a href="{% url 'gasto_edit' g.pk %}" class="btn btn-sm" style="background-color: var(--bg-light); color: var(--orange-primary); border-radius: 6px; padding: 6px 10px; border: 1px solid var(--border-light);" title="Editar">
+                  <button type="button" class="btn btn-sm btn-ver-gasto" data-pk="{{ g.pk }}" style="background-color: rgba(63, 81, 181, 0.1); color: #3f51b5; border-radius: 6px; padding: 6px 10px; border: 1px solid rgba(63, 81, 181, 0.2);" title="Ver">
+                    <i class="bi bi-eye"></i>
+                  </button>
+                  <button type="button" class="btn btn-sm btn-editar-gasto" data-pk="{{ g.pk }}" style="background-color: var(--bg-light); color: var(--orange-primary); border-radius: 6px; padding: 6px 10px; border: 1px solid var(--border-light);" title="Editar">
                     <i class="bi bi-pencil"></i>
-                  </a>
-                  <a href="{% url 'gasto_delete' g.pk %}" class="btn btn-sm" style="background-color: #ffebee; color: #d32f2f; border-radius: 6px; padding: 6px 10px; border: none;" title="Eliminar">
+                  </button>
+                  <button type="button" class="btn btn-sm btn-eliminar-gasto" data-pk="{{ g.pk }}" style="background-color: #ffebee; color: #d32f2f; border-radius: 6px; padding: 6px 10px; border: none;" title="Eliminar">
                     <i class="bi bi-trash3"></i>
-                  </a>
+                  </button>
                 </div>
               </td>
             </tr>
@@ -170,6 +167,204 @@
   </div>
 </div>
 
+<!-- MODAL DETALLE DE GASTO -->
+<div class="modal fade" id="gastoModal" tabindex="-1" aria-labelledby="gastoModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content border-0 shadow" style="border-radius: 16px; overflow: hidden;">
+      <div class="modal-header border-bottom-0" style="background: linear-gradient(135deg, #d32f2f 0%, #b71c1c 100%);">
+        <h5 class="modal-title text-white fw-bold" id="gastoModalLabel">
+          <i class="bi bi-eye me-2"></i>Detalle de Gasto
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body p-4" id="gastoModalBody">
+        <div class="text-center py-5">
+          <div class="spinner-border" style="color: var(--orange-primary);" role="status">
+            <span class="visually-hidden">Cargando...</span>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer border-top-0 justify-content-end gap-2" id="gastoModalFooter">
+        <button type="button" id="gastoModalEditBtn" class="btn btn-sm" style="background: var(--orange-primary); color: white; border-radius: 8px; border: none; padding: 6px 14px;">
+          <i class="bi bi-pencil me-1"></i> Editar
+        </button>
+        <button type="button" id="gastoModalDeleteBtn" class="btn btn-sm btn-outline-danger" style="border-radius: 8px; padding: 6px 14px;">
+          <i class="bi bi-trash3 me-1"></i> Eliminar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EDITAR GASTO -->
+<div class="modal fade" id="gastoEditModal" tabindex="-1" aria-labelledby="gastoEditModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow" style="border-radius: 16px; overflow: hidden;">
+      <div class="modal-header border-bottom-0" style="background: linear-gradient(135deg, var(--orange-primary) 0%, #e65100 100%);">
+        <h5 class="modal-title text-white fw-bold" id="gastoEditModalLabel">
+          <i class="bi bi-pencil me-2"></i>Editar Gasto
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body p-4" id="gastoEditModalBody">
+        <div class="text-center py-5">
+          <div class="spinner-border" style="color: var(--orange-primary);" role="status">
+            <span class="visually-hidden">Cargando...</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ELIMINAR GASTO -->
+<div class="modal fade" id="gastoDeleteModal" tabindex="-1" aria-labelledby="gastoDeleteModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow" style="border-radius: 16px; overflow: hidden;">
+      <div class="modal-header border-bottom-0" style="background: #d32f2f;">
+        <h5 class="modal-title text-white fw-bold" id="gastoDeleteModalLabel">
+          <i class="bi bi-trash3 me-2"></i>Eliminar Gasto
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body p-4" id="gastoDeleteModalBody">
+        <div class="text-center py-5">
+          <div class="spinner-border" style="color: #d32f2f;" role="status">
+            <span class="visually-hidden">Cargando...</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  var detailModal = new bootstrap.Modal(document.getElementById('gastoModal'));
+  var editModal = new bootstrap.Modal(document.getElementById('gastoEditModal'));
+  var deleteModal = new bootstrap.Modal(document.getElementById('gastoDeleteModal'));
+
+  var detailBody = document.getElementById('gastoModalBody');
+  var editBody = document.getElementById('gastoEditModalBody');
+  var deleteBody = document.getElementById('gastoDeleteModalBody');
+  var currentPk = null;
+
+  function showSpinner(el) {
+    el.innerHTML = '<div class="text-center py-5"><div class="spinner-border" style="color: var(--orange-primary);" role="status"><span class="visually-hidden">Cargando...</span></div></div>';
+  }
+
+  function showError(el) {
+    el.innerHTML = '<div class="text-center py-4 text-danger"><i class="bi bi-exclamation-triangle fs-1"></i><p class="mt-2">Error al cargar los datos.</p></div>';
+  }
+
+  // VER detalle
+  document.querySelectorAll('.btn-ver-gasto').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      currentPk = this.getAttribute('data-pk');
+      showSpinner(detailBody);
+      document.getElementById('gastoModalEditBtn').setAttribute('data-pk', currentPk);
+      document.getElementById('gastoModalDeleteBtn').setAttribute('data-pk', currentPk);
+      detailModal.show();
+
+      fetch('/gastos/' + currentPk + '/?modal=1')
+        .then(function(r) { return r.text(); })
+        .then(function(html) { detailBody.innerHTML = html; })
+        .catch(function() { showError(detailBody); });
+    });
+  });
+
+  // EDITAR desde el footer del modal de detalle
+  document.getElementById('gastoModalEditBtn').addEventListener('click', function() {
+    var pk = this.getAttribute('data-pk');
+    detailModal.hide();
+    abrirEditarModal(pk);
+  });
+
+  // ELIMINAR desde el footer del modal de detalle
+  document.getElementById('gastoModalDeleteBtn').addEventListener('click', function() {
+    var pk = this.getAttribute('data-pk');
+    detailModal.hide();
+    abrirEliminarModal(pk);
+  });
+
+  // EDITAR desde la tabla
+  function abrirEditarModal(pk) {
+    showSpinner(editBody);
+    editModal.show();
+    fetch('/gastos/' + pk + '/editar/?modal=1')
+      .then(function(r) { return r.text(); })
+      .then(function(html) { bindEditForm(html, pk); })
+      .catch(function() { showError(editBody); });
+  }
+
+  function bindEditForm(html, pk) {
+    editBody.innerHTML = html;
+    var form = document.getElementById('gastoEditForm');
+    if (form) {
+      form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        var fd = new FormData(form);
+        fetch(form.action, { method: 'POST', body: fd })
+          .then(function(r) {
+            if (r.status === 204) { location.reload(); }
+            else { return r.text(); }
+          })
+          .then(function(errorHtml) {
+            if (errorHtml) { bindEditForm(errorHtml, pk); }
+          });
+      });
+    }
+  }
+
+  document.querySelectorAll('.btn-editar-gasto').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      abrirEditarModal(this.getAttribute('data-pk'));
+    });
+  });
+
+  // ELIMINAR desde la tabla
+  function abrirEliminarModal(pk) {
+    showSpinner(deleteBody);
+    deleteModal.show();
+    fetch('/gastos/' + pk + '/eliminar/?modal=1')
+      .then(function(r) { return r.text(); })
+      .then(function(html) { bindDeleteForm(html, pk); })
+      .catch(function() { showError(deleteBody); });
+  }
+
+  function bindDeleteForm(html, pk) {
+    deleteBody.innerHTML = html;
+    var form = document.getElementById('gastoDeleteForm');
+    if (form) {
+      form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        var fd = new FormData(form);
+        fetch(form.action, { method: 'POST', body: fd })
+          .then(function(r) {
+            if (r.status === 204) { location.reload(); }
+          });
+      });
+    }
+  }
+
+  document.querySelectorAll('.btn-eliminar-gasto').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      abrirEliminarModal(this.getAttribute('data-pk'));
+    });
+  });
+
+  // Cerrar modal de detalle al abrir otro
+  document.getElementById('gastoEditModal').addEventListener('show.bs.modal', function() {
+    detailModal.hide();
+  });
+  document.getElementById('gastoDeleteModal').addEventListener('show.bs.modal', function() {
+    detailModal.hide();
+  });
+});
+</script>
 {% endblock %}
 
 

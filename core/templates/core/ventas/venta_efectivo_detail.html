@@ -1,287 +1,119 @@
 {% extends 'core/base.html' %}
-{% block title %}Venta Efectivo - {{ venta.cliente }}{% endblock %}
-{% block page_title %}Venta en Efectivo: {{ venta.cliente.nombre|default:"General" }}{% endblock %}
+{% block title %}Venta Efectivo #{{ venta.pk }}{% endblock %}
+{% block page_title %}Detalle de Venta en Efectivo{% endblock %}
 {% block content %}
 
 <div class="mb-3 d-flex justify-content-between align-items-center">
   <a href="{% url 'venta_efectivo_list' %}" class="btn btn-outline-secondary py-2 border-0 fw-semibold" style="color: var(--text-sec); font-size: 0.9rem;">
     <i class="bi bi-arrow-left me-1"></i> Volver
   </a>
-  <a href="{% url 'venta_efectivo_delete' venta.pk %}" class="btn btn-danger py-2 fw-semibold px-3" style="border-radius: 8px; font-size: 0.9rem;">
-    <i class="bi bi-trash3 me-1"></i> Eliminar
-  </a>
+  <div class="d-flex gap-2">
+    <a href="{% url 'venta_efectivo_edit' venta.pk %}" class="btn py-2 fw-semibold px-3" style="background: var(--orange-primary); color: white; border-radius: 8px; font-size: 0.9rem;">
+      <i class="bi bi-pencil me-1"></i> Editar
+    </a>
+    <a href="{% url 'venta_efectivo_delete' venta.pk %}" class="btn btn-outline-danger py-2 fw-semibold px-3" style="border-radius: 8px; font-size: 0.9rem;">
+      <i class="bi bi-trash3 me-1"></i> Eliminar
+    </a>
+  </div>
 </div>
 
-<div class="row g-3 mb-3">
-  <!-- Resumen de Venta -->
-  <div class="col-lg-4">
-    <div class="card border-0 shadow-sm h-100" style="border-radius: 10px; overflow: hidden; background: linear-gradient(135deg, #ffffff 0%, var(--bg-base) 100%);">
+<div class="row g-4">
+  <div class="col-lg-5">
+    <div class="card border-0 shadow-sm h-100" style="border-radius: 12px; overflow: hidden;">
+      <div class="card-header py-2 border-bottom-0 d-flex align-items-center" style="background: linear-gradient(135deg, var(--orange-primary) 0%, #e65100 100%);">
+        <h6 class="mb-0 fw-bold text-white"><i class="bi bi-card-list me-2"></i>Resumen</h6>
+      </div>
       <div class="card-body p-3">
-        <div class="d-flex align-items-center mb-3">
-          <div class="stat-icon-wrapper d-inline-flex me-2 shadow-sm" style="width: 40px; height: 40px; font-size: 1.2rem; background: var(--orange-primary); color: white; border-radius: 8px;">
-            <i class="bi bi-cash-coin"></i>
-          </div>
-          <div>
-            <h6 class="text-uppercase fw-bold mb-0" style="color: var(--text-sec); font-size: 0.7rem; letter-spacing: 0.5px;">Venta</h6>
-            <h5 class="fw-bold mb-0" style="color: white; font-size: 1rem;">{{ venta.cliente.nombre|default:"General" }}</h5>
-          </div>
+        <div class="d-flex justify-content-between mb-2">
+          <span class="text-muted small">Fecha</span>
+          <span class="fw-semibold">{{ venta.fecha|date:"d/m/Y" }}</span>
         </div>
-
-        <div class="d-flex flex-column gap-2 mb-3" style="font-size: 0.9rem;">
-          <div class="d-flex justify-content-between">
-            <span class="text-muted"><i class="bi bi-calendar3 me-1 opacity-50"></i>Fecha:</span>
-            <span class="fw-semibold">{{ venta.fecha|date:"d/m/Y" }}</span>
-          </div>
-          {% if venta.descripcion %}
-          <div class="d-flex justify-content-between">
-            <span class="text-muted"><i class="bi bi-file-text me-1 opacity-50"></i>Desc.:</span>
-            <span class="fw-semibold small">{{ venta.descripcion|truncatewords:3 }}</span>
-          </div>
-          {% endif %}
+        <div class="d-flex justify-content-between mb-2">
+          <span class="text-muted small">Producto</span>
+          <span class="fw-semibold">{{ venta.producto.nombre|default:"—" }}</span>
         </div>
-
-        <div class="p-3 rounded-2 text-center" style="background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); border: 1px solid #4CAF50;">
-          <div class="text-uppercase fw-bold small mb-1" style="color: #1b5e20; font-size: 0.75rem; letter-spacing: 0.5px;">Total Venta</div>
-          <div class="fw-bold" style="color: #2e7d32; font-size: 1.4rem;">${{ venta.total|default:0|cop }}</div>
+        <div class="d-flex justify-content-between mb-2">
+          <span class="text-muted small">Kg vendidos</span>
+          <span class="fw-semibold">{{ venta.kg_vendido|floatformat:2 }} kg</span>
+        </div>
+        <div class="d-flex justify-content-between mb-2">
+          <span class="text-muted small">Cliente</span>
+          <span class="fw-semibold">{{ venta.cliente.nombre|default:"General" }}</span>
+        </div>
+        {% if venta.descripcion %}
+        <div class="d-flex justify-content-between mb-2">
+          <span class="text-muted small">Descripción</span>
+          <span class="fw-semibold">{{ venta.descripcion }}</span>
+        </div>
+        {% endif %}
+        <hr>
+        <div class="d-flex justify-content-between align-items-center">
+          <span class="fw-bold text-uppercase small" style="letter-spacing: 0.5px;">Total</span>
+          <span class="fs-4 fw-bold text-success">${{ venta.total|cop }}</span>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Formulario Agregar Producto -->
-  <div class="col-lg-8">
-    <div class="card border-0 shadow-sm" style="border-radius: 10px; overflow: hidden;">
-      <div class="card-header bg-white py-2 px-3 border-bottom-0" style="background: linear-gradient(135deg, var(--orange-primary) 0%, #e65100 100%);">
-        <h6 class="mb-0 fw-bold small" style="color: white; letter-spacing: 0.5px; font-size: 0.9rem;"><i class="bi bi-plus-circle me-2"></i>AGREGAR PRODUCTO</h6>
+  <div class="col-lg-7">
+    <div class="card border-0 shadow-sm h-100" style="border-radius: 12px; overflow: hidden;">
+      <div class="card-header py-2 border-bottom-0 d-flex align-items-center" style="background: rgba(76, 175, 80, 0.15);">
+        <h6 class="mb-0 fw-bold" style="color: #2e7d32;"><i class="bi bi-cash-stack me-2"></i>Registrar Pago</h6>
       </div>
-
-      <div class="card-body p-3">
-        <form method="post" class="row g-2 align-items-end">
+      <div class="card-body p-4">
+        <form method="post">
           {% csrf_token %}
-
-          <!-- Producto -->
-          <div class="col-md-4">
-            <label class="form-label form-control-sm text-uppercase fw-semibold" style="color: var(--text-sec); letter-spacing: 0.5px; font-size: 0.7rem; margin-bottom: 0.35rem;">Producto</label>
-            {{ detalle_form.producto }}
+          <input type="hidden" name="finalizar_venta" value="1">
+          <div class="mb-3">
+            <label class="form-label fw-semibold small text-uppercase" style="color: var(--text-sec);">Medio de pago</label>
+            <select name="medio_pago" class="form-select">
+              <option value="efectivo">Efectivo</option>
+              <option value="transferencia">Transferencia</option>
+              <option value="cheque">Cheque</option>
+            </select>
           </div>
-
-          <!-- Kg a Vender -->
-          <div class="col-md-3">
-            <label class="form-label form-control-sm text-uppercase fw-semibold" style="color: var(--text-sec); letter-spacing: 0.5px; font-size: 0.7rem; margin-bottom: 0.35rem;">Kg</label>
-            {{ detalle_form.kg_vendido }}
-          </div>
-
-          <!-- Precio por Kg -->
-          <div class="col-md-3">
-            <label class="form-label form-control-sm text-uppercase fw-semibold" style="color: var(--text-sec); letter-spacing: 0.5px; font-size: 0.7rem; margin-bottom: 0.35rem;">Precio /kg</label>
-            {{ detalle_form.precio_por_kg }}
-          </div>
-
-          <!-- Botón Agregar -->
-          <div class="col-md-2">
-            <button type="submit" name="detalle_submit" class="btn w-100 py-2 d-flex justify-content-center fw-semibold" style="background: linear-gradient(135deg, var(--orange-primary) 0%, #e65100 100%); color: white; border: none; border-radius: 6px; font-size: 1rem;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
-              <i class="bi bi-plus-lg"></i>
-            </button>
-          </div>
-
-          <!-- Total Producto -->
-          <div class="col-md-4 offset-md-8">
-            <div class="p-2 rounded-2 text-center" style="background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); border: 1px solid #4CAF50;">
-              <div class="text-uppercase fw-bold" style="color: #1b5e20; font-size: 0.65rem; letter-spacing: 0.5px; margin-bottom: 0.25rem;">Total Prod.</div>
-              <div class="fw-bold" style="color: #2e7d32; font-size: 1rem;">$<span id="total_producto">0</span></div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold small text-uppercase" style="color: var(--text-sec);">Monto pagado</label>
+            <div class="input-group">
+              <span class="input-group-text fw-bold" style="background: var(--orange-primary); color: white; border: none;">$</span>
+              <input type="text" name="monto_pagado" id="id_monto_pagado" class="form-control price-cop" inputmode="numeric" autocomplete="off" placeholder="Monto recibido" required>
             </div>
           </div>
+          <div class="p-3 rounded mb-3" style="background: rgba(76, 175, 80, 0.08); border: 1px dashed rgba(76, 175, 80, 0.3);">
+            <div class="d-flex justify-content-between align-items-center">
+              <span class="small fw-semibold text-success">Total a pagar</span>
+              <span class="fw-bold text-success" id="total_pagar">${{ venta.total|cop }}</span>
+            </div>
+            <div class="d-flex justify-content-between align-items-center mt-1">
+              <span class="small fw-semibold" style="color: var(--text-sec);">Cambio</span>
+              <span class="fw-bold" id="cambio_display">$0</span>
+            </div>
+          </div>
+          <button type="submit" class="btn w-100 py-2 fw-bold text-white" style="background: #2e7d32; border: none; border-radius: 8px;">
+            <i class="bi bi-check2-circle me-1"></i> Finalizar Venta
+          </button>
         </form>
       </div>
     </div>
   </div>
 </div>
 
-<!-- Tabla de Productos Agregados -->
-<div class="card border-0 shadow-sm mb-3" style="border-radius: 10px; overflow: hidden;">
-  <div class="card-header bg-white py-2 px-3 border-bottom-0" style="background: linear-gradient(135deg, #f5f5f5 0%, #eeeeee 100%);">
-    <h6 class="mb-0 fw-bold small" style="color: #333; letter-spacing: 0.5px; font-size: 0.9rem;"><i class="bi bi-box-seam me-2 opacity-75"></i>PRODUCTOS ({{ detalles|length }})</h6>
-  </div>
-  <div class="card-body p-0">
-    <div class="table-responsive">
-      <table class="table table-sm table-hover align-middle mb-0" style="font-size: 0.85rem;">
-        <thead class="bg-light">
-          <tr style="background: #f9f9f9;">
-            <th class="ps-3 fw-bold" style="font-size: 0.75rem; color: #666;">Producto</th>
-            <th class="fw-bold text-center" style="font-size: 0.75rem; color: #666;">Kg</th>
-            <th class="fw-bold text-center" style="font-size: 0.75rem; color: #666;">$/Kg</th>
-            <th class="fw-bold text-end pe-2" style="font-size: 0.75rem; color: #666;">Subtotal</th>
-            <th class="text-end pe-3 fw-bold" style="font-size: 0.75rem; color: #666;">Acc.</th>
-          </tr>
-        </thead>
-        <tbody class="border-top">
-        {% for d in detalles %}
-        <tr style="border-bottom: 1px solid #f0f0f0;">
-          <td class="ps-3 py-2">
-            <div class="fw-semibold" style="font-size: 0.9rem;">{{ d.producto.nombre }}</div>
-          </td>
-          <td class="text-center py-2 fw-semibold">{{ d.kg_vendido }}</td>
-          <td class="text-center py-2 text-muted small">${{ d.precio_por_kg|cop }}</td>
-          <td class="text-end pe-2 py-2">
-            <span class="badge" style="background-color: rgba(76, 175, 80, 0.15); color: #2e7d32; font-weight: 600; font-size: 0.8rem;">
-              ${{ d.total|default:0|cop }}
-            </span>
-          </td>
-          <td class="text-end pe-3 py-2">
-            <a href="{% url 'detalle_venta_efectivo_delete' d.pk %}" class="btn btn-sm btn-link text-danger p-0" onclick="return confirm('¿Eliminar?')" style="font-size: 0.9rem;">
-              <i class="bi bi-trash3"></i>
-            </a>
-          </td>
-        </tr>
-        {% empty %}
-        <tr>
-          <td colspan="5" class="text-center text-muted py-3">
-            <i class="bi bi-inbox opacity-50" style="font-size: 1.5rem; display: block; margin-bottom: 0.5rem;"></i>
-            <small>Sin productos agregados</small>
-          </td>
-        </tr>
-        {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </div>
-</div>
-
-<!-- SECCIÓN DE PAGO -->
-<div class="card border-0 shadow-sm" style="border-radius: 10px; overflow: hidden;">
-  <div class="card-header py-2 px-3 border-bottom-0" style="background: linear-gradient(135deg, var(--orange-primary) 0%, #e65100 100%);">
-    <h6 class="mb-0 fw-bold small" style="color: white; letter-spacing: 0.5px; font-size: 0.9rem;"><i class="bi bi-credit-card me-2"></i>PROCESAMIENTO DE PAGO</h6>
-  </div>
-
-  <div class="card-body p-3">
-    <!-- Fila 1: Resumen de Totales -->
-    <div class="row g-2 mb-4">
-      <div class="col-6">
-        <div class="p-3 rounded-2 text-center" style="background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%); border: 1px solid #ef5350;">
-          <div class="text-uppercase fw-bold small" style="color: #c62828; font-size: 0.7rem; letter-spacing: 0.5px; margin-bottom: 0.2rem;">Total Venta</div>
-          <div class="fw-bold" style="color: #d84315; font-size: 1.4rem;">
-            ${{ venta.total|default:0|cop }}
-          </div>
-        </div>
-      </div>
-
-      <div class="col-6">
-        <div class="p-3 rounded-2 text-center" style="background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%); border: 1px solid #ff9800;">
-          <div class="text-uppercase fw-bold small" style="color: #e65100; font-size: 0.7rem; letter-spacing: 0.5px; margin-bottom: 0.2rem;">Pagado</div>
-          <div class="fw-bold" style="color: #d84315; font-size: 1.4rem;">
-            $<span id="resumen_pagado">0</span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Fila 2: Entrada de Datos -->
-    <div class="row g-2 mb-4">
-      <div class="col-md-6">
-        <label class="form-label form-control-sm text-uppercase fw-semibold" style="color: var(--text-sec); letter-spacing: 0.5px; font-size: 0.7rem; margin-bottom: 0.35rem;">Medio de Pago</label>
-        <select class="form-select form-select-sm fw-semibold" id="medio_pago" style="border: 1px solid var(--orange-primary); border-radius: 6px; background-color: white; color: #d84315; font-size: 0.9rem;">
-          <option value="efectivo">💵 Efectivo</option>
-          <option value="transferencia">💳 Transferencia</option>
-        </select>
-      </div>
-
-      <div class="col-md-6">
-        <label class="form-label form-control-sm text-uppercase fw-semibold" style="color: var(--text-sec); letter-spacing: 0.5px; font-size: 0.7rem; margin-bottom: 0.35rem;">Monto Pagado</label>
-        <div class="input-group" style="border: 1px solid var(--orange-primary); border-radius: 6px; overflow: hidden;">
-          <span class="input-group-text fw-bold" style="background: var(--orange-primary); color: white; border: none; padding: 0.4rem 0.6rem; font-size: 0.85rem;">$</span>
-          <input type="text" inputmode="numeric" autocomplete="off" id="monto_pagado" class="form-control form-control-sm fw-semibold price-cop" placeholder="Ingresa monto" style="border: none; font-size: 0.9rem; color: #d84315;">
-        </div>
-      </div>
-    </div>
-
-    <!-- Fila 3: Estado de Pago -->
-    <div id="payment_status" class="mb-3" style="display: none;">
-      <div class="alert mb-0 py-2 px-3 rounded-2 small" style="border-left: 3px solid var(--orange-primary); font-size: 0.8rem;">
-        <i class="bi me-1" id="payment_icon"></i><span id="payment_message"></span>
-      </div>
-    </div>
-
-    <!-- Fila 4: Botón Registrar Venta -->
-    <div class="d-grid gap-2 pt-2 border-top" style="border-top-color: #e0e0e0 !important;">
-      <form method="post" id="finalizar_venta_form">
-        {% csrf_token %}
-        <input type="hidden" name="finalizar_venta" value="1">
-        <input type="hidden" id="hidden_medio_pago" name="medio_pago">
-        <input type="hidden" id="hidden_monto_pagado" name="monto_pagado">
-        <button type="submit" class="btn fw-bold py-3" id="btn_registrar" style="background: linear-gradient(135deg, #4CAF50 0%, #2e7d32 100%); color: white; border: none; border-radius: 8px; font-size: 1rem; transition: all 0.3s; box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);" onmouseover="this.style.opacity='0.95'; this.style.boxShadow='0 6px 16px rgba(76, 175, 80, 0.4)'" onmouseout="this.style.opacity='1'; this.style.boxShadow='0 4px 12px rgba(76, 175, 80, 0.3)'">
-          <i class="bi bi-check-circle me-2"></i> Registrar Venta
-        </button>
-      </form>
-    </div>
-  </div>
-</div>
-
-<!-- JavaScript para Cálculos Dinámicos -->
+{% block extra_js %}
 <script>
-  const kgInput = document.getElementById('id_kg_vendido');
-  const precioInput = document.getElementById('id_precio_por_kg');
-  const montoPagadoInput = document.getElementById('monto_pagado');
-  const medioPagoSelect = document.getElementById('medio_pago');
-  const formFinalizarVenta = document.getElementById('finalizar_venta_form');
-
-  function parseCOP(value) {
-    if (!value) return 0;
-    return parseFloat(String(value).replace(/\./g, '').replace(',', '.')) || 0;
+document.addEventListener('DOMContentLoaded', function() {
+  var montoInput = document.getElementById('id_monto_pagado');
+  var totalPagar = document.getElementById('total_pagar');
+  var cambioDisplay = document.getElementById('cambio_display');
+  if (montoInput && totalPagar && cambioDisplay) {
+    var total = parseFloat('{{ venta.total|floatformat:0 }}') || 0;
+    montoInput.addEventListener('input', function() {
+      var monto = parseFloat((montoInput.value || '').replace(/\./g, '')) || 0;
+      var cambio = monto - total;
+      cambioDisplay.textContent = '$' + Math.max(0, cambio).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+      cambioDisplay.className = 'fw-bold ' + (cambio >= 0 ? 'text-success' : 'text-danger');
+    });
   }
-
-  function updateProductTotal() {
-    const kg = parseFloat(kgInput.value) || 0;
-    const precio = parseCOP(precioInput.value);
-    const totalProducto = (kg * precio).toFixed(2);
-    document.getElementById('total_producto').textContent = parseFloat(totalProducto).toLocaleString('es-AR', {minimumFractionDigits: 0});
-  }
-
-  function updatePaymentCalculations() {
-    const total = parseFloat('{{ venta.total|default:0|floatformat:2 }}');
-    const pagado = parseCOP(montoPagadoInput.value);
-    const cambio = Math.max(0, pagado - total);
-
-    document.getElementById('resumen_pagado').textContent = pagado.toLocaleString('es-AR', {minimumFractionDigits: 0});
-
-    const paymentStatus = document.getElementById('payment_status');
-    const paymentMessage = document.getElementById('payment_message');
-    const paymentIcon = document.getElementById('payment_icon');
-    const infoAlert = paymentStatus.querySelector('.alert');
-
-    if (pagado > 0) {
-      paymentStatus.style.display = 'block';
-      if (pagado >= total) {
-        infoAlert.style.borderLeftColor = '#4CAF50';
-        infoAlert.style.backgroundColor = '#e8f5e9';
-        infoAlert.style.color = '#1b5e20';
-        paymentIcon.className = 'bi bi-check-circle-fill';
-        paymentMessage.innerHTML = 'Pago completo ✓' + (cambio > 0 ? ' — Cambio: $' + cambio.toLocaleString('es-AR', {minimumFractionDigits: 0}) : '');
-      } else {
-        const falta = (total - pagado).toLocaleString('es-AR', {minimumFractionDigits: 0});
-        infoAlert.style.borderLeftColor = 'var(--orange-primary)';
-        infoAlert.style.backgroundColor = '#fff3e0';
-        infoAlert.style.color = '#e65100';
-        paymentIcon.className = 'bi bi-exclamation-circle-fill';
-        paymentMessage.innerHTML = 'Falta $' + falta + ' para completar el pago';
-      }
-    } else {
-      paymentStatus.style.display = 'none';
-    }
-  }
-
-  // Llenar campos ocultos al enviar el formulario
-  formFinalizarVenta.addEventListener('submit', function(e) {
-    document.getElementById('hidden_medio_pago').value = medioPagoSelect.value || 'efectivo';
-    document.getElementById('hidden_monto_pagado').value = String(montoPagadoInput.value).replace(/\./g, '') || '0';
-  });
-
-  kgInput.addEventListener('input', updateProductTotal);
-  precioInput.addEventListener('input', updateProductTotal);
-  montoPagadoInput.addEventListener('input', updatePaymentCalculations);
-  medioPagoSelect.addEventListener('change', updatePaymentCalculations);
-
-  updateProductTotal();
-  updatePaymentCalculations();
+});
 </script>
-
+{% endblock %}
 {% endblock %}

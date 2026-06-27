@@ -53,35 +53,25 @@
             <thead class="bg-light">
               <tr>
                 <th class="ps-4 fw-bold small" style="color: var(--text-secondary);">PRODUCTO</th>
+                <th class="fw-bold small text-end pe-2" style="color: var(--text-secondary);">KG</th>
                 <th class="fw-bold small text-end pe-2" style="color: var(--text-secondary);">TOTAL</th>
                 <th class="text-end pe-4 fw-bold small" style="color: var(--text-secondary);">ACCIONES</th>
               </tr>
             </thead>
             <tbody class="border-top-0">
             {% for v in ventas %}
-              {% with detalles_venta=v.detalles.all %}
               <tr>
                 <td class="ps-4" style="color: var(--text-main);">
-                  {% if detalles_venta|length == 1 %}
-                    <span class="fw-semibold">{{ detalles_venta.0.producto.nombre|default:"—" }}</span>
-                  {% elif detalles_venta|length > 1 %}
-                    <span class="fw-semibold">{{ detalles_venta|length }} productos</span>
-                    <div class="small text-muted" style="font-size: 0.75rem;">
-                      {% for d in detalles_venta %}
-                        {{ d.producto.nombre }} ({{ d.kg_vendido }} kg){% if not forloop.last %}, {% endif %}
-                      {% endfor %}
-                    </div>
-                  {% else %}
-                    <span class="fw-semibold text-muted">Sin productos</span>
-                  {% endif %}
+                  <span class="fw-semibold">{{ v.producto.nombre|default:"—" }}</span>
                 </td>
+                <td class="text-end pe-2 fw-semibold">{{ v.kg_vendido|floatformat:2 }}</td>
                 <td class="text-end pe-2">
                   <span class="badge fw-bold px-2 py-1" style="background-color: rgba(76, 175, 80, 0.15); color: #2e7d32; border: 1px solid rgba(76, 175, 80, 0.3);">
                     ${{ v.total|cop }}
                   </span>
                 </td>
                 <td class="text-end pe-4">
-                  <a href="{% url 'venta_efectivo_detail' v.pk %}" class="btn btn-sm me-1" style="background-color: #e8f5e9; color: #2e7d32; border-radius: 6px; padding: 6px 10px; border: none;" title="Ver detalle / agregar productos">
+                  <a href="{% url 'venta_efectivo_detail' v.pk %}" class="btn btn-sm me-1" style="background-color: #e8f5e9; color: #2e7d32; border-radius: 6px; padding: 6px 10px; border: none;" title="Ver detalle">
                     <i class="bi bi-eye"></i>
                   </a>
                   <a href="{% url 'venta_efectivo_edit' v.pk %}" class="btn btn-sm me-1" style="background-color: #e3f2fd; color: #1565c0; border-radius: 6px; padding: 6px 10px; border: none;" title="Editar">
@@ -92,10 +82,9 @@
                   </a>
                 </td>
               </tr>
-              {% endwith %}
             {% empty %}
             <tr>
-              <td colspan="3" class="text-center text-muted py-4">
+              <td colspan="4" class="text-center text-muted py-4">
                 <div class="mb-3">
                   <i class="bi bi-inbox" style="font-size: 2rem; opacity: 0.3;"></i>
                 </div>

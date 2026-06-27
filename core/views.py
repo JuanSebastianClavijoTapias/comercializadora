@@ -1,7 +1,7 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.db.models import Sum, Q, F, Count, Value, DecimalField
 from django.db.models.functions import Coalesce
 from django.utils import timezone
@@ -859,7 +859,7 @@ def pago_proveedor_delete(request, pk):
 @login_required
 def gasto_list(request):
     fecha = request.GET.get('fecha', str(date.today()))
-    gastos = Gasto.objects.filter(fecha=fecha).select_related('categoria')
+    gastos = Gasto.objects.filter(fecha=fecha)
     total = sum(g.monto for g in gastos)
     num_gastos = len(gastos)
     gasto_promedio = (total / num_gastos) if num_gastos > 0 else 0
@@ -879,20 +879,37 @@ def gasto_list(request):
 def gasto_edit(request, pk):
     obj = get_object_or_404(Gasto, pk=pk)
     form = GastoForm(request.POST or None, instance=obj)
-    if form.is_valid():
-        form.save()
-        messages.success(request, 'Gasto actualizado.')
-        return redirect('gasto_list')
+    is_modal = request.GET.get('modal')
+    if request.method == 'POST':
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Gasto actualizado.')
+            if is_modal:
+                return HttpResponse(status=204)
+            return redirect('gasto_list')
+    if is_modal:
+        return render(request, 'core/gastos/gasto_edit_modal.html', {'form': form, 'gasto': obj})
     return render(request, 'core/genericos/form_generic.html', {'form': form, 'titulo': 'Editar Gasto', 'back_url': 'gasto_list'})
 
 @login_required
 def gasto_delete(request, pk):
     obj = get_object_or_404(Gasto, pk=pk)
+    is_modal = request.GET.get('modal')
     if request.method == 'POST':
         obj.delete()
         messages.success(request, 'Gasto eliminado.')
+        if is_modal:
+            return HttpResponse(status=204)
         return redirect('gasto_list')
+    if is_modal:
+        return render(request, 'core/gastos/gasto_delete_modal.html', {'gasto': obj, 'pk': pk})
     return render(request, 'core/genericos/confirm_delete.html', {'obj': obj, 'titulo': 'Eliminar Gasto', 'back_url': 'gasto_list'})
+
+@login_required
+def gasto_detail(request, pk):
+    gasto = get_object_or_404(Gasto.objects.select_related('categoria', 'pago_proveedor__viaje'), pk=pk)
+    template = 'core/gastos/gasto_detail_modal.html' if request.GET.get('modal') else 'core/gastos/gasto_detail.html'
+    return render(request, template, {'gasto': gasto})
 
 @login_required
 def weekly_inventory_edit(request, pk):
@@ -980,144 +997,17 @@ def _normalizar_precio_cop(valor):
 
 @login_required
 def venta_efectivo_create(request):
-    productos = Producto.objects.filter(activo=True).order_by('nombre')
-    hoy = date.today()
-
     if request.method == 'POST':
-        fecha_str = request.POST.get('fecha', '').strip()
-        productos_ids = request.POST.getlist('producto[]')
-        kg_list = request.POST.getlist('kg_vendido[]')
-        precio_list = request.POST.getlist('precio_por_kg[]')
-
-        # Normalizar precios COP
-        precio_list = [_normalizar_precio_cop(p) for p in precio_list]
-
-        errores_generales = []
-        errores_filas = []
-        filas_validas = []
-
-        # Validar fecha
-        fecha = hoy
-        if fecha_str:
-            try:
-                fecha = date.fromisoformat(fecha_str)
-            except ValueError:
-                errores_generales.append('Fecha no válida.')
-
-        # Validar que haya al menos una fila
-        if len(productos_ids) == 0:
-            errores_generales.append('Debe agregar al menos un producto.')
-
-        # Validar longitudes consistentes
-        if not (len(productos_ids) == len(kg_list) == len(precio_list)):
-            errores_generales.append('Datos inconsistentes. Intente de nuevo.')
-
-        if not errores_generales:
-            for i, (prod_id, kg_str, precio_str) in enumerate(zip(productos_ids, kg_list, precio_list)):
-                fila_errores = []
-
-                if not prod_id:
-                    fila_errores.append('Seleccione un producto.')
-                if not kg_str:
-                    fila_errores.append('Ingrese la cantidad en kg.')
-                if not precio_str:
-                    fila_errores.append('Ingrese el precio por kg.')
-
-                producto = None
-                kg_vendido = None
-                precio_por_kg = None
-
-                if prod_id:
-                    try:
-                        producto = Producto.objects.get(pk=prod_id, activo=True)
-                    except Producto.DoesNotExist:
-                        fila_errores.append('Producto no válido.')
-
-                if kg_str:
-                    try:
-                        kg_vendido = Decimal(kg_str)
-                        if kg_vendido <= 0:
-                            fila_errores.append('La cantidad debe ser mayor a 0.')
-                    except (ValueError, TypeError, InvalidOperation):
-                        fila_errores.append('Ingrese un número válido.')
-
-                if precio_str:
-                    try:
-                        precio_por_kg = Decimal(precio_str)
-                        if precio_por_kg < 0:
-                            fila_errores.append('El precio no puede ser negativo.')
-                    except (ValueError, TypeError, InvalidOperation):
-                        fila_errores.append('Ingrese un precio válido.')
-
-                if fila_errores:
-                    errores_filas.append({
-                        'fila': i,
-                        'errores': fila_errores,
-                    })
-                else:
-                    filas_validas.append({
-                        'producto': producto,
-                        'kg_vendido': kg_vendido,
-                        'precio_por_kg': precio_por_kg,
-                    })
-
-        hay_errores = errores_generales or errores_filas or not filas_validas
-
-        if hay_errores:
-            if not errores_generales and not filas_validas:
-                errores_generales.append('Ninguna fila es válida. Corrija los errores.')
-
-            # Preparar datos de filas para re-renderizar
-            filas_post = []
-            for i in range(len(productos_ids)):
-                filas_post.append({
-                    'producto': productos_ids[i] if i < len(productos_ids) else '',
-                    'kg_vendido': kg_list[i] if i < len(kg_list) else '',
-                    'precio_por_kg': request.POST.getlist('precio_por_kg[]')[i] if i < len(request.POST.getlist('precio_por_kg[]')) else '',
-                })
-
-            return render(request, 'core/ventas/venta_efectivo_create.html', {
-                'titulo': 'Nueva Venta en Efectivo',
-                'productos': productos,
-                'fecha': fecha_str or hoy.isoformat(),
-                'filas': filas_post,
-                'errores_generales': errores_generales,
-                'errores_filas': errores_filas,
-            })
-
-        # Crear venta y detalles en transacción atómica
-        with transaction.atomic():
-            venta = VentaEfectivo.objects.create(
-                fecha=fecha,
-                producto=None,
-            )
-            detalles = []
-            for fila in filas_validas:
-                detalles.append(DetalleVentaEfectivo(
-                    venta=venta,
-                    producto=fila['producto'],
-                    kg_vendido=fila['kg_vendido'],
-                    precio_por_kg=fila['precio_por_kg'],
-                ))
-            DetalleVentaEfectivo.objects.bulk_create(detalles)
-
-        total = sum(f['kg_vendido'] * f['precio_por_kg'] for f in filas_validas)
-        nombres_unicos = sorted(set(f['producto'].nombre for f in filas_validas))
-        resumen_nombres = ', '.join(nombres_unicos[:3])
-        if len(nombres_unicos) > 3:
-            resumen_nombres += f' y {len(nombres_unicos) - 3} más'
-
-        messages.success(
-            request,
-            f'Venta registrada: {len(filas_validas)} producto(s) ({resumen_nombres}) — Total: ${total:,.0f}'
-        )
-        return redirect('venta_efectivo_list')
-
+        form = VentaEfectivoForm(request.POST)
+        if form.is_valid():
+            venta = form.save()
+            messages.success(request, f'Venta registrada: {venta.producto} - {venta.kg_vendido} kg - ${venta.total}')
+            return redirect('venta_efectivo_list')
+    else:
+        form = VentaEfectivoForm(initial={'fecha': date.today()})
     return render(request, 'core/ventas/venta_efectivo_create.html', {
+        'form': form,
         'titulo': 'Nueva Venta en Efectivo',
-        'productos': productos,
-        'fecha': hoy.isoformat(),
-        'filas': [{'producto': '', 'kg_vendido': '', 'precio_por_kg': ''}],
     })
 
 @login_required
@@ -1139,67 +1029,29 @@ def venta_efectivo_edit(request, pk):
 
 @login_required
 def venta_efectivo_detail(request, pk):
-    venta = get_object_or_404(VentaEfectivo, pk=pk)
-    detalles = venta.detalles.all()
-    detalle_form = DetalleVentaEfectivoForm(request.POST or None)
-    
+    venta = get_object_or_404(VentaEfectivo.objects.select_related('producto'), pk=pk)
     if request.method == 'POST' and 'finalizar_venta' in request.POST:
-        # Validar que tenga al menos un detalle
-        if not detalles.exists():
-            messages.error(request, '❌ Debe agregar al menos un producto antes de registrar la venta.')
-            return redirect('venta_efectivo_detail', pk=venta.pk)
-        
-        # Obtener datos del pago del formulario
         medio_pago = request.POST.get('medio_pago', 'efectivo')
         monto_pagado_str = request.POST.get('monto_pagado', '')
-        
-        # Validar y convertir monto pagado
         monto_pagado = None
         if monto_pagado_str:
-            # Reemplazar coma por punto si es necesario
-            monto_pagado_str = str(monto_pagado_str).replace(',', '.')
+            monto_pagado_str = str(monto_pagado_str).replace(',', '.').replace('.', '', monto_pagado_str.count('.') - 1) if monto_pagado_str.count('.') > 1 else str(monto_pagado_str).replace('.', '')
             try:
                 monto_pagado = float(monto_pagado_str)
             except (ValueError, TypeError):
                 monto_pagado = None
-        
         if not monto_pagado or monto_pagado <= 0:
-            messages.error(request, '❌ Ingrese un monto pagado válido (debe ser mayor a 0).')
+            messages.error(request, 'Ingrese un monto pagado valido (debe ser mayor a 0).')
             return redirect('venta_efectivo_detail', pk=venta.pk)
-        
         total_venta = float(venta.total)
-        
-        # Mensaje dependiendo del pago
         if monto_pagado >= total_venta:
             cambio = monto_pagado - total_venta
-            messages.success(
-                request, 
-                f'✅ ¡Venta registrada exitosamente! | Medio: {medio_pago.upper()} | Total: ${total_venta:.0f} | Cambio: ${cambio:.0f}'
-            )
+            messages.success(request, f'Venta registrada. Medio: {medio_pago.upper()} | Total: ${total_venta:.0f} | Cambio: ${cambio:.0f}')
         else:
             falta = total_venta - monto_pagado
-            messages.warning(
-                request, 
-                f'⚠️ Venta registrada con pago incompleto. Falta: ${falta:.0f}'
-            )
-        
+            messages.warning(request, f'Pago incompleto. Falta: ${falta:.0f}')
         return redirect('venta_efectivo_list')
-    
-    if request.method == 'POST' and 'detalle_submit' in request.POST:
-        if detalle_form.is_valid():
-            detalle = detalle_form.save(commit=False)
-            detalle.venta = venta
-            
-            detalle.save()
-            messages.success(request, f'Producto agregado: {detalle.producto.nombre} - {detalle.kg_vendido} kg')
-            return redirect('venta_efectivo_detail', pk=venta.pk)
-    
-    ctx = {
-        'venta': venta,
-        'detalles': detalles,
-        'detalle_form': detalle_form
-    }
-    return render(request, 'core/ventas/venta_efectivo_detail.html', ctx)
+    return render(request, 'core/ventas/venta_efectivo_detail.html', {'venta': venta})
 
 @login_required
 def detalle_venta_efectivo_delete(request, pk):
@@ -1261,7 +1113,7 @@ def venta_credito_create(request):
             return redirect('venta_credito_detail', pk=venta.pk)
     else:
         form = VentaCreditoForm(initial={'fecha': date.today()})
-    return render(request, 'core/genericos/form_generic.html', {
+    return render(request, 'core/ventas/venta_credito_form.html', {
         'form': form,
         'titulo': 'Nueva Venta a Crédito',
         'back_url': 'venta_credito_list'
@@ -1376,7 +1228,7 @@ def reporte_diario(request):
     fecha = request.GET.get('fecha', str(date.today()))
     ventas_ef = VentaEfectivo.objects.filter(fecha=fecha)
     ventas_cr = VentaCredito.objects.filter(fecha=fecha)
-    gastos = Gasto.objects.filter(fecha=fecha).select_related('categoria')
+    gastos = Gasto.objects.filter(fecha=fecha)
     abonos = PagoVentaCredito.objects.filter(fecha=fecha).select_related('venta__cliente')
     total_efectivo = sum(v.total for v in ventas_ef)
     total_credito = sum(v.total for v in ventas_cr)
