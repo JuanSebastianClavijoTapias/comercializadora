@@ -93,70 +93,62 @@
     </div>
   </div>
 </div>
+{% endblock %}
 
+{% block extra_js %}
 <script>
-  document.addEventListener('DOMContentLoaded', function() {
-    const inputKg = document.getElementById('id_kg_vendido_c') || document.getElementById('id_kg_vendido');
-    const inputPrecio = document.getElementById('id_precio_por_kg_c') || document.getElementById('id_precio_por_kg');
-    const previewContainer = document.getElementById('total_preview_container');
-    const previewVal = document.getElementById('total_preview_val');
-    
-    // Fecha Hoy
-    const inputFecha = document.getElementById('id_fecha');
-    const btnFechaHoy = document.getElementById('btn-fecha-hoy');
-    
-    if(btnFechaHoy && inputFecha) {
-      btnFechaHoy.addEventListener('click', () => {
-        const today = new Date();
-        // Ajustar al formato yyyy-mm-dd local
-        const yyyy = today.getFullYear();
-        const mm = String(today.getMonth() + 1).padStart(2, '0');
-        const dd = String(today.getDate()).padStart(2, '0');
-        inputFecha.value = `${yyyy}-${mm}-${dd}`;
-      });
-    }
+document.addEventListener('DOMContentLoaded', function() {
+  // Buscador de cliente (Choices.js)
+  var elCliente = document.getElementById('id_cliente');
+  if (elCliente && window.Choices) {
+    new Choices(elCliente, {
+      searchEnabled: true,
+      searchPlaceholder: 'Buscar cliente...',
+      placeholder: 'Seleccione un cliente',
+      placeholderValue: 'Seleccione un cliente',
+      searchResultLimit: 20,
+      shouldSort: true,
+      itemSelectText: '',
+      noResultsText: 'Sin resultados',
+    });
+  }
 
-    // Abono inicial
-    const checkAbono = document.getElementById('checkAbonoInicial');
-    const containerAbono = document.getElementById('abono_inicial_container');
-    const inputMontoAbono = document.getElementById('monto_abono_inicial');
-    const valSaldoProyectado = document.getElementById('saldo_proyectado');
+  // Fecha Hoy
+  var inputFecha = document.getElementById('id_fecha');
+  var btnFechaHoy = document.getElementById('btn-fecha-hoy');
+  if (btnFechaHoy && inputFecha) {
+    btnFechaHoy.addEventListener('click', function() {
+      var t = new Date();
+      inputFecha.value = t.getFullYear() + '-' +
+        String(t.getMonth() + 1).padStart(2, '0') + '-' +
+        String(t.getDate()).padStart(2, '0');
+    });
+  }
 
-    function updateTotal() {
-      const kg = parseFloat(inputKg?.value) || 0;
-      const precio = parseCOP(inputPrecio?.value);
-      const total = kg * precio;
-      let saldo = total;
-      
-      if (total > 0) {
-        previewContainer.style.display = 'block';
-        previewVal.innerText = '$' + Math.round(total).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-      } else {
-        previewContainer.style.display = 'none';
+  // Abono inicial
+  var checkAbono = document.getElementById('checkAbonoInicial');
+  var containerAbono = document.getElementById('abono_inicial_container');
+  var inputMontoAbono = document.getElementById('monto_abono_inicial');
+  var valSaldoProyectado = document.getElementById('saldo_proyectado');
+
+  if (checkAbono) {
+    checkAbono.addEventListener('change', function() {
+      containerAbono.style.display = this.checked ? 'flex' : 'none';
+      if (this.checked && inputMontoAbono) inputMontoAbono.focus();
+      if (this.checked && valSaldoProyectado) {
+        valSaldoProyectado.innerText = '$0';
       }
+    });
+  }
 
-      if (checkAbono.checked) {
-        const abono = parseCOP(inputMontoAbono?.value);
-        saldo = total - abono;
-        valSaldoProyectado.innerText = '$' + Math.max(0, Math.round(saldo)).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  if (inputMontoAbono) {
+    inputMontoAbono.addEventListener('input', function() {
+      if (checkAbono && checkAbono.checked && valSaldoProyectado) {
+        var abono = window.parseCOP ? window.parseCOP(inputMontoAbono.value) : (parseFloat(String(inputMontoAbono.value).replace(/\./g, '')) || 0);
+        valSaldoProyectado.innerText = '$' + abono.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
       }
-    }
-
-    if (checkAbono) {
-      checkAbono.addEventListener('change', function() {
-        containerAbono.style.display = this.checked ? 'flex' : 'none';
-        if(this.checked) inputMontoAbono.focus();
-        updateTotal();
-      });
-    }
-
-    if(inputMontoAbono) inputMontoAbono.addEventListener('input', updateTotal);
-
-    if (inputKg && inputPrecio && previewContainer) {
-      inputKg.addEventListener('input', updateTotal);
-      inputPrecio.addEventListener('input', updateTotal);
-      updateTotal(); // initial check
-    }
-  });
+    });
+  }
+});
 </script>
 {% endblock %}

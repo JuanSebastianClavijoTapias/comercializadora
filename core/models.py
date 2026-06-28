@@ -104,6 +104,7 @@ class Viaje(models.Model):
 
 class PesadaViaje(models.Model):
     viaje = models.ForeignKey(Viaje, on_delete=models.CASCADE, related_name='pesadas', verbose_name='Viaje')
+    clasificacion = models.ForeignKey(Clasificacion, null=True, blank=True, on_delete=models.SET_NULL, related_name='pesadas', verbose_name='Clasificación')
     num_canastillas_negras = models.PositiveIntegerField(default=0, verbose_name='Canastillas Negras (1.6 kg)')
     num_canastillas_colores = models.PositiveIntegerField(default=0, verbose_name='Canastillas Color (2.2 kg)')
     kg_bruto = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Kg Bruto')
@@ -292,6 +293,51 @@ def actualiza_stock_lote_delete(sender, instance, **kwargs):
     if instance.clasificacion:
         instance.clasificacion.stock_kg = F('stock_kg') - instance.kg_neto
         instance.clasificacion.save(update_fields=['stock_kg'])
+
+
+def recalcular_lotes_viaje(viaje):
+    """
+    Recalcula los LoteClasificacion del viaje a partir de las pesadas.
+
+    Suma el kg_neto de las pesadas agrupadas por clasificacion_id y hace
+    upsert/eliminacion de LoteClasificacion. Los signals de LoteClasificacion
+    actualizan el stock de cada Clasificacion automaticamente.
+    """
+    pesadas = list(viaje.pesadas.exclude(clasificacion__isnull=True))
+    nuevas = {}
+    for p in pesadas:
+        nuevas[p.clasificacion_id] = nuevas.get(p.clasificacion_id, Decimal('0')) + p.kg_neto
+
+    existentes = {l.clasificacion_id: l for l in viaje.lotes.all()}
+
+    for clasif_id, total_kg in nuevas.items():
+        if clasif_id in existentes:
+            lote = existentes[clasif_id]
+            if lote.kg_neto != total_kg:
+                lote.kg_neto = total_kg
+                lote.save(update_fields=['kg_neto'])
+        else:
+            LoteClasificacion.objects.create(
+                viaje=viaje, clasificacion_id=clasif_id, kg_neto=total_kg
+            )
+
+    for clasif_id, lote in existentes.items():
+        if clasif_id not in nuevas:
+            lote.delete()
+
+
+@receiver(post_save, sender=PesadaViaje)
+def sincronizar_lote_on_pesada_save(sender, instance, created, **kwargs):
+    recalcular_lotes_viaje(instance.viaje)
+
+
+@receiver(post_delete, sender=PesadaViaje)
+def sincronizar_lote_on_pesada_delete(sender, instance, **kwargs):
+    try:
+        recalcular_lotes_viaje(instance.viaje)
+    except Viaje.DoesNotExist:
+        # El viaje fue borrado en cascada, no hay nada que recalcular
+        pass
 
 @receiver(pre_save, sender=DetalleVentaCredito)
 def captura_anterior_venta_credito(sender, instance, **kwargs):

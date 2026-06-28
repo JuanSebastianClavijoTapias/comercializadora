@@ -593,42 +593,27 @@ def viaje_detail(request, pk):
     from decimal import Decimal, InvalidOperation
     viaje = get_object_or_404(Viaje, pk=pk)
     lotes = viaje.lotes.select_related('clasificacion').all()
-    lotes_dict = {lote.clasificacion_id: lote for lote in lotes}
-    pesadas = viaje.pesadas.all()
+    pesadas = viaje.pesadas.select_related('clasificacion').all()
 
     clasificaciones = Clasificacion.objects.filter(
         producto=viaje.producto, activo=True
     ).order_by('orden', 'nombre')
 
-    if request.method == 'POST' and 'guardar_clasificaciones' in request.POST:
-        for c in clasificaciones:
-            kg_str = request.POST.get(f'kg_neto_{c.id}', '')
-            try:
-                kg_val = Decimal(kg_str) if kg_str.strip() else Decimal('0')
-            except InvalidOperation:
-                kg_val = Decimal('0')
-            if kg_val > 0:
-                lote, created = LoteClasificacion.objects.get_or_create(
-                    viaje=viaje, clasificacion=c, defaults={'kg_neto': kg_val}
-                )
-                if not created:
-                    lote.kg_neto = kg_val
-                    lote.save()
-            else:
-                if c.id in lotes_dict:
-                    lotes_dict[c.id].delete()
-
-        messages.success(request, 'Clasificaciones guardadas exitosamente.')
-        return redirect('viaje_detail', pk=pk)
-
-    # Pre-build data for the template
-    clases_data = []
+    # Desglose de kg_neto por clasificacion (calculado desde las pesadas)
+    kg_por_clasificacion = {}
+    total_neto_clasificado = Decimal('0')
+    for p in pesadas:
+        if p.clasificacion_id is not None and p.kg_neto is not None:
+            kg_por_clasificacion[p.clasificacion_id] = (
+                kg_por_clasificacion.get(p.clasificacion_id, Decimal('0')) + p.kg_neto
+            )
+            total_neto_clasificado += p.kg_neto
+    # Mapear a lista ordenada por clasificacion para el template
+    desglose_clasificaciones = []
     for c in clasificaciones:
-        ext_lote = lotes_dict.get(c.id)
-        clases_data.append({
-            'clasificacion': c,
-            'kg_neto': float(ext_lote.kg_neto) if (ext_lote and ext_lote.kg_neto) else '',
-        })
+        kg = kg_por_clasificacion.get(c.id, Decimal('0'))
+        if kg > 0:
+            desglose_clasificaciones.append({'clasificacion': c, 'kg_neto': kg})
 
     pagos = viaje.pagos_proveedor.all()
     pago_form = PagoProveedorForm()
@@ -649,7 +634,9 @@ def viaje_detail(request, pk):
         'viaje': viaje,
         'pesadas': pesadas,
         'pesada_form': pesada_form,
-        'clases_data': clases_data,
+        'clasificaciones': clasificaciones,
+        'desglose_clasificaciones': desglose_clasificaciones,
+        'total_neto_clasificado': float(total_neto_clasificado),
         'pagos': pagos,
         'pago_form': pago_form,
         'lotes': lotes,
@@ -678,10 +665,12 @@ def pesada_add(request, pk):
             while f'kg_bruto_{i}' in request.POST:
                 kg_bruto_val = request.POST.get(f'kg_bruto_{i}', '').strip()
                 if kg_bruto_val:
+                    clasif_id = request.POST.get(f'clasificacion_{i}', '').strip()
                     data = {
                         'num_canastillas_negras': request.POST.get(f'num_canastillas_negras_{i}', '') or None,
                         'num_canastillas_colores': request.POST.get(f'num_canastillas_colores_{i}', '') or None,
                         'kg_bruto': kg_bruto_val,
+                        'clasificacion': clasif_id or None,
                     }
                     form = PesadaViajeForm(data)
                     if form.is_valid():
