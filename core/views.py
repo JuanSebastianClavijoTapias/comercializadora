@@ -503,7 +503,15 @@ def producto_delete(request, pk):
 def producto_clasificaciones(request, pk):
     producto = get_object_or_404(Producto, pk=pk)
     clasificaciones = producto.clasificaciones.all()
-    return render(request, 'core/catalogo/producto_clasificaciones.html', {'producto': producto, 'clasificaciones': clasificaciones})
+    form = ClasificacionForm(request.POST or None)
+    if form.is_valid():
+        clas = form.save(commit=False)
+        clas.producto = producto
+        clas.save()
+        messages.success(request, 'Clasificación creada.')
+        return redirect('producto_clasificaciones', pk=pk)
+    return render(request, 'core/catalogo/producto_clasificaciones.html',
+        {'producto': producto, 'clasificaciones': clasificaciones, 'form': form})
 
 @login_required
 def producto_stock_update(request, pk):
