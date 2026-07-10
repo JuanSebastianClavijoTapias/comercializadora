@@ -108,7 +108,7 @@
     <div class="stat-card-white h-100" style="background: linear-gradient(135deg, #00897B 0%, #00695C 100%); cursor: pointer;" data-bs-toggle="modal" data-bs-target="#modalInventarioInicial">
       <div>
         <div class="small fw-semibold" style="color: white;">Inventario Inicial</div>
-        <div class="fs-4 fw-bold" style="color: white;">{{ weekly_initial_inventory_kg|floatformat:0|default:0 }} kg</div>
+        <div class="fs-4 fw-bold" style="color: white;">{{ inventario_inicial_kg|floatformat:0 }} kg</div>
         <div class="small" style="color: rgba(255,255,255,0.9);">Disponible al inicio de la semana</div>
       </div>
       <div class="stat-icon-wrapper" style="background: rgba(255,255,255,0.25); color: white;">
@@ -573,6 +573,7 @@
           <table class="table table-hover">
             <thead class="bg-light">
               <tr>
+                <th>Producto</th>
                 <th>Clasificación</th>
                 <th class="text-end">Kg</th>
               </tr>
@@ -580,6 +581,7 @@
             <tbody>
               {% for detalle in detalles_inventario_inicial %}
               <tr>
+                <td>{{ detalle.producto }}</td>
                 <td>{{ detalle.nombre }}</td>
                 <td class="text-end"><strong>{{ detalle.stock_kg|floatformat:0 }}</strong></td>
               </tr>
@@ -613,6 +615,7 @@
             <thead class="bg-light">
               <tr>
                 <th>Proveedor</th>
+                <th>Producto</th>
                 <th>Clasificación</th>
                 <th class="text-end">Kg Neto</th>
                 <th class="text-end">Fecha</th>
@@ -622,6 +625,7 @@
               {% for compra in detalles_compras %}
               <tr>
                 <td><strong>{{ compra.proveedor }}</strong></td>
+                <td>{{ compra.producto }}</td>
                 <td>{{ compra.clasificacion }}</td>
                 <td class="text-end">{{ compra.kg_neto|floatformat:2 }}</td>
                 <td class="text-end text-muted small">{{ compra.fecha|date:"d/m/Y" }}</td>
@@ -707,6 +711,8 @@
             <thead class="bg-light">
               <tr>
                 <th>Proveedor</th>
+                <th>Producto</th>
+                <th>Clasificación</th>
                 <th class="text-end">Kg Podridos</th>
                 <th class="text-end">Fecha</th>
                 <th>Observaciones</th>
@@ -716,8 +722,10 @@
               {% for desecho in detalles_desechos %}
               <tr>
                 <td><strong>{{ desecho.proveedor }}</strong></td>
+                <td class="text-muted small">{{ desecho.producto }}</td>
+                <td><span class="badge bg-info text-dark">{{ desecho.clasificacion }}</span></td>
                 <td class="text-end text-danger fw-bold">{{ desecho.kg_podridos|floatformat:2 }}</td>
-                <td class="text-end text-muted small">{{ desecho.fecha|date:"d/m/Y" }}</td>
+                <td class="text-end text-muted small">{{ desecho.fecha|date:"d/m/Y }}</td>
                 <td class="text-muted small">{{ desecho.observaciones|truncatewords:10 }}</td>
               </tr>
               {% endfor %}

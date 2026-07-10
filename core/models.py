@@ -60,7 +60,6 @@ class Viaje(models.Model):
     producto = models.ForeignKey(Producto, on_delete=models.CASCADE, related_name='viajes', verbose_name='Producto')
     fecha = models.DateField(verbose_name='Fecha')
     observaciones = models.TextField(blank=True, verbose_name='Observaciones')
-    kg_podridos = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name='Kg Podridos / Rechazo')
     precio_total_acordado = models.DecimalField(max_digits=12, decimal_places=2, default=0, verbose_name='Precio Total Acordado')
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -84,11 +83,14 @@ class Viaje(models.Model):
 
     @property
     def neto_a_pagar(self):
-        kg_p = self.kg_podridos or Decimal('0')
-        neto = self.kg_bruto - kg_p - self.peso_canastillas
+        neto = sum((p.kg_neto for p in self.pesadas.all()), Decimal('0'))
         if self.producto.tiene_descuento_gobierno and self.producto.porcentaje_descuento > 0:
             neto = neto - (neto * self.producto.porcentaje_descuento / 100)
         return max(neto, Decimal('0'))
+
+    @property
+    def total_kg_podridos(self):
+        return sum((p.kg_podridos for p in self.pesadas.all()), Decimal('0'))
 
     @property
     def total_kg_neto(self): return sum(lote.kg_neto for lote in self.lotes.all())
@@ -108,6 +110,7 @@ class PesadaViaje(models.Model):
     num_canastillas_negras = models.PositiveIntegerField(default=0, verbose_name='Canastillas Negras (1.6 kg)')
     num_canastillas_colores = models.PositiveIntegerField(default=0, verbose_name='Canastillas Color (2.2 kg)')
     kg_bruto = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Kg Bruto')
+    kg_podridos = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name='Kg Podridos / Rechazo')
 
     @property
     def total_canastillas(self):
@@ -120,7 +123,7 @@ class PesadaViaje(models.Model):
 
     @property
     def kg_neto(self):
-        return max(self.kg_bruto - self.peso_canastillas, Decimal('0'))
+        return max(self.kg_bruto - self.peso_canastillas - (self.kg_podridos or Decimal('0')), Decimal('0'))
 
     def __str__(self):
         partes = []
@@ -242,6 +245,8 @@ class VentaCredito(models.Model):
     def total_pagado(self): return sum(p.monto for p in self.pagos.all())
     @property
     def saldo_pendiente(self): return self.total - self.total_pagado
+    @property
+    def total_kg(self): return sum(d.kg_vendido for d in self.detalles.all())
     def __str__(self): return f"Venta crédito {self.cliente} - {self.fecha}"
     class Meta:
         verbose_name = 'Venta a Crédito'; verbose_name_plural = 'Ventas a Crédito'; ordering = ['-fecha']

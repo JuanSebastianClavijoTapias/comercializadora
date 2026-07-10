@@ -78,24 +78,16 @@ class ViajeForm(forms.ModelForm):
             'observaciones': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Observaciones opcionales...'}),
         }
 
-class ViajeDetallesForm(forms.ModelForm):
-    """Formulario para editar detalles del viaje después de su creación"""
-    class Meta:
-        model = Viaje
-        fields = ['kg_podridos']
-        widgets = {
-            'kg_podridos': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
-        }
-
 class PesadaViajeForm(forms.ModelForm):
     class Meta:
         model = PesadaViaje
-        fields = ['num_canastillas_negras', 'num_canastillas_colores', 'kg_bruto', 'clasificacion']
+        fields = ['num_canastillas_negras', 'num_canastillas_colores', 'kg_bruto', 'clasificacion', 'kg_podridos']
         widgets = {
             'num_canastillas_negras': forms.NumberInput(attrs={'class': 'form-control', 'min': '0', 'placeholder': '0'}),
             'num_canastillas_colores': forms.NumberInput(attrs={'class': 'form-control', 'min': '0', 'placeholder': '0'}),
             'kg_bruto': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': 'Ej: 180.00'}),
             'clasificacion': forms.Select(attrs={'class': 'form-select'}),
+            'kg_podridos': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0', 'placeholder': '0'}),
         }
 
 class LoteClasificacionForm(forms.ModelForm):
@@ -197,7 +189,7 @@ class PesadaEntradaForm(forms.ModelForm):
         }
 
 class VentaEfectivoForm(COPInputNormalizationMixin, forms.ModelForm):
-    cop_fields = ('total_dia', 'kg_vendido')
+    cop_fields = ('total_dia',)
 
     class Meta:
         model = VentaEfectivo
@@ -205,7 +197,7 @@ class VentaEfectivoForm(COPInputNormalizationMixin, forms.ModelForm):
         widgets = {
             'fecha': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'producto': forms.Select(attrs={'class': 'form-select'}),
-            'kg_vendido': forms.TextInput(attrs={'class': 'form-control price-cop', 'inputmode': 'numeric', 'placeholder': 'Ej: 3.00'}),
+            'kg_vendido': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0', 'placeholder': 'Ej: 3.50'}),
             'total_dia': forms.TextInput(attrs={'class': 'form-control price-cop', 'inputmode': 'numeric', 'placeholder': 'Total del día'}),
         }
         labels = {

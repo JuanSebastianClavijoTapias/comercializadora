@@ -819,20 +819,22 @@
               <tr>
                 <th>Fecha</th>
                 <th>Proveedor</th>
+                <th>Clasificación</th>
                 <th class="text-end">Kg podridos</th>
                 <th>Observaciones</th>
               </tr>
             </thead>
             <tbody>
-              {% for viaje in desechos_semana %}
+              {% for pesada in desechos_semana %}
               <tr>
-                <td>{{ viaje.fecha|date:"d/m/Y" }}</td>
-                <td>{{ viaje.proveedor }}</td>
-                <td class="text-end fw-semibold text-danger">{{ viaje.kg_podridos|floatformat:0 }} kg</td>
-                <td>{{ viaje.observaciones|default:"-" }}</td>
+                <td>{{ pesada.viaje.fecha|date:"d/m/Y" }}</td>
+                <td>{{ pesada.viaje.proveedor }}</td>
+                <td>{{ pesada.clasificacion.nombre|default:"Sin clasificación" }}</td>
+                <td class="text-end fw-semibold text-danger">{{ pesada.kg_podridos|floatformat:2 }} kg</td>
+                <td>{{ pesada.viaje.observaciones|default:"-" }}</td>
               </tr>
               {% empty %}
-              <tr><td colspan="4" class="text-center text-muted py-4">No hubo desechos en esta semana.</td></tr>
+              <tr><td colspan="5" class="text-center text-muted py-4">No hubo desechos en esta semana.</td></tr>
               {% endfor %}
             </tbody>
           </table>
@@ -907,22 +909,25 @@
               </tr>
             </thead>
             <tbody>
-              {% for entrada in compras_semana %}
+              {% for ing in ingresos_semana %}
               <tr>
-                <td>{{ entrada.fecha|date:"d/m/Y" }}</td>
-                <td>{{ entrada.proveedor }}</td>
-                <td>{{ entrada.clasificacion }}</td>
-                <td class="text-end fw-semibold text-primary">{{ entrada.kg|floatformat:2 }} kg</td>
-                <td class="text-end">${{ entrada.precio_por_kg|cop }}</td>
-                <td class="text-end fw-semibold" style="color:#E91E63;">${{ entrada.total|cop }}</td>
+                <td><a href="{{ ing.url }}" class="text-decoration-none">{{ ing.fecha|date:"d/m/Y" }}</a></td>
+                <td>{{ ing.proveedor }}</td>
+                <td>
+                  {{ ing.clasificacion }}
+                  <span class="badge ms-1 {% if ing.origen == 'Viaje' %}bg-warning text-dark{% else %}bg-info text-dark{% endif %}" style="font-size:0.7rem;">{{ ing.origen }}</span>
+                </td>
+                <td class="text-end fw-semibold text-primary">{{ ing.kg|floatformat:2 }} kg</td>
+                <td class="text-end">{% if ing.precio_por_kg is not None %}${{ ing.precio_por_kg|cop }}{% else %}—{% endif %}</td>
+                <td class="text-end fw-semibold" style="color:#E91E63;">{% if ing.total is not None %}${{ ing.total|cop }}{% else %}—{% endif %}</td>
               </tr>
               {% empty %}
-              <tr><td colspan="6" class="text-center text-muted py-4">No hay entradas registradas en esta semana.</td></tr>
+              <tr><td colspan="6" class="text-center text-muted py-4">No hay ingresos registrados en esta semana.</td></tr>
               {% endfor %}
-              {% if compras_semana %}
+              {% if ingresos_semana %}
               <tr class="table-light fw-bold">
                 <td colspan="3" class="text-end">Total semana</td>
-                <td class="text-end text-primary">{{ compras_semana_kg|floatformat:2 }} kg</td>
+                <td class="text-end text-primary">{{ total_kg_ingresado_semana|floatformat:2 }} kg</td>
                 <td></td>
                 <td class="text-end" style="color:#E91E63;">${{ total_compras_semana|cop }}</td>
               </tr>

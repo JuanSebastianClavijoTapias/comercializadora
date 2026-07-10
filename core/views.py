@@ -110,7 +110,9 @@ def get_weekly_history():
 
         gastos_semana = Gasto.objects.filter(fecha__range=[week_start, week_end]).select_related('categoria')
         nomina_total = sum(
-            g.monto for g in gastos_semana if g.categoria.nombre.lower() == NOMINA_CATEGORY_NAME.lower()
+            g.monto for g in gastos_semana
+            if getattr(g.categoria, 'nombre', None) and
+               g.categoria.nombre.lower() == NOMINA_CATEGORY_NAME.lower()
         ) or Decimal('0')
         gastos_total = sum(g.monto for g in gastos_semana) or Decimal('0')
 
@@ -243,51 +245,48 @@ def dashboard(request):
         'gastos': gastos_7dias
     }
     
-    # ---- MÉTRICAS DE INVENTARIO DE MANDARINA ----
-    # Obtener el producto "Mandarina" o el primero disponible
-    producto_mandarina = Producto.objects.filter(nombre__icontains='Mandarina').first() or Producto.objects.first()
+    # ---- MÉTRICAS DE INVENTARIO (TODOS LOS PRODUCTOS) ----
     
-    # 1. INVENTARIO INICIAL: Stock total de mandarina al inicio del día
-    clasificaciones_mandarina = Clasificacion.objects.filter(producto=producto_mandarina) if producto_mandarina else Clasificacion.objects.none()
-    inventario_inicial_kg = sum(c.stock_kg for c in clasificaciones_mandarina)
+    # 1. INVENTARIO INICIAL: Stock total de todas las clasificaciones con stock > 0
+    clasificaciones_todas = Clasificacion.objects.filter(stock_kg__gt=0).select_related('producto').order_by('producto__nombre', 'orden')
+    inventario_inicial_kg = sum(c.stock_kg for c in clasificaciones_todas)
     inventario_inicial_toneladas = inventario_inicial_kg / 1000 if inventario_inicial_kg > 0 else Decimal('0')
     
     # Detalles de clasificaciones para modal
     detalles_inventario_inicial = []
-    for clasificacion in clasificaciones_mandarina:
+    for clasificacion in clasificaciones_todas:
         detalles_inventario_inicial.append({
+            'producto': clasificacion.producto.nombre,
             'nombre': clasificacion.nombre,
             'stock_kg': clasificacion.stock_kg,
             'stock_toneladas': clasificacion.stock_kg / 1000
         })
     
-    # 2. COMPRAS DEL DÍA: Suma de kg_neto de lotes clasificados de viajes de hoy
+    # 2. COMPRAS DEL DÍA: Suma de kg_neto de lotes clasificados de viajes de hoy (todos los productos)
     lotes_hoy = LoteClasificacion.objects.filter(
         viaje__fecha=hoy,
-        viaje__producto=producto_mandarina
-    ) if producto_mandarina else LoteClasificacion.objects.none()
+    ).select_related('clasificacion__producto', 'viaje__proveedor')
     compras_hoy_kg = sum(lote.kg_neto for lote in lotes_hoy)
     compras_hoy_toneladas = compras_hoy_kg / 1000 if compras_hoy_kg > 0 else Decimal('0')
     
     # Detalles de compras para modal
     detalles_compras = []
-    lotes_hoy_list = list(lotes_hoy)
-    for lote in lotes_hoy_list:
+    for lote in lotes_hoy:
         detalles_compras.append({
             'proveedor': lote.viaje.proveedor.nombre if lote.viaje.proveedor else 'N/A',
+            'producto': lote.clasificacion.producto.nombre,
             'clasificacion': lote.clasificacion.nombre,
             'kg_neto': lote.kg_neto,
             'fecha': lote.viaje.fecha
         })
     
-    # 3. VENDIDO: Suma de kg_vendido de todas las ventas de hoy
+    # 3. VENDIDO: Suma de kg_vendido de todas las ventas de hoy (todos los productos)
     # 3a. Ventas en efectivo del día
-    detalles_efectivo_mandarina = [d for v in ventas_efectivo_hoy for d in v.detalles.all() if d.producto == producto_mandarina] if producto_mandarina else []
-    kg_vendido_efectivo = sum(d.kg_vendido for d in detalles_efectivo_mandarina)
+    detalles_efectivo_todos = [d for v in ventas_efectivo_hoy for d in v.detalles.all()]
+    kg_vendido_efectivo = sum(d.kg_vendido for d in detalles_efectivo_todos)
     
-    # 3b. Ventas a crédito del día - filtrar por clasificación.producto, no por venta.producto
-    detalles_credito_todos = DetalleVentaCredito.objects.filter(venta__fecha=hoy)
-    detalles_credito_hoy = [d for d in detalles_credito_todos if d.clasificacion.producto == producto_mandarina] if producto_mandarina else []
+    # 3b. Ventas a crédito del día
+    detalles_credito_hoy = DetalleVentaCredito.objects.filter(venta__fecha=hoy).select_related('clasificacion__producto', 'venta__cliente')
     kg_vendido_credito = sum(d.kg_vendido for d in detalles_credito_hoy)
     
     # Total vendido en kg y toneladas
@@ -296,7 +295,7 @@ def dashboard(request):
     
     # Detalles de ventas para modal
     detalles_ventas = []
-    for detalle in detalles_efectivo_mandarina:
+    for detalle in detalles_efectivo_todos:
         detalles_ventas.append({
             'tipo': 'Efectivo',
             'cliente': detalle.venta.cliente.nombre if detalle.venta.cliente else 'General',
@@ -313,22 +312,25 @@ def dashboard(request):
             'monto': detalle.total
         })
     
-    # 4. DESECHOS: Suma de kg_podridos de viajes de hoy
-    viajes_hoy = Viaje.objects.filter(fecha=hoy, producto=producto_mandarina) if producto_mandarina else Viaje.objects.none()
-    desechos_kg = sum(v.kg_podridos for v in viajes_hoy)
+    # 4. DESECHOS: Suma de kg_podridos de las pesadas de los viajes de hoy (todos los productos)
+    viajes_hoy = Viaje.objects.filter(fecha=hoy).select_related('proveedor', 'producto')
+    desechos_kg = sum(v.total_kg_podridos for v in viajes_hoy)
     desechos_toneladas = desechos_kg / 1000 if desechos_kg > 0 else Decimal('0')
-    
-    # Detalles de desechos para modal
+
+    # Detalles de desechos para modal (por pesada, con clasificación)
+    pesadas_desecho_hoy = PesadaViaje.objects.filter(
+        viaje__in=viajes_hoy, kg_podridos__gt=0
+    ).select_related('viaje__proveedor', 'viaje__producto', 'clasificacion')
     detalles_desechos = []
-    viajes_hoy_list = list(viajes_hoy)
-    for viaje in viajes_hoy_list:
-        if viaje.kg_podridos > 0:
-            detalles_desechos.append({
-                'proveedor': viaje.proveedor.nombre if viaje.proveedor else 'N/A',
-                'kg_podridos': viaje.kg_podridos,
-                'fecha': viaje.fecha,
-                'observaciones': viaje.observaciones
-            })
+    for pesada in pesadas_desecho_hoy:
+        detalles_desechos.append({
+            'proveedor': pesada.viaje.proveedor.nombre if pesada.viaje.proveedor else 'N/A',
+            'producto': pesada.viaje.producto.nombre if pesada.viaje.producto else 'N/A',
+            'clasificacion': pesada.clasificacion.nombre if pesada.clasificacion else 'Sin clasificación',
+            'kg_podridos': pesada.kg_podridos,
+            'fecha': pesada.viaje.fecha,
+            'observaciones': pesada.viaje.observaciones
+        })
     
     pago_form = PagoVentaCreditoForm()
     
@@ -635,7 +637,7 @@ def viaje_detail(request, pk):
     cant_neg = sum(p.num_canastillas_negras for p in pesadas)
     cant_col = sum(p.num_canastillas_colores for p in pesadas)
     peso_total_canastillas = peso_can_negras + peso_can_colores
-    kg_podrido = viaje.kg_podridos or Decimal('0')
+    kg_podrido = viaje.total_kg_podridos or Decimal('0')
     neto_final = max(kg_bruto_total - peso_total_canastillas - kg_podrido, Decimal('0'))
 
     ctx = {
@@ -679,6 +681,7 @@ def pesada_add(request, pk):
                         'num_canastillas_colores': request.POST.get(f'num_canastillas_colores_{i}', '') or None,
                         'kg_bruto': kg_bruto_val,
                         'clasificacion': clasif_id or None,
+                        'kg_podridos': request.POST.get(f'kg_podridos_{i}', '') or None,
                     }
                     form = PesadaViajeForm(data)
                     if form.is_valid():
@@ -774,22 +777,6 @@ def viaje_delete(request, pk):
         messages.success(request, 'Viaje eliminado satisfactoriamente.')
         return redirect('viaje_list')
     return render(request, 'core/genericos/confirm_delete.html', {'obj': viaje, 'tipo': 'Viaje', 'cancel_url': 'viaje_list'})
-
-@login_required
-def viaje_detalles_edit(request, pk):
-    """Editar detalles adicionales del viaje (rechazos, canastillas, precio)"""
-    viaje = get_object_or_404(Viaje, pk=pk)
-    form = ViajeDetallesForm(request.POST or None, instance=viaje)
-    if form.is_valid():
-        form.save()
-        messages.success(request, 'Detalles del viaje actualizados correctamente.')
-        return redirect('viaje_detail', pk=pk)
-    return render(request, 'core/genericos/form_generic.html', {
-        'form': form, 
-        'titulo': f'Editar Detalles - {viaje}', 
-        'back_url': 'viaje_detail',
-        'back_url_args': [pk]
-    })
 
 @login_required
 def viaje_precio_update(request, pk):
@@ -1090,12 +1077,16 @@ def venta_credito_list(request):
     total_credito = sum(v.total for v in ventas)
     total_pagado = sum(v.total_pagado for v in ventas)
     total_pendiente = sum(v.saldo_pendiente for v in ventas)
+    total_kg_credito = DetalleVentaCredito.objects.aggregate(
+        t=Coalesce(Sum('kg_vendido'), Value(0), output_field=DecimalField())
+    )['t']
     ctx = {
         'ventas': ventas,
         'num_ventas': num_ventas,
         'total_credito': total_credito,
         'total_pagado': total_pagado,
-        'total_pendiente': total_pendiente
+        'total_pendiente': total_pendiente,
+        'total_kg_credito': total_kg_credito,
     }
     return render(request, 'core/ventas/venta_credito_list.html', ctx)
 
@@ -1401,9 +1392,11 @@ def inventario_weekly_summary(request):
 
     viajes_semana = Viaje.objects.filter(
         fecha__range=[inicio_semana, fin_semana]
-    ).select_related('proveedor').order_by('-fecha', '-id')
-    desechos_semana = viajes_semana.filter(kg_podridos__gt=0)
-    total_kg_podridos = sum(v.kg_podridos for v in desechos_semana) or Decimal('0')
+    ).select_related('proveedor').prefetch_related('lotes__clasificacion').order_by('-fecha', '-id')
+    desechos_semana = PesadaViaje.objects.filter(
+        viaje__in=viajes_semana, kg_podridos__gt=0
+    ).select_related('viaje__proveedor', 'viaje__producto', 'clasificacion')
+    total_kg_podridos = sum(p.kg_podridos for p in desechos_semana) or Decimal('0')
 
     compras_semana = EntradaInventario.objects.filter(
         fecha__range=[inicio_semana, fin_semana]
@@ -1415,6 +1408,22 @@ def inventario_weekly_summary(request):
         sum(l.kg_neto for l in v.lotes.all()) for v in viajes_semana
     ) or Decimal('0')
     total_kg_ingresado_semana = compras_semana_kg + viajes_kg_semana
+
+    ingresos_semana = []
+    for e in compras_semana:
+        ingresos_semana.append({
+            'fecha': e.fecha, 'proveedor': e.proveedor, 'clasificacion': e.clasificacion,
+            'kg': e.kg, 'precio_por_kg': e.precio_por_kg, 'total': e.total,
+            'origen': 'Entrada', 'url': reverse('entrada_inventario_detail', args=[e.pk]),
+        })
+    for v in viajes_semana:
+        for l in v.lotes.all():
+            ingresos_semana.append({
+                'fecha': v.fecha, 'proveedor': v.proveedor, 'clasificacion': l.clasificacion,
+                'kg': l.kg_neto, 'precio_por_kg': None, 'total': None,
+                'origen': 'Viaje', 'url': reverse('viaje_detail', args=[v.pk]),
+            })
+    ingresos_semana.sort(key=lambda x: (x['fecha'], 0 if x['origen'] == 'Entrada' else 1), reverse=True)
 
     balance_neto = total_ventas_semana - total_gastos_semana - monto_nomina
     dias_nomina = [10, 20, 30]
@@ -1471,6 +1480,7 @@ def inventario_weekly_summary(request):
         'ventas_credito_semana': ventas_credito_semana,
         'desechos_semana': desechos_semana,
         'compras_semana': compras_semana,
+        'ingresos_semana': ingresos_semana,
         'weekly_history': get_weekly_history(),
         'nomina_form': nomina_form,
         'stock_valorizado': _get_stock_valorizado(),

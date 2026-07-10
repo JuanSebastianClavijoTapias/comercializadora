@@ -952,8 +952,7 @@
 // ===== FORMATO MONEDA COLOMBIANA (price-cop) =====
 (function() {
   function formatCOP(val) {
-    const intPart = String(val).split('.')[0];
-    const digits = intPart.replace(/\D/g, '');
+    const digits = String(val).replace(/\D/g, '');
     if (!digits) return '';
     return parseInt(digits, 10).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
   }

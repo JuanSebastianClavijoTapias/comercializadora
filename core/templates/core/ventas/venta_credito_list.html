@@ -43,7 +43,7 @@
 </div>
 
 <!-- TARJETAS DE ESTAD�?STICAS -->
-<div class="row row-cols-1 row-cols-md-3 g-3 mb-4">
+<div class="row row-cols-1 row-cols-md-4 g-3 mb-4">
   <div class="col">
     <div class="stat-card-white h-100">
       <div>
@@ -60,7 +60,7 @@
     <div class="stat-card-white h-100">
       <div>
         <div class="small fw-semibold">Cobrado</div>
-        <div class="fs-4 fw-bold text-success" style="color: #4CAF50;">$ {{ total_pagado|default:0|floatformat:0 }}</div>
+        <div class="fs-4 fw-bold text-success" style="color: #4CAF50;">${{ total_pagado|default:0|cop }}</div>
         <div class="small">Pagos recibidos</div>
       </div>
       <div class="stat-icon-wrapper" style="background: rgba(76, 175, 80, 0.2); color: #4CAF50;">
@@ -72,11 +72,23 @@
     <div class="stat-card-white h-100">
       <div>
         <div class="small fw-semibold">Por Cobrar</div>
-        <div class="fs-4 fw-bold text-danger" style="color: #d32f2f;">$ {{ total_pendiente|default:0|floatformat:0 }}</div>
+        <div class="fs-4 fw-bold text-danger" style="color: #d32f2f;">${{ total_pendiente|default:0|cop }}</div>
         <div class="small">Saldo pendiente</div>
       </div>
       <div class="stat-icon-wrapper" style="background: rgba(211, 47, 47, 0.2); color: #d32f2f;">
         <i class="bi bi-exclamation-circle-fill"></i>
+      </div>
+    </div>
+  </div>
+  <div class="col">
+    <div class="stat-card-white h-100">
+      <div>
+        <div class="small fw-semibold">Kg Vendidos a Crédito</div>
+        <div class="fs-4 fw-bold">{{ total_kg_credito|default:0|floatformat:2 }} kg</div>
+        <div class="small">Total kilogramos</div>
+      </div>
+      <div class="stat-icon-wrapper" style="background: rgba(255, 152, 0, 0.2); color: var(--orange-primary);">
+        <i class="bi bi-box"></i>
       </div>
     </div>
   </div>
@@ -104,6 +116,7 @@
             <th class="fw-bold small" style="color: var(--text-secondary);">VENCIMIENTO</th>
             <th class="fw-bold small" style="color: var(--text-secondary);">CLIENTE</th>
             <th class="fw-bold small" style="color: var(--text-secondary);">PRODUCTO</th>
+            <th class="fw-bold small text-end pe-2" style="color: var(--text-secondary);">KG</th>
             <th class="fw-bold small text-end pe-2" style="color: var(--text-secondary);">TOTAL</th>
             <th class="fw-bold small text-end pe-2" style="color: var(--text-secondary);">PAGADO</th>
             <th class="fw-bold small text-end pe-2" style="color: var(--text-secondary);">SALDO</th>
@@ -118,6 +131,7 @@
           <td><span class="small text-muted">{{ v.fecha_vencimiento|date:"d/m/Y"|default:"-" }}</span></td>
           <td class="fw-semibold" style="color: var(--orange-primary);">{{ v.cliente }}</td>
           <td class="text-muted small">{{ v.producto|default:"Varios" }}</td>
+          <td class="text-end pe-2 fw-semibold" style="color: var(--text-main);">{{ v.total_kg|default:0|floatformat:2 }}</td>
           <td class="text-end pe-2 fw-bold" style="color: var(--text-main);">${{ v.total|default:0|cop }}</td>
           <td class="text-end pe-2 fw-semibold" style="color: #4CAF50;">${{ v.total_pagado|default:0|cop }}</td>
           <td class="text-end pe-2">
@@ -155,7 +169,7 @@
         </tr>
         {% empty %}
         <tr>
-          <td colspan="9" class="text-center py-5">
+          <td colspan="10" class="text-center py-5">
             <div class="d-flex flex-column align-items-center justify-content-center" style="color: var(--text-secondary);">
               <i class="bi bi-wallet2 fs-1 mb-3" style="opacity: 0.4;"></i>
               <h6 class="fw-semibold mb-2">Sin ventas a crédito registradas</h6>

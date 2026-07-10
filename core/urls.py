@@ -30,7 +30,6 @@ urlpatterns = [
     path('viajes/', views.viaje_list, name='viaje_list'),
     path('viajes/nuevo/', views.viaje_create, name='viaje_create'),
     path('viajes/<int:pk>/', views.viaje_detail, name='viaje_detail'),
-    path('viajes/<int:pk>/detalles/', views.viaje_detalles_edit, name='viaje_detalles_edit'),
     path('viajes/<int:pk>/precio/', views.viaje_precio_update, name='viaje_precio_update'),
     path('viajes/<int:pk>/eliminar/', views.viaje_delete, name='viaje_delete'),
     path('viajes/<int:pk>/pago/', views.viaje_pago_add, name='viaje_pago_add'),
