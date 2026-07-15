@@ -73,10 +73,10 @@
             <thead>
               <tr>
                 <th>#</th>
+                <th>Clasificación</th>
+                <th>Kg Bruto</th>
                 <th><span class="badge" style="background:#333;">Negras</span></th>
                 <th><span class="badge" style="background:#1976D2;">Colores</span></th>
-                <th>Clasificacion</th>
-                <th>Kg Bruto</th>
                 <th>Kg Podr.</th>
                 <th>Peso Can.</th>
                 <th>Kg Neto</th>
@@ -87,6 +87,14 @@
               {% for p in pesadas %}
               <tr>
                 <td class="text-muted small">{{ forloop.counter }}</td>
+                <td>
+                  {% if p.clasificacion %}
+                    <span class="badge bg-info text-dark">{{ p.clasificacion.nombre }}</span>
+                  {% else %}
+                    <span class="text-muted">-</span>
+                  {% endif %}
+                </td>
+                <td class="fw-semibold text-orange">{{ p.kg_bruto|floatformat:2 }} kg</td>
                 <td class="fw-bold">
                   {% if p.num_canastillas_negras %}
                     {{ p.num_canastillas_negras }}
@@ -101,17 +109,9 @@
                     <span class="text-muted">-</span>
                   {% endif %}
                 </td>
-                <td>
-                  {% if p.clasificacion %}
-                    <span class="badge bg-info text-dark">{{ p.clasificacion.nombre }}</span>
-                  {% else %}
-                    <span class="text-muted">-</span>
-                  {% endif %}
-                </td>
-                <td class="fw-semibold text-orange">{{ p.kg_bruto|floatformat:2 }} kg</td>
                 <td class="text-danger fw-semibold">
-                  {% if p.kg_podridos > 0 %}
-                    -{{ p.kg_podridos|floatformat:2 }} kg
+                  {% if p.kg_podridos or p.desecho_kg %}
+                    -{{ p.kg_podridos|default:0|add:p.desecho_kg|floatformat:2 }} kg
                   {% else %}
                     <span class="text-muted">-</span>
                   {% endif %}
@@ -131,10 +131,10 @@
             <tfoot>
               <tr>
                 <th class="text-end">Tot.:</th>
-                <th>{{ cant_neg }}</th>
-                <th>{{ cant_col }}</th>
                 <th></th>
                 <th class="text-orange">{{ kg_bruto_total|floatformat:2 }} kg</th>
+                <th>{{ cant_neg }}</th>
+                <th>{{ cant_col }}</th>
                 <th class="text-danger">-{{ kg_podrido|floatformat:2 }} kg</th>
                 <th class="text-danger">-{{ peso_total_canastillas|floatformat:2 }} kg</th>
                 <th class="text-success" colspan="2">
@@ -170,26 +170,26 @@
               <table class="table table-sm mb-2" style="font-size:0.85rem;">
                 <thead>
                   <tr>
-                    <th><span class="badge" style="background:#333;">N</span> Can. Negras</th>
-                    <th><span class="badge" style="background:#1976D2;">C</span> Can. Colores</th>
-                    <th>Clasificacion</th>
+                    <th>Clasificación</th>
                     <th>Kg Bruto <span class="text-danger">*</span></th>
+                    <th><span class="badge" style="background:#333;">N</span> Negras</th>
+                    <th><span class="badge" style="background:#1976D2;">C</span> Colores</th>
                     <th></th>
                   </tr>
                 </thead>
                 <tbody id="pesadas_rows">
                   <tr class="pesada-row">
-                    <td><input type="number" min="0" name="num_canastillas_negras_0" class="form-control form-control-sm" placeholder="0"></td>
-                    <td><input type="number" min="0" name="num_canastillas_colores_0" class="form-control form-control-sm" placeholder="0"></td>
                     <td>
                       <select name="clasificacion_0" class="form-select form-select-sm">
                         <option value="">--</option>
                         {% for c in clasificaciones %}
-                        <option value="{{ c.pk }}">{{ c.nombre }}</option>
+                        <option value="{{ c.pk }}">{{ c.nombre }} — {{ c.stock_kg|floatformat:0 }} kg</option>
                         {% endfor %}
                       </select>
                     </td>
                     <td><input type="number" min="0" step="0.01" name="kg_bruto_0" class="form-control form-control-sm" placeholder="0.00" required></td>
+                    <td><input type="number" min="0" name="num_canastillas_negras_0" class="form-control form-control-sm" placeholder="0"></td>
+                    <td><input type="number" min="0" name="num_canastillas_colores_0" class="form-control form-control-sm" placeholder="0"></td>
                     <td><button type="button" class="btn btn-sm btn-outline-danger btn-rm-row" title="Eliminar fila"><i class="bi bi-x"></i></button></td>
                   </tr>
                 </tbody>
@@ -331,34 +331,40 @@
   </div>
   <div class="card-body p-0">
     <div class="table-responsive">
-      <table class="table table-hover mb-0">
-        <thead>
-          <tr>
-            <th>Clasificacion</th>
-            <th class="text-end">Kg Neto</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for d in desglose_clasificaciones %}
-          <tr>
-            <td class="fw-medium">
-              <span class="badge bg-info text-dark">{{ d.clasificacion.nombre }}</span>
-            </td>
-            <td class="text-end fw-bold text-success">{{ d.kg_neto|floatformat:2 }} kg</td>
-          </tr>
-          {% empty %}
-          <tr><td colspan="2" class="text-center text-muted py-3">No hay clasificaciones registradas. Asigne una clasificacion a cada pesada.</td></tr>
-          {% endfor %}
-        </tbody>
-        {% if desglose_clasificaciones %}
-        <tfoot>
-          <tr>
-            <th class="text-end">Total clasificado:</th>
-            <th class="text-end text-success">{{ total_neto_clasificado|floatformat:2 }} kg</th>
-          </tr>
-        </tfoot>
-        {% endif %}
-      </table>
+<table class="table table-hover mb-0">
+            <thead>
+              <tr>
+                <th>Clasificacion</th>
+                <th class="text-end">Kg Neto</th>
+                <th class="text-end">Desecho</th>
+                <th class="text-end">Neto Final</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for d in desglose_clasificaciones %}
+              <tr>
+                <td class="fw-medium">
+                  <span class="badge bg-info text-dark">{{ d.clasificacion.nombre }}</span>
+                </td>
+                <td class="text-end fw-bold text-success">{{ d.kg_neto|floatformat:2 }} kg</td>
+                <td class="text-end text-danger">{% if d.desecho_kg > 0 %}-{{ d.desecho_kg|floatformat:2 }} kg{% else %}-{% endif %}</td>
+                <td class="text-end fw-bold text-success">{{ d.kg_neto_final|floatformat:2 }} kg</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="4" class="text-center text-muted py-3">No hay clasificaciones registradas. Asigne una clasificacion a cada pesada.</td></tr>
+              {% endfor %}
+            </tbody>
+            {% if desglose_clasificaciones %}
+            <tfoot>
+              <tr>
+                <th class="text-end">Total:</th>
+                <th class="text-end text-success">{{ total_neto_clasificado|floatformat:2 }} kg</th>
+                <th class="text-end text-danger">-{{ kg_podrido|floatformat:2 }} kg</th>
+                <th class="text-end text-success">{{ neto_final|floatformat:2 }} kg</th>
+              </tr>
+            </tfoot>
+            {% endif %}
+          </table>
     </div>
   </div>
 </div>
@@ -369,35 +375,50 @@
     <span><i class="bi bi-exclamation-triangle me-2"></i>Registrar Desecho / Rechazo</span>
   </div>
   <div class="card-body">
+    {% if desglose_clasificaciones %}
     <form method="post">
       {% csrf_token %}
       <input type="hidden" name="form_type" value="desecho_viaje">
-      <div class="row g-2 align-items-end">
-        <div class="col-md-3">
-          <label class="form-label small fw-semibold mb-1">Fecha</label>
-          {{ desecho_form.fecha }}
-        </div>
-        <div class="col-md-3">
-          <label class="form-label small fw-semibold mb-1">Clasificación</label>
-          {{ desecho_form.clasificacion }}
-          {% if desecho_form.clasificacion.errors %}<div class="text-danger small mt-1">{{ desecho_form.clasificacion.errors }}</div>{% endif %}
-        </div>
-        <div class="col-md-2">
-          <label class="form-label small fw-semibold mb-1">Kg</label>
-          {{ desecho_form.kg }}
-          {% if desecho_form.kg.errors %}<div class="text-danger small mt-1">{{ desecho_form.kg.errors }}</div>{% endif %}
-        </div>
-        <div class="col-md-3">
-          <label class="form-label small fw-semibold mb-1">Observaciones</label>
-          {{ desecho_form.observaciones }}
-        </div>
-        <div class="col-md-1">
-          <button type="submit" class="btn btn-danger btn-sm w-100" title="Registrar desecho">
-            <i class="bi bi-plus-lg"></i>
-          </button>
-        </div>
+      <input type="hidden" name="fecha" value="{{ viaje.fecha|date:'Y-m-d' }}">
+      <div class="table-responsive">
+        <table class="table table-sm mb-2" style="font-size:0.85rem;">
+          <thead>
+            <tr>
+              <th>Clasificación</th>
+              <th style="width:150px;">Kg Podridos</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for d in desglose_clasificaciones %}
+            <tr>
+              <td class="fw-medium align-middle">
+                <span class="badge bg-info text-dark">{{ d.clasificacion.nombre }}</span>
+                <span class="text-muted small ms-1">({{ d.kg_neto_final|floatformat:0 }} kg neto)</span>
+              </td>
+              <td>
+                <input type="number" min="0" step="0.01"
+                       name="kg_desecho_{{ d.clasificacion.id }}"
+                       class="form-control form-control-sm"
+                       placeholder="0"
+                       {% if d.desecho_kg > 0 %}value="{{ d.desecho_kg|floatformat:2 }}"{% endif %}>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="d-grid">
+        <button type="submit" class="btn btn-danger btn-sm">
+          <i class="bi bi-save me-1"></i>Registrar Desechos
+        </button>
       </div>
     </form>
+    {% else %}
+    <div class="text-center py-3 text-muted">
+      <i class="bi bi-inbox" style="font-size:2rem; opacity:0.3;"></i>
+      <p class="mb-0 mt-2 small">Primero registre pesadas con clasificación.</p>
+    </div>
+    {% endif %}
   </div>
 </div>
 

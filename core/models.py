@@ -1,4 +1,6 @@
 from django.db import models
+from django.db.models import F, Sum, Value
+from django.db.models.functions import Greatest, Coalesce
 from decimal import Decimal
 from datetime import timedelta
 
@@ -41,10 +43,24 @@ class Clasificacion(models.Model):
     orden = models.IntegerField(default=1, verbose_name='Orden')
     activo = models.BooleanField(default=True, verbose_name='Activa')
     stock_kg = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name='Stock (Kg)')
-    
+
+    def save(self, *args, **kwargs):
+        if not hasattr(self.stock_kg, 'resolve_expression'):
+            if self.stock_kg is not None and self.stock_kg < 0:
+                self.stock_kg = Decimal('0')
+        super().save(*args, **kwargs)
+
     def __str__(self): return f"{self.producto.nombre} - {self.nombre} (Stock: {self.stock_kg} kg)"
     class Meta:
-        verbose_name = 'Clasificación'; verbose_name_plural = 'Clasificaciones'; ordering = ['producto', 'orden']
+        verbose_name = 'Clasificación'
+        verbose_name_plural = 'Clasificaciones'
+        ordering = ['producto', 'orden']
+        constraints = [
+            models.CheckConstraint(
+                check=models.Q(stock_kg__gte=0),
+                name='stock_kg_no_negativo',
+            ),
+        ]
 
 class CategoriaGasto(models.Model):
     nombre = models.CharField(max_length=100, verbose_name='Nombre')
@@ -308,8 +324,9 @@ def actualiza_stock_lote_save(sender, instance, created, **kwargs):
 @receiver(post_delete, sender=LoteClasificacion)
 def actualiza_stock_lote_delete(sender, instance, **kwargs):
     if instance.clasificacion:
-        instance.clasificacion.stock_kg = F('stock_kg') - instance.kg_neto
-        instance.clasificacion.save(update_fields=['stock_kg'])
+        Clasificacion.objects.filter(pk=instance.clasificacion_id).update(
+            stock_kg=Greatest(F('stock_kg') - instance.kg_neto, Value(Decimal('0')))
+        )
 
 
 def recalcular_lotes_viaje(viaje):
@@ -370,15 +387,17 @@ def actualiza_stock_venta_credito_save(sender, instance, created, **kwargs):
     if instance.clasificacion:
         if created:
             # Venta nueva: restar kg del stock
-            instance.clasificacion.stock_kg = F('stock_kg') - instance.kg_vendido
-            instance.clasificacion.save(update_fields=['stock_kg'])
+            Clasificacion.objects.filter(pk=instance.clasificacion_id).update(
+                stock_kg=Greatest(F('stock_kg') - instance.kg_vendido, Value(Decimal('0')))
+            )
         else:
             # Actualización: calcular la diferencia
             old_kg = getattr(instance, '_old_kg_vendido', Decimal('0'))
             diff = instance.kg_vendido - old_kg
             if diff != 0:
-                instance.clasificacion.stock_kg = F('stock_kg') - diff
-                instance.clasificacion.save(update_fields=['stock_kg'])
+                Clasificacion.objects.filter(pk=instance.clasificacion_id).update(
+                    stock_kg=Greatest(F('stock_kg') - diff, Value(Decimal('0')))
+                )
 
 @receiver(post_delete, sender=DetalleVentaCredito)
 def actualiza_stock_venta_credito_delete(sender, instance, **kwargs):
@@ -464,7 +483,7 @@ def actualiza_stock_pesada_entrada_save(sender, instance, created, **kwargs):
 @receiver(post_delete, sender=PesadaEntrada)
 def actualiza_stock_pesada_entrada_delete(sender, instance, **kwargs):
     Clasificacion.objects.filter(pk=instance.entrada.clasificacion_id).update(
-        stock_kg=F('stock_kg') - instance.kg_neto
+        stock_kg=Greatest(F('stock_kg') - instance.kg_neto, Value(Decimal('0')))
     )
 
 
@@ -473,6 +492,7 @@ def actualiza_stock_pesada_entrada_delete(sender, instance, **kwargs):
 class DesechoInventario(models.Model):
     fecha = models.DateField(verbose_name='Fecha')
     clasificacion = models.ForeignKey(Clasificacion, on_delete=models.CASCADE, related_name='desechos', verbose_name='Clasificación')
+    viaje = models.ForeignKey('Viaje', null=True, blank=True, on_delete=models.SET_NULL, related_name='desechos', verbose_name='Viaje')
     kg = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Kg desechados')
     observaciones = models.TextField(blank=True, verbose_name='Observaciones')
     created_at = models.DateTimeField(auto_now_add=True)
@@ -503,7 +523,7 @@ def actualiza_stock_desecho_save(sender, instance, created, **kwargs):
     diff = instance.kg - getattr(instance, '_old_kg', Decimal('0'))
     if diff != 0:
         Clasificacion.objects.filter(pk=instance.clasificacion_id).update(
-            stock_kg=F('stock_kg') - diff
+            stock_kg=Greatest(F('stock_kg') - diff, Value(Decimal('0')))
         )
 
 

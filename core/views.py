@@ -139,6 +139,8 @@ def _viajes_with_totals(qs=None):
                                Value(0, output_field=DecimalField())),
     )
 
+    
+
 def get_weekly_history():
     """
     Historial semanal: datos agregados de todas las semanas con datos.
@@ -742,27 +744,35 @@ def viaje_detail(request, pk):
                 kg_por_clasificacion.get(p.clasificacion_id, Decimal('0')) + p.kg_neto
             )
             total_neto_clasificado += p.kg_neto
-    # Mapear a lista ordenada por clasificacion para el template
-    desglose_clasificaciones = []
-    for c in clasificaciones:
-        kg = kg_por_clasificacion.get(c.id, Decimal('0'))
-        if kg > 0:
-            desglose_clasificaciones.append({'clasificacion': c, 'kg_neto': kg})
 
     pagos = viaje.pagos_proveedor.all()
     pago_form = PagoProveedorForm()
     pesada_form = PesadaViajeForm()
 
-    # Formulario de desecho (separado de la pesada)
-    desecho_form = DesechoForm(initial={'fecha': viaje.fecha})
-    desecho_form.fields['clasificacion'].queryset = clasificaciones
     if request.method == 'POST' and request.POST.get('form_type') == 'desecho_viaje':
-        desecho_form = DesechoForm(request.POST)
-        desecho_form.fields['clasificacion'].queryset = clasificaciones
-        if desecho_form.is_valid():
-            desecho_form.save()
-            messages.success(request, 'Desecho registrado correctamente.')
-            return redirect('viaje_detail', pk=pk)
+        # Borrar desechos previos de este viaje y crear los nuevos
+        DesechoInventario.objects.filter(viaje=viaje).delete()
+        guardados = 0
+        for c in clasificaciones:
+            kg = (request.POST.get(f'kg_desecho_{c.id}', '') or '').strip()
+            if kg:
+                try:
+                    kg_val = Decimal(kg)
+                    if kg_val > 0:
+                        DesechoInventario.objects.create(
+                            fecha=viaje.fecha,
+                            clasificacion=c,
+                            viaje=viaje,
+                            kg=kg_val,
+                        )
+                        guardados += 1
+                except InvalidOperation:
+                    pass
+        if guardados:
+            messages.success(request, f'{guardados} desecho{"s" if guardados > 1 else ""} registrado{"s" if guardados > 1 else ""}.')
+        else:
+            messages.success(request, 'Desechos eliminados.')
+        return redirect('viaje_detail', pk=pk)
 
     total_kg_neto = sum(lote.kg_neto for lote in lotes)
 
@@ -774,14 +784,33 @@ def viaje_detail(request, pk):
     cant_col = sum(p.num_canastillas_colores for p in pesadas)
     peso_total_canastillas = peso_can_negras + peso_can_colores
 
-    # kg podrido: legado (PesadaViaje.kg_podridos) + DesechoInventario del mismo producto+fecha
-    desechos_extra_qs = DesechoInventario.objects.filter(
-        fecha=viaje.fecha,
-        clasificacion__producto=viaje.producto,
-    )
-    desechos_extra_kg = desechos_extra_qs.aggregate(t=Sum('kg'))['t'] or Decimal('0')
+    # kg podrido: legado (PesadaViaje.kg_podridos) + DesechoInventario vinculado a este viaje
+    desechos_viaje = DesechoInventario.objects.filter(viaje=viaje)
+    desechos_extra_kg = desechos_viaje.aggregate(t=Sum('kg'))['t'] or Decimal('0')
+    desecho_por_clasificacion = {}
+    for d in desechos_viaje:
+        cid = d.clasificacion_id
+        desecho_por_clasificacion[cid] = desecho_por_clasificacion.get(cid, Decimal('0')) + d.kg
+
     kg_podrido = (viaje.total_kg_podridos or Decimal('0')) + desechos_extra_kg
     neto_final = max(kg_bruto_total - peso_total_canastillas - kg_podrido, Decimal('0'))
+
+    # Adjuntar desecho por clasificación a cada pesada para el template
+    for p in pesadas:
+        p.desecho_kg = desecho_por_clasificacion.get(p.clasificacion_id, Decimal('0'))
+
+    # Desglose por clasificación (kg_neto - desecho)
+    desglose_clasificaciones = []
+    for c in clasificaciones:
+        kg = kg_por_clasificacion.get(c.id, Decimal('0'))
+        if kg > 0:
+            d_kg = desecho_por_clasificacion.get(c.id, Decimal('0'))
+            desglose_clasificaciones.append({
+                'clasificacion': c,
+                'kg_neto': kg,
+                'desecho_kg': d_kg,
+                'kg_neto_final': kg - d_kg,
+            })
 
     ctx = {
         'viaje': viaje,
@@ -792,7 +821,6 @@ def viaje_detail(request, pk):
         'total_neto_clasificado': float(total_neto_clasificado),
         'pagos': pagos,
         'pago_form': pago_form,
-        'desecho_form': desecho_form,
         'lotes': lotes,
         'total_kg_neto': total_kg_neto,
         # Desglose de cálculos

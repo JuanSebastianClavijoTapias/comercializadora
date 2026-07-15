@@ -870,23 +870,19 @@
             <thead>
               <tr>
                 <th>Fecha</th>
-                <th>Proveedor</th>
                 <th>Clasificación</th>
                 <th class="text-end">Kg podridos</th>
-                <th>Observaciones</th>
               </tr>
             </thead>
             <tbody>
               {% for pesada in desechos_semana %}
               <tr>
                 <td>{{ pesada.fecha|date:"d/m/Y" }}</td>
-                <td>{{ pesada.proveedor }}</td>
                 <td>{{ pesada.clasificacion }}</td>
                 <td class="text-end fw-semibold text-danger">{{ pesada.kg|floatformat:2 }} kg</td>
-                <td>{{ pesada.observaciones|default:"-" }}</td>
               </tr>
               {% empty %}
-              <tr><td colspan="5" class="text-center text-muted py-4">No hubo desechos en esta semana.</td></tr>
+              <tr><td colspan="3" class="text-center text-muted py-4">No hubo desechos en esta semana.</td></tr>
               {% endfor %}
             </tbody>
           </table>
