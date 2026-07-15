@@ -773,7 +773,14 @@ def viaje_detail(request, pk):
     cant_neg = sum(p.num_canastillas_negras for p in pesadas)
     cant_col = sum(p.num_canastillas_colores for p in pesadas)
     peso_total_canastillas = peso_can_negras + peso_can_colores
-    kg_podrido = viaje.total_kg_podridos or Decimal('0')
+
+    # kg podrido: legado (PesadaViaje.kg_podridos) + DesechoInventario del mismo producto+fecha
+    desechos_extra_qs = DesechoInventario.objects.filter(
+        fecha=viaje.fecha,
+        clasificacion__producto=viaje.producto,
+    )
+    desechos_extra_kg = desechos_extra_qs.aggregate(t=Sum('kg'))['t'] or Decimal('0')
+    kg_podrido = (viaje.total_kg_podridos or Decimal('0')) + desechos_extra_kg
     neto_final = max(kg_bruto_total - peso_total_canastillas - kg_podrido, Decimal('0'))
 
     ctx = {

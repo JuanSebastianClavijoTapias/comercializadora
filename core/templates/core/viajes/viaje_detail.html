@@ -55,10 +55,8 @@
   </div>
 </div>
 
-<!-- PESADAS + RESUMEN -->
+<!-- PESADAS + RESUMEN (al lado) -->
 <div class="row g-3 mb-3">
-
-  <!-- COLUMNA PESADAS -->
   <div class="col-lg-7">
     <div class="card mb-3">
       <div class="card-header d-flex justify-content-between align-items-center">
@@ -257,88 +255,9 @@
 
       </div>
     </div>
-
-    <!-- CLASIFICAR KG NETO -->
-    <div class="card">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <span><i class="bi bi-list-check me-2"></i>Resumen por Clasificacion</span>
-        <span class="badge bg-secondary">Solo lectura</span>
-      </div>
-      <div class="card-body p-0">
-        <div class="table-responsive">
-          <table class="table table-hover mb-0">
-            <thead>
-              <tr>
-                <th>Clasificacion</th>
-                <th class="text-end">Kg Neto</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for d in desglose_clasificaciones %}
-              <tr>
-                <td class="fw-medium">
-                  <span class="badge bg-info text-dark">{{ d.clasificacion.nombre }}</span>
-                </td>
-                <td class="text-end fw-bold text-success">{{ d.kg_neto|floatformat:2 }} kg</td>
-              </tr>
-              {% empty %}
-              <tr><td colspan="2" class="text-center text-muted py-3">No hay clasificaciones registradas. Asigne una clasificacion a cada pesada.</td></tr>
-              {% endfor %}
-            </tbody>
-            {% if desglose_clasificaciones %}
-            <tfoot>
-              <tr>
-                <th class="text-end">Total clasificado:</th>
-                <th class="text-end text-success">{{ total_neto_clasificado|floatformat:2 }} kg</th>
-              </tr>
-            </tfoot>
-            {% endif %}
-          </table>
-        </div>
-      </div>
-    </div>
   </div>
 
-    <!-- REGISTRAR DESECHO (AISLADO DE PESADAS) -->
-    <div class="card mt-3">
-      <div class="card-header py-2 d-flex justify-content-between align-items-center" style="background: linear-gradient(135deg, #E64A19 0%, #B71C1C 100%); color: white;">
-        <span><i class="bi bi-exclamation-triangle me-2"></i>Registrar Desecho / Rechazo</span>
-      </div>
-      <div class="card-body">
-        <form method="post">
-          {% csrf_token %}
-          <input type="hidden" name="form_type" value="desecho_viaje">
-          <div class="row g-2 align-items-end">
-            <div class="col-md-3">
-              <label class="form-label small fw-semibold mb-1">Fecha</label>
-              {{ desecho_form.fecha }}
-            </div>
-            <div class="col-md-3">
-              <label class="form-label small fw-semibold mb-1">Clasificación</label>
-              {{ desecho_form.clasificacion }}
-              {% if desecho_form.clasificacion.errors %}<div class="text-danger small mt-1">{{ desecho_form.clasificacion.errors }}</div>{% endif %}
-            </div>
-            <div class="col-md-2">
-              <label class="form-label small fw-semibold mb-1">Kg</label>
-              {{ desecho_form.kg }}
-              {% if desecho_form.kg.errors %}<div class="text-danger small mt-1">{{ desecho_form.kg.errors }}</div>{% endif %}
-            </div>
-            <div class="col-md-3">
-              <label class="form-label small fw-semibold mb-1">Observaciones</label>
-              {{ desecho_form.observaciones }}
-            </div>
-            <div class="col-md-1">
-              <button type="submit" class="btn btn-danger btn-sm w-100" title="Registrar desecho">
-                <i class="bi bi-plus-lg"></i>
-              </button>
-            </div>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-
-  <!-- RESUMEN CALCULO -->
+  <!-- COLUMNA RESUMEN -->
   <div class="col-lg-5">
     <div class="card h-100">
       <div class="card-header">
@@ -378,28 +297,6 @@
             <span class="fw-bold" style="font-size:1.1rem;">{{ viaje.producto.nombre }}</span>
           </div>
 
-          {% if desglose_clasificaciones %}
-          <div class="mt-2 pt-2 border-top" style="border-color:rgba(255,255,255,0.25);">
-            <div class="small fw-semibold mb-1" style="opacity:0.85;"><i class="bi bi-list-ul me-1"></i>Desglose por clasificacion:</div>
-            <div class="row g-1">
-              {% for d in desglose_clasificaciones %}
-              <div class="col-6 d-flex justify-content-between small">
-                <span style="opacity:0.9;">{{ d.clasificacion.nombre }}:</span>
-                <span class="fw-bold">{{ d.kg_neto|floatformat:2 }} kg</span>
-              </div>
-              {% endfor %}
-            </div>
-            <div class="d-flex justify-content-between small mt-1 pt-1 border-top" style="border-color:rgba(255,255,255,0.2);">
-              <span style="opacity:0.85;">Total bruto clasificado:</span>
-              <span class="fw-bold">{{ total_neto_clasificado|floatformat:2 }} kg</span>
-            </div>
-            <div class="d-flex justify-content-between small">
-              <span style="opacity:0.85;">Kg podrido / rechazo:</span>
-              <span class="fw-bold">-{{ kg_podrido|floatformat:2 }} kg</span>
-            </div>
-          </div>
-          {% endif %}
-
           <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top" style="border-color:rgba(255,255,255,0.25);">
             <span class="fw-bold"><i class="bi bi-check-circle me-2"></i>Kg Neto a Pagar</span>
             <span class="fw-bold" style="font-size:1.4rem;">{{ neto_final|floatformat:2 }} kg</span>
@@ -424,7 +321,84 @@
       </div>
     </div>
   </div>
+</div>
 
+<!-- CLASIFICAR KG NETO (full width) -->
+<div class="card mb-3">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span><i class="bi bi-list-check me-2"></i>Resumen por Clasificacion</span>
+    <span class="badge bg-secondary">Solo lectura</span>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Clasificacion</th>
+            <th class="text-end">Kg Neto</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for d in desglose_clasificaciones %}
+          <tr>
+            <td class="fw-medium">
+              <span class="badge bg-info text-dark">{{ d.clasificacion.nombre }}</span>
+            </td>
+            <td class="text-end fw-bold text-success">{{ d.kg_neto|floatformat:2 }} kg</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="2" class="text-center text-muted py-3">No hay clasificaciones registradas. Asigne una clasificacion a cada pesada.</td></tr>
+          {% endfor %}
+        </tbody>
+        {% if desglose_clasificaciones %}
+        <tfoot>
+          <tr>
+            <th class="text-end">Total clasificado:</th>
+            <th class="text-end text-success">{{ total_neto_clasificado|floatformat:2 }} kg</th>
+          </tr>
+        </tfoot>
+        {% endif %}
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- REGISTRAR DESECHO (full width) -->
+<div class="card mb-3">
+  <div class="card-header py-2 d-flex justify-content-between align-items-center" style="background: linear-gradient(135deg, #E64A19 0%, #B71C1C 100%); color: white;">
+    <span><i class="bi bi-exclamation-triangle me-2"></i>Registrar Desecho / Rechazo</span>
+  </div>
+  <div class="card-body">
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="form_type" value="desecho_viaje">
+      <div class="row g-2 align-items-end">
+        <div class="col-md-3">
+          <label class="form-label small fw-semibold mb-1">Fecha</label>
+          {{ desecho_form.fecha }}
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small fw-semibold mb-1">Clasificación</label>
+          {{ desecho_form.clasificacion }}
+          {% if desecho_form.clasificacion.errors %}<div class="text-danger small mt-1">{{ desecho_form.clasificacion.errors }}</div>{% endif %}
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small fw-semibold mb-1">Kg</label>
+          {{ desecho_form.kg }}
+          {% if desecho_form.kg.errors %}<div class="text-danger small mt-1">{{ desecho_form.kg.errors }}</div>{% endif %}
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small fw-semibold mb-1">Observaciones</label>
+          {{ desecho_form.observaciones }}
+        </div>
+        <div class="col-md-1">
+          <button type="submit" class="btn btn-danger btn-sm w-100" title="Registrar desecho">
+            <i class="bi bi-plus-lg"></i>
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
 </div>
 
 <div class="card">
