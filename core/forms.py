@@ -81,13 +81,12 @@ class ViajeForm(forms.ModelForm):
 class PesadaViajeForm(forms.ModelForm):
     class Meta:
         model = PesadaViaje
-        fields = ['num_canastillas_negras', 'num_canastillas_colores', 'kg_bruto', 'clasificacion', 'kg_podridos']
+        fields = ['num_canastillas_negras', 'num_canastillas_colores', 'kg_bruto', 'clasificacion']
         widgets = {
             'num_canastillas_negras': forms.NumberInput(attrs={'class': 'form-control', 'min': '0', 'placeholder': '0'}),
             'num_canastillas_colores': forms.NumberInput(attrs={'class': 'form-control', 'min': '0', 'placeholder': '0'}),
             'kg_bruto': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': 'Ej: 180.00'}),
             'clasificacion': forms.Select(attrs={'class': 'form-select'}),
-            'kg_podridos': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0', 'placeholder': '0'}),
         }
 
 class LoteClasificacionForm(forms.ModelForm):

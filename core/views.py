@@ -425,17 +425,19 @@ def dashboard(request):
             'monto': detalle.total
         })
     
-    # 4. DESECHOS: Suma de kg_podridos de las pesadas de los viajes de hoy (todos los productos)
+    # 4. DESECHOS: kg_podridos de pesadas (legado) + DesechoInventario
     viajes_hoy = Viaje.objects.filter(fecha=hoy).select_related('proveedor', 'producto')
-    desechos_kg = sum(v.total_kg_podridos for v in viajes_hoy)
+    desechos_kg_legado = sum(v.total_kg_podridos for v in viajes_hoy)
+    desechos_inv_hoy = DesechoInventario.objects.filter(fecha=hoy).select_related('clasificacion__producto')
+    desechos_kg_inv = sum(d.kg for d in desechos_inv_hoy)
+    desechos_kg = desechos_kg_legado + desechos_kg_inv
     desechos_toneladas = desechos_kg / 1000 if desechos_kg > 0 else Decimal('0')
 
-    # Detalles de desechos para modal (por pesada, con clasificación)
-    pesadas_desecho_hoy = PesadaViaje.objects.filter(
-        viaje__in=viajes_hoy, kg_podridos__gt=0
-    ).select_related('viaje__proveedor', 'viaje__producto', 'clasificacion')
+    # Detalles de desechos para modal
     detalles_desechos = []
-    for pesada in pesadas_desecho_hoy:
+    for pesada in PesadaViaje.objects.filter(
+        viaje__in=viajes_hoy, kg_podridos__gt=0
+    ).select_related('viaje__proveedor', 'viaje__producto', 'clasificacion'):
         detalles_desechos.append({
             'proveedor': pesada.viaje.proveedor.nombre if pesada.viaje.proveedor else 'N/A',
             'producto': pesada.viaje.producto.nombre if pesada.viaje.producto else 'N/A',
@@ -443,6 +445,15 @@ def dashboard(request):
             'kg_podridos': pesada.kg_podridos,
             'fecha': pesada.viaje.fecha,
             'observaciones': pesada.viaje.observaciones
+        })
+    for d in desechos_inv_hoy:
+        detalles_desechos.append({
+            'proveedor': '—',
+            'producto': d.clasificacion.producto.nombre if d.clasificacion else 'N/A',
+            'clasificacion': d.clasificacion.nombre if d.clasificacion else 'Sin clasificación',
+            'kg_podridos': d.kg,
+            'fecha': d.fecha,
+            'observaciones': d.observaciones or '',
         })
     
     pago_form = PagoVentaCreditoForm()
@@ -741,6 +752,18 @@ def viaje_detail(request, pk):
     pagos = viaje.pagos_proveedor.all()
     pago_form = PagoProveedorForm()
     pesada_form = PesadaViajeForm()
+
+    # Formulario de desecho (separado de la pesada)
+    desecho_form = DesechoForm(initial={'fecha': viaje.fecha})
+    desecho_form.fields['clasificacion'].queryset = clasificaciones
+    if request.method == 'POST' and request.POST.get('form_type') == 'desecho_viaje':
+        desecho_form = DesechoForm(request.POST)
+        desecho_form.fields['clasificacion'].queryset = clasificaciones
+        if desecho_form.is_valid():
+            desecho_form.save()
+            messages.success(request, 'Desecho registrado correctamente.')
+            return redirect('viaje_detail', pk=pk)
+
     total_kg_neto = sum(lote.kg_neto for lote in lotes)
 
     # Cálculos de desglose de peso desde pesadas
@@ -762,6 +785,7 @@ def viaje_detail(request, pk):
         'total_neto_clasificado': float(total_neto_clasificado),
         'pagos': pagos,
         'pago_form': pago_form,
+        'desecho_form': desecho_form,
         'lotes': lotes,
         'total_kg_neto': total_kg_neto,
         # Desglose de cálculos
@@ -794,7 +818,6 @@ def pesada_add(request, pk):
                         'num_canastillas_colores': request.POST.get(f'num_canastillas_colores_{i}', '') or None,
                         'kg_bruto': kg_bruto_val,
                         'clasificacion': clasif_id or None,
-                        'kg_podridos': request.POST.get(f'kg_podridos_{i}', '') or None,
                     }
                     form = PesadaViajeForm(data)
                     if form.is_valid():
@@ -1521,10 +1544,38 @@ def inventario_weekly_summary(request):
     viajes_semana = Viaje.objects.filter(
         fecha__range=[inicio_semana, fin_semana]
     ).select_related('proveedor').prefetch_related('lotes__clasificacion').order_by('-fecha', '-id')
-    desechos_semana = PesadaViaje.objects.filter(
+
+    # Desechos: legado (PesadaViaje.kg_podridos) + DesechoInventario
+    desechos_legado = PesadaViaje.objects.filter(
         viaje__in=viajes_semana, kg_podridos__gt=0
     ).select_related('viaje__proveedor', 'viaje__producto', 'clasificacion')
-    total_kg_podridos = sum(p.kg_podridos for p in desechos_semana) or Decimal('0')
+    desechos_inv_semana = DesechoInventario.objects.filter(
+        fecha__range=[inicio_semana, fin_semana]
+    ).select_related('clasificacion__producto')
+    total_kg_podridos = (
+        sum(p.kg_podridos for p in desechos_legado) +
+        sum(d.kg for d in desechos_inv_semana)
+    ) or Decimal('0')
+
+    # Unificar en lista de dicts para el template
+    desechos_semana = []
+    for p in desechos_legado:
+        desechos_semana.append({
+            'proveedor': p.viaje.proveedor.nombre if p.viaje.proveedor else '—',
+            'producto': p.viaje.producto.nombre if p.viaje.producto else '—',
+            'clasificacion': p.clasificacion.nombre if p.clasificacion else '—',
+            'kg': p.kg_podridos,
+            'fecha': p.viaje.fecha,
+        })
+    for d in desechos_inv_semana:
+        desechos_semana.append({
+            'proveedor': '—',
+            'producto': d.clasificacion.producto.nombre if d.clasificacion else '—',
+            'clasificacion': d.clasificacion.nombre if d.clasificacion else '—',
+            'kg': d.kg,
+            'fecha': d.fecha,
+        })
+    desechos_semana.sort(key=lambda x: x['fecha'], reverse=True)
 
     compras_semana = EntradaInventario.objects.filter(
         fecha__range=[inicio_semana, fin_semana]
