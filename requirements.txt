@@ -1,5 +1,7 @@
 asgiref==3.11.1
 Django==4.2.30
+django-axes==7.0.0
+django-debug-toolbar==5.1.0
 gunicorn==25.3.0
 packaging==26.2
 pillow==12.2.0

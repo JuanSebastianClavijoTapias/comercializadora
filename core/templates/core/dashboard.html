@@ -725,7 +725,7 @@
                 <td class="text-muted small">{{ desecho.producto }}</td>
                 <td><span class="badge bg-info text-dark">{{ desecho.clasificacion }}</span></td>
                 <td class="text-end text-danger fw-bold">{{ desecho.kg_podridos|floatformat:2 }}</td>
-                <td class="text-end text-muted small">{{ desecho.fecha|date:"d/m/Y }}</td>
+                <td class="text-end text-muted small">{{ desecho.fecha|date:"d/m/Y" }}</td>
                 <td class="text-muted small">{{ desecho.observaciones|truncatewords:10 }}</td>
               </tr>
               {% endfor %}

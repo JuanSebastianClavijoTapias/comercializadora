@@ -97,7 +97,11 @@ class Viaje(models.Model):
     @property
     def total_valor(self): return self.precio_total_acordado
     @property
-    def total_pagado(self): return sum(p.monto for p in self.pagos_proveedor.all())
+    def total_pagado(self):
+        cached = self.__dict__.get('_total_pagado')
+        if cached is not None:
+            return cached
+        return sum(p.monto for p in self.pagos_proveedor.all())
     @property
     def saldo_pendiente(self): return self.total_valor - self.total_pagado
     class Meta:
@@ -240,9 +244,17 @@ class VentaCredito(models.Model):
     observaciones = models.TextField(blank=True, verbose_name='Observaciones')
     created_at = models.DateTimeField(auto_now_add=True)
     @property
-    def total(self): return sum(d.total for d in self.detalles.all())
+    def total(self):
+        cached = self.__dict__.get('_total')
+        if cached is not None:
+            return cached
+        return sum(d.total for d in self.detalles.all())
     @property
-    def total_pagado(self): return sum(p.monto for p in self.pagos.all())
+    def total_pagado(self):
+        cached = self.__dict__.get('_total_pagado')
+        if cached is not None:
+            return cached
+        return sum(p.monto for p in self.pagos.all())
     @property
     def saldo_pendiente(self): return self.total - self.total_pagado
     @property

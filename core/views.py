@@ -2,7 +2,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse, HttpResponse
-from django.db.models import Sum, Q, F, Count, Value, DecimalField
+from django.db.models import Sum, Q, F, Count, Value, DecimalField, Subquery, OuterRef
 from django.db.models.functions import Coalesce
 from django.utils import timezone
 from django.db import transaction
@@ -91,7 +91,62 @@ def get_current_week_inventory_data():
     """
     return get_week_inventory_data(date.today())
 
+
+# ---- Helpers para eliminar N+1 en reportes y dashboard ----
+# Cada helper anota _total y _total_pagado con Subquery; las @property de los
+# modelos los leen desde __dict__ y evitan disparar queries adicionales por fila.
+
+def _ventas_credito_with_totals(qs=None):
+    """VentaCredito con _total (suma detalles) y _total_pagado (suma pagos) anotados."""
+    if qs is None:
+        qs = VentaCredito.objects.all()
+    total_sq = (
+        DetalleVentaCredito.objects
+        .filter(venta=OuterRef('pk'))
+        .values('venta')
+        .annotate(t=Sum(F('kg_vendido') * F('precio_por_kg'), output_field=DecimalField()))
+        .values('t')
+    )
+    pagado_sq = (
+        PagoVentaCredito.objects
+        .filter(venta=OuterRef('pk'))
+        .values('venta')
+        .annotate(t=Sum('monto', output_field=DecimalField()))
+        .values('t')
+    )
+    return qs.annotate(
+        _total=Coalesce(Subquery(total_sq, output_field=DecimalField()),
+                        Value(0, output_field=DecimalField())),
+        _total_pagado=Coalesce(Subquery(pagado_sq, output_field=DecimalField()),
+                               Value(0, output_field=DecimalField())),
+    )
+
+
+def _viajes_with_totals(qs=None):
+    """Viaje con _total_pagado (suma pagos a proveedor) anotado.
+    total_valor es solo el campo precio_total_acordado, no requiere anotación."""
+    if qs is None:
+        qs = Viaje.objects.all()
+    pagado_sq = (
+        PagoProveedor.objects
+        .filter(viaje=OuterRef('pk'))
+        .values('viaje')
+        .annotate(t=Sum('monto', output_field=DecimalField()))
+        .values('t')
+    )
+    return qs.annotate(
+        _total_pagado=Coalesce(Subquery(pagado_sq, output_field=DecimalField()),
+                               Value(0, output_field=DecimalField())),
+    )
+
 def get_weekly_history():
+    """
+    Historial semanal: datos agregados de todas las semanas con datos.
+    En vez de ejecutar 6 queries por semana (N+1), hace 6 queries
+    para TODO el rango y agrupa en Python por get_week_monday().
+    """
+    from collections import defaultdict
+
     week_starts = set(WeeklyInventory.objects.values_list('week_start', flat=True))
     for model in (Gasto, VentaEfectivo, VentaCredito, PagoVentaCredito, Viaje, EntradaInventario):
         week_starts.update(model.objects.dates('fecha', 'week'))
@@ -99,56 +154,112 @@ def get_weekly_history():
     if not week_starts:
         return []
 
+    mondays = sorted({get_week_monday(week) for week in week_starts})
+    mondays_set = set(mondays)
+
+    if not mondays:
+        return []
+
+    min_date = mondays[0]
+    max_date = mondays[-1] + timedelta(days=6)
+
     weekly_records = {
-        record.week_start: record
-        for record in WeeklyInventory.objects.filter(week_start__in=week_starts)
+        r.week_start: r
+        for r in WeeklyInventory.objects.filter(week_start__in=mondays_set)
     }
+
+    # ---- 1 consulta por modelo (6 total), agrupada en dicts ----
+
+    gastos_by_week = defaultdict(lambda: {'total': Decimal('0'), 'nomina': Decimal('0')})
+    for g in Gasto.objects.filter(
+        fecha__range=[min_date, max_date]
+    ).select_related('categoria'):
+        wm = get_week_monday(g.fecha)
+        if wm in mondays_set:
+            gastos_by_week[wm]['total'] += g.monto
+            cat = getattr(g.categoria, 'nombre', None)
+            if cat and cat.lower() == NOMINA_CATEGORY_NAME.lower():
+                gastos_by_week[wm]['nomina'] += g.monto
+
+    viajes_by_week = defaultdict(lambda: {'total': Decimal('0'), 'count': 0, 'list': []})
+    for v in Viaje.objects.filter(
+        fecha__range=[min_date, max_date]
+    ).select_related('proveedor', 'producto'):
+        wm = get_week_monday(v.fecha)
+        if wm in mondays_set:
+            viajes_by_week[wm]['total'] += v.precio_total_acordado
+            viajes_by_week[wm]['count'] += 1
+            viajes_by_week[wm]['list'].append(v)
+
+    vef_by_week = defaultdict(lambda: {'total': Decimal('0'), 'count': 0})
+    for v in VentaEfectivo.objects.filter(fecha__range=[min_date, max_date]):
+        wm = get_week_monday(v.fecha)
+        if wm in mondays_set:
+            vef_by_week[wm]['total'] += v.total
+            vef_by_week[wm]['count'] += 1
+
+    vcr_by_week = defaultdict(lambda: {'total': Decimal('0'), 'count': 0})
+    for v in VentaCredito.objects.filter(
+        fecha__range=[min_date, max_date]
+    ).prefetch_related('detalles'):
+        wm = get_week_monday(v.fecha)
+        if wm in mondays_set:
+            vcr_by_week[wm]['total'] += v.total
+            vcr_by_week[wm]['count'] += 1
+
+    entradas_kg_by_week = defaultdict(Decimal)
+    for p in PesadaEntrada.objects.filter(
+        entrada__fecha__range=[min_date, max_date]
+    ).select_related('entrada'):
+        wm = get_week_monday(p.entrada.fecha)
+        if wm in mondays_set:
+            entradas_kg_by_week[wm] += p.kg_neto
+
+    lotes_kg_by_week = defaultdict(Decimal)
+    for l in LoteClasificacion.objects.filter(
+        viaje__fecha__range=[min_date, max_date]
+    ).select_related('viaje'):
+        wm = get_week_monday(l.viaje.fecha)
+        if wm in mondays_set:
+            lotes_kg_by_week[wm] += l.kg_neto
+
+    # ---- Ensamblar history list ----
     history = []
-    for week_start in sorted({get_week_monday(week) for week in week_starts}, reverse=True):
+    for week_start in reversed(mondays):
         week_end = week_start + timedelta(days=6)
         record = weekly_records.get(week_start)
 
-        gastos_semana = Gasto.objects.filter(fecha__range=[week_start, week_end]).select_related('categoria')
-        nomina_total = sum(
-            g.monto for g in gastos_semana
-            if getattr(g.categoria, 'nombre', None) and
-               g.categoria.nombre.lower() == NOMINA_CATEGORY_NAME.lower()
-        ) or Decimal('0')
-        gastos_total = sum(g.monto for g in gastos_semana) or Decimal('0')
+        gbw = gastos_by_week[week_start]
+        vbbw = viajes_by_week[week_start]
+        vefbw = vef_by_week[week_start]
+        vcrbw = vcr_by_week[week_start]
 
-        viajes_w = Viaje.objects.filter(fecha__range=[week_start, week_end]).select_related('proveedor', 'producto')
-        viajes_total = sum(v.precio_total_acordado for v in viajes_w) or Decimal('0')
-
-        ventas_ef = VentaEfectivo.objects.filter(fecha__range=[week_start, week_end])
-        ventas_cr = VentaCredito.objects.filter(fecha__range=[week_start, week_end])
-        total_ventas = (sum(v.total for v in ventas_ef) + sum(v.total for v in ventas_cr)) or Decimal('0')
-
-        pesadas_w = PesadaEntrada.objects.filter(entrada__fecha__range=[week_start, week_end])
-        entradas_kg = sum(p.kg_neto for p in pesadas_w) or Decimal('0')
-
-        lotes_w = LoteClasificacion.objects.filter(viaje__fecha__range=[week_start, week_end])
-        viajes_kg = sum(l.kg_neto for l in lotes_w) or Decimal('0')
-
-        total_inv_kg = (record.total_inventory_kg if record else (entradas_kg + viajes_kg))
+        e_kg = entradas_kg_by_week.get(week_start, Decimal('0'))
+        v_kg = lotes_kg_by_week.get(week_start, Decimal('0'))
+        total_ventas = vefbw['total'] + vcrbw['total']
+        total_inv_kg = (record.total_inventory_kg
+                        if record else (e_kg + v_kg))
 
         history.append({
             'week_start': week_start,
             'week_end': week_end,
             'record': record,
-            'initial_inventory_kg': record.initial_inventory_kg if record else Decimal('0'),
+            'initial_inventory_kg': (record.initial_inventory_kg
+                                     if record else Decimal('0')),
             'total_inventory_kg': total_inv_kg,
-            'nomina_total': nomina_total,
-            'gastos_total': gastos_total,
-            'viajes_total': viajes_total,
-            'viajes_count': len(viajes_w),
-            'viajes_list': list(viajes_w),
-            'entradas_kg': entradas_kg,
-            'viajes_kg': viajes_kg,
+            'nomina_total': gbw['nomina'],
+            'gastos_total': gbw['total'],
+            'viajes_total': vbbw['total'],
+            'viajes_count': vbbw['count'],
+            'viajes_list': vbbw['list'],
+            'entradas_kg': e_kg,
+            'viajes_kg': v_kg,
             'total_ventas': total_ventas,
-            'ventas_ef_count': len(ventas_ef),
-            'ventas_cr_count': len(ventas_cr),
-            'balance': total_ventas - gastos_total,
+            'ventas_ef_count': vefbw['count'],
+            'ventas_cr_count': vcrbw['count'],
+            'balance': total_ventas - gbw['total'],
         })
+
     return history
 
 # ---- DASHBOARD ----
@@ -173,7 +284,9 @@ def dashboard(request):
     balance_hoy = total_efectivo - total_gastos
     
     # Cuanto hay que cobrar en total historico
-    ventas_por_cobrar = [v for v in VentaCredito.objects.all().order_by('-fecha') if v.saldo_pendiente > 0]
+    ventas_por_cobrar = [v for v in _ventas_credito_with_totals(
+        VentaCredito.objects.select_related('cliente').order_by('-fecha', '-id')
+    ) if v.saldo_pendiente > 0]
     total_por_cobrar = sum(v.saldo_pendiente for v in ventas_por_cobrar)
     
     viajes_recientes = Viaje.objects.all().order_by('-id')[:5]
@@ -1285,14 +1398,18 @@ def reporte_diario(request):
 
 @login_required
 def reporte_cartera(request):
-    ventas = VentaCredito.objects.select_related('cliente', 'producto').all()
+    ventas = _ventas_credito_with_totals(
+        VentaCredito.objects.select_related('cliente', 'producto').order_by('-fecha', '-id')
+    )
     pendientes = [v for v in ventas if v.saldo_pendiente > 0]
     total_cartera = sum(v.saldo_pendiente for v in pendientes)
     return render(request, 'core/reportes/reporte_cartera.html', {'pendientes': pendientes, 'total_cartera': total_cartera})
 
 @login_required
 def reporte_proveedor(request):
-    viajes = Viaje.objects.select_related('proveedor', 'producto').all()
+    viajes = _viajes_with_totals(
+        Viaje.objects.select_related('proveedor', 'producto').order_by('-fecha', '-id')
+    )
     pendientes = [v for v in viajes if v.saldo_pendiente > 0]
     total_deuda = sum(v.saldo_pendiente for v in pendientes)
     return render(request, 'core/reportes/reporte_proveedor.html', {'viajes': viajes, 'pendientes': pendientes, 'total_deuda': total_deuda})
@@ -1361,11 +1478,22 @@ def inventario_weekly_summary(request):
             'descripcion': default_nomina_desc,
         })
 
-    gastos_semana = Gasto.objects.filter(
-        fecha__range=[inicio_semana, fin_semana]
-    ).select_related('categoria').order_by('-fecha', '-id')
-    nominas_semana = gastos_semana.filter(categoria__nombre__iexact=NOMINA_CATEGORY_NAME)
-    gastos_operativos_semana = gastos_semana.exclude(categoria__nombre__iexact=NOMINA_CATEGORY_NAME)
+    # Evaluados una sola vez (list) para evitar re-ejecuciones del queryset
+    _gastos_list = list(
+        Gasto.objects.filter(
+            fecha__range=[inicio_semana, fin_semana]
+        ).select_related('categoria').order_by('-fecha', '-id')
+    )
+    nominas_semana = [
+        g for g in _gastos_list
+        if g.categoria and getattr(g.categoria, 'nombre', '') and
+           g.categoria.nombre.lower() == NOMINA_CATEGORY_NAME.lower()
+    ]
+    gastos_operativos_semana = [
+        g for g in _gastos_list
+        if not (g.categoria and getattr(g.categoria, 'nombre', '') and
+                g.categoria.nombre.lower() == NOMINA_CATEGORY_NAME.lower())
+    ]
     total_gastos_semana = sum(g.monto for g in gastos_operativos_semana) or Decimal('0')
     monto_nomina = sum(g.monto for g in nominas_semana) or Decimal('0')
 
@@ -1458,8 +1586,8 @@ def inventario_weekly_summary(request):
         'tiene_nomina_hoy': tiene_nomina_hoy,
         'dias_nomina_semana': dias_nomina_semana,
         'monto_nomina': monto_nomina,
-        'num_gastos': gastos_operativos_semana.count(),
-        'num_nominas_semana': nominas_semana.count(),
+        'num_gastos': len(gastos_operativos_semana),
+        'num_nominas_semana': len(nominas_semana),
         'num_ventas_efectivo': num_ventas_efectivo,
         'num_ventas_credito': num_ventas_credito,
         'num_abonos_semana': abonos_semana.count(),

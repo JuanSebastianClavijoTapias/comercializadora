@@ -19,7 +19,7 @@ class WeeklySummaryTests(TestCase):
 	def test_weekly_summary_post_creates_payroll_expense(self):
 		week_start = date(2026, 5, 4)
 		response = self.client.post(
-			f"{reverse('inventario_weekly_summary')}?week={week_start.isoformat()}",
+			f"{reverse('entrada_inventario_list')}?week={week_start.isoformat()}",
 			{
 				'form_type': 'nomina',
 				'descripcion': 'Nómina operativa',
@@ -28,7 +28,7 @@ class WeeklySummaryTests(TestCase):
 			},
 		)
 
-		self.assertRedirects(response, f"{reverse('inventario_weekly_summary')}?week={week_start.isoformat()}")
+		self.assertRedirects(response, f"{reverse('entrada_inventario_list')}?week={week_start.isoformat()}")
 		nomina = Gasto.objects.get(descripcion='Nómina operativa')
 		self.assertEqual(nomina.categoria.nombre, 'Nómina')
 		self.assertEqual(nomina.monto, Decimal('250000'))
@@ -47,6 +47,6 @@ class WeeklySummaryTests(TestCase):
 			},
 		)
 
-		self.assertRedirects(response, f"{reverse('inventario_weekly_summary')}?week={weekly.week_start.isoformat()}")
+		self.assertRedirects(response, f"{reverse('entrada_inventario_list')}?week={weekly.week_start.isoformat()}")
 		weekly.refresh_from_db()
 		self.assertEqual(weekly.initial_inventory_kg, Decimal('125.50'))
