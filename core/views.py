@@ -1612,6 +1612,12 @@ def inventario_weekly_summary(request):
         })
     desechos_semana.sort(key=lambda x: x['fecha'], reverse=True)
 
+    # Desecho local (sin impacto en stock, solo conteo)
+    desechos_locales = DesechoLocal.objects.filter(
+        fecha__range=[inicio_semana, fin_semana]
+    ).order_by('-fecha', '-id')
+    total_desecho_local = sum(d.kg for d in desechos_locales) or Decimal('0')
+
     compras_semana = EntradaInventario.objects.filter(
         fecha__range=[inicio_semana, fin_semana]
     ).select_related('proveedor', 'clasificacion').prefetch_related('pesadas').order_by('-fecha', '-id')
@@ -1693,6 +1699,8 @@ def inventario_weekly_summary(request):
         'abonos_semana': abonos_semana,
         'ventas_credito_semana': ventas_credito_semana,
         'desechos_semana': desechos_semana,
+        'desechos_locales': desechos_locales,
+        'total_desecho_local': total_desecho_local,
         'compras_semana': compras_semana,
         'ingresos_semana': ingresos_semana,
         'weekly_history': get_weekly_history(),
@@ -1719,7 +1727,7 @@ def entrada_inventario_create(request):
 
         if form_type == 'nomina':
             nomina_form = NominaForm(request.POST)
-            desecho_form = DesechoForm()
+            desecho_local_form = DesechoLocalForm()
             if nomina_form.is_valid():
                 nomina = nomina_form.save(commit=False)
                 nomina.categoria = get_nomina_category()
@@ -1729,20 +1737,20 @@ def entrada_inventario_create(request):
             return render(request, 'core/inventario/entrada_inventario_nueva.html', {
                 'proveedores': proveedores, 'clasificaciones': clasificaciones,
                 'fecha_default': date.today().isoformat(),
-                'nomina_form': nomina_form, 'desecho_form': desecho_form,
+                'nomina_form': nomina_form, 'desecho_local_form': desecho_local_form,
             })
 
         if form_type == 'desecho':
             nomina_form = NominaForm(initial={'fecha': date.today()})
-            desecho_form = DesechoForm(request.POST)
-            if desecho_form.is_valid():
-                desecho_form.save()
+            desecho_local_form = DesechoLocalForm(request.POST)
+            if desecho_local_form.is_valid():
+                desecho_local_form.save()
                 messages.success(request, 'Desecho registrado correctamente.')
                 return redirect('entrada_inventario_create')
             return render(request, 'core/inventario/entrada_inventario_nueva.html', {
                 'proveedores': proveedores, 'clasificaciones': clasificaciones,
                 'fecha_default': date.today().isoformat(),
-                'nomina_form': nomina_form, 'desecho_form': desecho_form,
+                'nomina_form': nomina_form, 'desecho_local_form': desecho_local_form,
             })
 
         # --- Entrada de inventario (default) ---
@@ -1832,7 +1840,7 @@ def entrada_inventario_create(request):
             'fecha_default': request.POST.get('fecha', date.today().isoformat()),
             'proveedor_selected': proveedor_id,
             'nomina_form': NominaForm(initial={'fecha': date.today()}),
-            'desecho_form': DesechoForm(),
+            'desecho_local_form': DesechoLocalForm(),
         })
 
     return render(request, 'core/inventario/entrada_inventario_nueva.html', {
@@ -1840,7 +1848,7 @@ def entrada_inventario_create(request):
         'clasificaciones': clasificaciones,
         'fecha_default': date.today().isoformat(),
         'nomina_form': NominaForm(initial={'fecha': date.today()}),
-        'desecho_form': DesechoForm(),
+        'desecho_local_form': DesechoLocalForm(),
     })
 
 

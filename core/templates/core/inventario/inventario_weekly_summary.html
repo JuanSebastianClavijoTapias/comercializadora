@@ -241,6 +241,21 @@
   </div>
 
   <div class="col">
+    <button type="button" class="stat-card-white weekly-card-trigger h-100" data-bs-toggle="modal" data-bs-target="#modalDesechosLocales" style="background: linear-gradient(135deg, #5D4037 0%, #3E2723 100%);">
+      <div class="d-flex justify-content-between align-items-start gap-3">
+        <div>
+          <div class="small fw-semibold" style="color: white;">Desechos Locales</div>
+          <div class="fs-4 fw-bold" style="color: white;">{{ total_desecho_local|floatformat:0 }} kg</div>
+          <div class="small" style="color: rgba(255,255,255,0.9);">{{ desechos_locales|length }} registro{{ desechos_locales|length|pluralize:"s" }}</div>
+        </div>
+        <div class="stat-icon-wrapper" style="background: rgba(255,255,255,0.25); color: white;">
+          <i class="bi bi-trash3-fill"></i>
+        </div>
+      </div>
+    </button>
+  </div>
+
+  <div class="col">
     <button type="button" class="stat-card-white weekly-card-trigger h-100" data-bs-toggle="modal" data-bs-target="#modalInventarioInicial" style="background: linear-gradient(135deg, #00897B 0%, #00695C 100%);">
       <div class="d-flex justify-content-between align-items-start gap-3">
         <div>
@@ -1181,5 +1196,46 @@
   </div>
 </div>
 {% endfor %}
+
+
+<!-- Modal: Desechos Locales -->
+<div class="modal fade" id="modalDesechosLocales" tabindex="-1" aria-labelledby="modalDesechosLocalesLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header" style="background: linear-gradient(135deg, #5D4037 0%, #3E2723 100%); color: white;">
+        <h5 class="modal-title" id="modalDesechosLocalesLabel">Desechos Locales</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <div class="d-flex justify-content-between align-items-center modal-summary-pill mb-3">
+          <div>
+            <div class="small text-muted">Total desechos locales</div>
+            <div class="fs-5 fw-bold" style="color: #5D4037;">{{ total_desecho_local|floatformat:0 }} kg</div>
+          </div>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th class="text-end">Kg</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for d in desechos_locales %}
+              <tr>
+                <td>{{ d.fecha|date:"d/m/Y" }}</td>
+                <td class="text-end fw-semibold" style="color: #5D4037;">{{ d.kg|floatformat:2 }} kg</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="2" class="text-center text-muted py-4">No hay desechos locales en esta semana.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
 {% endblock %}

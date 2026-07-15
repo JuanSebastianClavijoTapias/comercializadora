@@ -532,3 +532,21 @@ def actualiza_stock_desecho_delete(sender, instance, **kwargs):
     Clasificacion.objects.filter(pk=instance.clasificacion_id).update(
         stock_kg=F('stock_kg') + instance.kg
     )
+
+
+# ------------- DESECHO LOCAL (sin impacto en stock) -------------
+
+class DesechoLocal(models.Model):
+    """Desecho registrado desde 'Generar nueva entrada'.
+    No afecta stock — es solo un conteo manual para el usuario."""
+    fecha = models.DateField(verbose_name='Fecha')
+    kg = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Kg')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Desecho local {self.fecha} – {self.kg} kg"
+
+    class Meta:
+        verbose_name = 'Desecho Local'
+        verbose_name_plural = 'Desechos Locales'
+        ordering = ['-fecha', '-created_at']

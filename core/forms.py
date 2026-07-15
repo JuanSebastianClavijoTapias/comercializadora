@@ -162,6 +162,16 @@ class DesechoForm(forms.ModelForm):
             activo=True
         ).select_related('producto').order_by('producto__nombre', 'nombre')
 
+
+class DesechoLocalForm(forms.ModelForm):
+    class Meta:
+        model = DesechoLocal
+        fields = ['fecha', 'kg']
+        widgets = {
+            'fecha': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'kg': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0', 'placeholder': '0.00'}),
+        }
+
 class EntradaInventarioForm(COPInputNormalizationMixin, forms.ModelForm):
     cop_fields = ('precio_por_kg',)
 
