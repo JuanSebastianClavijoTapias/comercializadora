@@ -849,8 +849,8 @@ def pesada_add(request, pk):
                 if kg_bruto_val:
                     clasif_id = request.POST.get(f'clasificacion_{i}', '').strip()
                     data = {
-                        'num_canastillas_negras': request.POST.get(f'num_canastillas_negras_{i}', '') or None,
-                        'num_canastillas_colores': request.POST.get(f'num_canastillas_colores_{i}', '') or None,
+                        'num_canastillas_negras': request.POST.get(f'num_canastillas_negras_{i}', '') or '0',
+                        'num_canastillas_colores': request.POST.get(f'num_canastillas_colores_{i}', '') or '0',
                         'kg_bruto': kg_bruto_val,
                         'clasificacion': clasif_id or None,
                     }
