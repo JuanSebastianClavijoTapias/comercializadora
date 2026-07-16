@@ -170,9 +170,11 @@
               <div class="pesada-row mb-2">
                 <div class="row g-2">
                   <div class="col-12 col-md-7">
-                    <label class="form-label small fw-semibold mb-1 d-md-none">Clasificación</label>
+                    <label class="form-label small fw-semibold mb-1">
+                      <span class="num-label">1ra</span> clasificación
+                    </label>
                     <select name="clasificacion_0" class="form-select form-select-sm w-100">
-                      <option value="">-- Clasificación --</option>
+                      <option value="">-- Seleccionar --</option>
                       {% for c in clasificaciones %}
                       <option value="{{ c.pk }}">{{ c.nombre }} — {{ c.stock_kg|floatformat:0 }} kg</option>
                       {% endfor %}
@@ -224,11 +226,31 @@
           const container = document.getElementById('pesadas_container');
           const btnAdd = document.getElementById('btn_add_row');
 
+          function ordinal(n) {
+            if (n === 1) return '1ra';
+            if (n === 2) return '2da';
+            if (n === 3) return '3ra';
+            if (n === 4) return '4ta';
+            if (n === 5) return '5ta';
+            if (n === 6) return '6ta';
+            if (n === 7) return '7ma';
+            if (n === 8) return '8va';
+            if (n === 9) return '9na';
+            return n + 'ma';
+          }
+
+          function renumberLabels() {
+            const rows = container.querySelectorAll('.pesada-row');
+            rows.forEach(function(row, idx) {
+              const lbl = row.querySelector('.num-label');
+              if (lbl) lbl.textContent = ordinal(idx + 1);
+            });
+          }
+
           btnAdd.addEventListener('click', function() {
             const firstRow = container.querySelector('.pesada-row');
             const newRow = firstRow.cloneNode(true);
-            
-            // Actualizar índices de los inputs
+
             newRow.querySelectorAll('input, select').forEach(function(el) {
               const name = el.getAttribute('name');
               if (name) {
@@ -240,9 +262,10 @@
                 el.selectedIndex = 0;
               }
             });
-            
+
             container.appendChild(newRow);
             rowIndex++;
+            renumberLabels();
             updateRemoveButtons();
           });
 
@@ -253,6 +276,7 @@
               if (rows.length > 1) {
                 btn.closest('.pesada-row').remove();
                 rowIndex--;
+                renumberLabels();
                 updateRemoveButtons();
               }
             }
