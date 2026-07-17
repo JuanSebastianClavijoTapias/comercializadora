@@ -100,6 +100,12 @@ class PesadaViajeForm(forms.ModelForm):
             'clasificacion': forms.Select(attrs={'class': 'form-select'}),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['clasificacion'].queryset = Clasificacion.objects.filter(
+            activo=True
+        ).select_related('producto').order_by('producto__nombre', 'nombre')
+
 class LoteClasificacionForm(forms.ModelForm):
     class Meta:
         model = LoteClasificacion
