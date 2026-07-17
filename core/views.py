@@ -744,6 +744,12 @@ def viaje_detail(request, pk):
         producto_id__in=productos_ids, activo=True
     ).select_related('producto').order_by('producto__nombre', 'orden', 'nombre')
 
+    # Nombre de todos los productos del viaje para mostrar en el resumen
+    nombres = [p.nombre for p in viaje.productos.all()]
+    if viaje.producto_id and viaje.producto.nombre not in nombres:
+        nombres.insert(0, viaje.producto.nombre)
+    viaje.nombres_productos = ', '.join(nombres)
+
     # Desglose de kg_neto por clasificacion (calculado desde las pesadas)
     kg_por_clasificacion = {}
     total_neto_clasificado = Decimal('0')
