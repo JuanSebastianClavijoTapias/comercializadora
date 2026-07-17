@@ -119,6 +119,11 @@
                 <td class="text-danger small">-{{ p.peso_canastillas|floatformat:2 }} kg</td>
                 <td class="fw-bold text-success">{{ p.kg_neto|floatformat:2 }} kg</td>
                 <td>
+                  <a href="{% url 'pesada_edit' p.pk %}"
+                     class="btn btn-sm btn-outline-secondary me-1"
+                     title="Editar pesada">
+                    <i class="bi bi-pencil"></i>
+                  </a>
                   <a href="{% url 'pesada_delete' p.pk %}"
                      class="btn btn-sm btn-outline-danger"
                      onclick="return confirm('Eliminar esta pesada?')">

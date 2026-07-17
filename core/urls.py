@@ -35,6 +35,7 @@ urlpatterns = [
     path('viajes/<int:pk>/pago/', views.viaje_pago_add, name='viaje_pago_add'),
     path('viajes/<int:pk>/pesada/', views.pesada_add, name='pesada_add'),
     path('pesadas/<int:pk>/eliminar/', views.pesada_delete, name='pesada_delete'),
+    path('pesadas/<int:pk>/editar/', views.pesada_edit, name='pesada_edit'),
     path('lotes/<int:pk>/eliminar/', views.lote_delete, name='lote_delete'),
     path('pagos-proveedor/<int:pk>/eliminar/', views.pago_proveedor_delete, name='pago_proveedor_delete'),
     # Gastos

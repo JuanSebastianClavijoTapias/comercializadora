@@ -900,6 +900,23 @@ def pesada_delete(request, pk):
 
 
 @login_required
+def pesada_edit(request, pk):
+    """Editar una pesada existente."""
+    pesada = get_object_or_404(PesadaViaje, pk=pk)
+    form = PesadaViajeForm(request.POST or None, instance=pesada)
+    if form.is_valid():
+        form.save()
+        messages.success(request, 'Pesada actualizada.')
+        return redirect('viaje_detail', pk=pesada.viaje_id)
+    return render(request, 'core/genericos/form_generic.html', {
+        'form': form,
+        'titulo': f'Editar Pesada — {pesada.viaje.producto.nombre}',
+        'back_url': 'viaje_detail',
+        'back_url_args': [pesada.viaje_id],
+    })
+
+
+@login_required
 def viaje_pago_add(request, pk):
     """
     Registra un pago al proveedor y automáticamente crea un gasto correspondiente.
