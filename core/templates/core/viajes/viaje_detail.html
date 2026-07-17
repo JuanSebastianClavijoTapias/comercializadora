@@ -352,22 +352,34 @@
 
           {% if desglose_clasificaciones %}
           <div class="mt-2 pt-2 border-top" style="border-color:rgba(255,255,255,0.25);">
-            <div class="small fw-semibold mb-1" style="opacity:0.85;">Kg Neto por clasificación:</div>
+            <div class="small fw-semibold mb-2" style="opacity:0.85;">Desglose por clasificación:</div>
             {% for d in desglose_clasificaciones %}
-            <div class="small mb-2">
-              <div class="d-flex justify-content-between">
-                <span style="opacity:0.9;">{{ d.clasificacion.producto.nombre }} - {{ d.clasificacion.nombre|abr_clasif }}:</span>
-                <span class="fw-bold">{{ d.kg_neto_final|floatformat:2 }} kg</span>
+            <div class="mb-2" style="font-size:0.82rem;">
+              <div class="fw-semibold mb-1">{{ d.clasificacion.producto.nombre }} - {{ d.clasificacion.nombre|abr_clasif }}</div>
+              <div class="ps-2" style="border-left:2px solid rgba(255,255,255,0.3);">
+                {% if d.can_negras %}
+                <div class="d-flex justify-content-between">
+                  <span style="opacity:0.8;">Can. Negras ({{ d.can_negras }} x 1.6 kg)</span>
+                  <span class="text-warning">-{{ d.kg_can_negras|floatformat:2 }} kg</span>
+                </div>
+                {% endif %}
+                {% if d.can_colores %}
+                <div class="d-flex justify-content-between">
+                  <span style="opacity:0.8;">Can. Color ({{ d.can_colores }} x 2.2 kg)</span>
+                  <span class="text-warning">-{{ d.kg_can_colores|floatformat:2 }} kg</span>
+                </div>
+                {% endif %}
+                {% if d.desecho_kg > 0 %}
+                <div class="d-flex justify-content-between">
+                  <span style="opacity:0.8;">Kg Podrido / Rechazo</span>
+                  <span class="text-warning">-{{ d.desecho_kg|floatformat:2 }} kg</span>
+                </div>
+                {% endif %}
+                <div class="d-flex justify-content-between mt-1 pt-1 border-top" style="border-color:rgba(255,255,255,0.15);">
+                  <span class="fw-bold">Neto</span>
+                  <span class="fw-bold">{{ d.kg_neto_final|floatformat:2 }} kg</span>
+                </div>
               </div>
-              {% if d.can_negras or d.can_colores %}
-              <div class="d-flex justify-content-between ps-3" style="opacity:0.75;">
-                <span class="small">
-                  {% if d.can_negras %}<i class="bi bi-dash me-1"></i>{{ d.can_negras }}N x1.6 = {{ d.kg_can_negras|floatformat:1 }} kg{% endif %}
-                  {% if d.can_negras and d.can_colores %} &nbsp;|&nbsp; {% endif %}
-                  {% if d.can_colores %}{{ d.can_colores }}C x2.2 = {{ d.kg_can_colores|floatformat:1 }} kg{% endif %}
-                </span>
-              </div>
-              {% endif %}
             </div>
             {% endfor %}
           </div>
