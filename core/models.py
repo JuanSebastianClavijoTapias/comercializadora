@@ -74,6 +74,7 @@ class Viaje(models.Model):
 
     proveedor = models.ForeignKey(Proveedor, on_delete=models.CASCADE, related_name='viajes', verbose_name='Proveedor')
     producto = models.ForeignKey(Producto, on_delete=models.CASCADE, related_name='viajes', verbose_name='Producto')
+    productos = models.ManyToManyField(Producto, related_name='viajes_m2m', verbose_name='Productos adicionales')
     fecha = models.DateField(verbose_name='Fecha')
     observaciones = models.TextField(blank=True, verbose_name='Observaciones')
     precio_total_acordado = models.DecimalField(max_digits=12, decimal_places=2, default=0, verbose_name='Precio Total Acordado')

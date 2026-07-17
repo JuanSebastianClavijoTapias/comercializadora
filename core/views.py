@@ -719,7 +719,13 @@ def viaje_list(request):
 def viaje_create(request):
     form = ViajeForm(request.POST or None)
     if form.is_valid():
-        viaje = form.save()
+        viaje = form.save(commit=False)
+        # Primer producto seleccionado va al FK para compatibilidad
+        selected = form.cleaned_data['productos']
+        if selected:
+            viaje.producto = selected[0]
+        viaje.save()
+        form.save_m2m()
         messages.success(request, 'Viaje registrado. Ahora ingrese las pesadas del viaje.')
         return redirect('viaje_detail', pk=viaje.pk)
     return render(request, 'core/genericos/form_generic.html', {'form': form, 'titulo': 'Registrar Nuevo Viaje', 'back_url': 'viaje_list'})
@@ -731,9 +737,13 @@ def viaje_detail(request, pk):
     lotes = viaje.lotes.select_related('clasificacion').all()
     pesadas = viaje.pesadas.select_related('clasificacion').all()
 
+    # Clasificaciones de todos los productos seleccionados en el viaje
+    productos_ids = list(viaje.productos.values_list('pk', flat=True))
+    if viaje.producto_id and viaje.producto_id not in productos_ids:
+        productos_ids.append(viaje.producto_id)
     clasificaciones = Clasificacion.objects.filter(
-        producto=viaje.producto, activo=True
-    ).order_by('orden', 'nombre')
+        producto_id__in=productos_ids, activo=True
+    ).select_related('producto').order_by('producto__nombre', 'orden', 'nombre')
 
     # Desglose de kg_neto por clasificacion (calculado desde las pesadas)
     kg_por_clasificacion = {}

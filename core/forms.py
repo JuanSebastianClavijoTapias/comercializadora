@@ -68,15 +68,26 @@ class CategoriaGastoForm(forms.ModelForm):
 
 class ViajeForm(forms.ModelForm):
     """Formulario simplificado para registrar nuevo viaje - solo datos básicos"""
+    productos = forms.ModelMultipleChoiceField(
+        queryset=Producto.objects.filter(activo=True),
+        widget=forms.CheckboxSelectMultiple(attrs={'class': 'form-check-input'}),
+        label='Productos',
+        required=True,
+    )
+
     class Meta:
         model = Viaje
-        fields = ['proveedor', 'producto', 'fecha', 'observaciones']
+        fields = ['proveedor', 'fecha', 'observaciones']
         widgets = {
             'proveedor': forms.Select(attrs={'class': 'form-select'}),
-            'producto': forms.Select(attrs={'class': 'form-select'}),
             'fecha': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'observaciones': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Observaciones opcionales...'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance.pk:
+            self.fields['productos'].initial = self.instance.productos.all()
 
 class PesadaViajeForm(forms.ModelForm):
     class Meta:
