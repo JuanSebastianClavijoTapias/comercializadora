@@ -1,0 +1,1761 @@
+[
+{
+  "model": "auth.permission",
+  "pk": 1,
+  "fields": {
+    "name": "Can add log entry",
+    "content_type": 1,
+    "codename": "add_logentry"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 2,
+  "fields": {
+    "name": "Can change log entry",
+    "content_type": 1,
+    "codename": "change_logentry"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 3,
+  "fields": {
+    "name": "Can delete log entry",
+    "content_type": 1,
+    "codename": "delete_logentry"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 4,
+  "fields": {
+    "name": "Can view log entry",
+    "content_type": 1,
+    "codename": "view_logentry"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 5,
+  "fields": {
+    "name": "Can add permission",
+    "content_type": 2,
+    "codename": "add_permission"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 6,
+  "fields": {
+    "name": "Can change permission",
+    "content_type": 2,
+    "codename": "change_permission"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 7,
+  "fields": {
+    "name": "Can delete permission",
+    "content_type": 2,
+    "codename": "delete_permission"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 8,
+  "fields": {
+    "name": "Can view permission",
+    "content_type": 2,
+    "codename": "view_permission"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 9,
+  "fields": {
+    "name": "Can add group",
+    "content_type": 3,
+    "codename": "add_group"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 10,
+  "fields": {
+    "name": "Can change group",
+    "content_type": 3,
+    "codename": "change_group"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 11,
+  "fields": {
+    "name": "Can delete group",
+    "content_type": 3,
+    "codename": "delete_group"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 12,
+  "fields": {
+    "name": "Can view group",
+    "content_type": 3,
+    "codename": "view_group"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 13,
+  "fields": {
+    "name": "Can add user",
+    "content_type": 4,
+    "codename": "add_user"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 14,
+  "fields": {
+    "name": "Can change user",
+    "content_type": 4,
+    "codename": "change_user"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 15,
+  "fields": {
+    "name": "Can delete user",
+    "content_type": 4,
+    "codename": "delete_user"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 16,
+  "fields": {
+    "name": "Can view user",
+    "content_type": 4,
+    "codename": "view_user"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 17,
+  "fields": {
+    "name": "Can add content type",
+    "content_type": 5,
+    "codename": "add_contenttype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 18,
+  "fields": {
+    "name": "Can change content type",
+    "content_type": 5,
+    "codename": "change_contenttype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 19,
+  "fields": {
+    "name": "Can delete content type",
+    "content_type": 5,
+    "codename": "delete_contenttype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 20,
+  "fields": {
+    "name": "Can view content type",
+    "content_type": 5,
+    "codename": "view_contenttype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 21,
+  "fields": {
+    "name": "Can add session",
+    "content_type": 6,
+    "codename": "add_session"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 22,
+  "fields": {
+    "name": "Can change session",
+    "content_type": 6,
+    "codename": "change_session"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 23,
+  "fields": {
+    "name": "Can delete session",
+    "content_type": 6,
+    "codename": "delete_session"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 24,
+  "fields": {
+    "name": "Can view session",
+    "content_type": 6,
+    "codename": "view_session"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 25,
+  "fields": {
+    "name": "Can add Categoría de Gasto",
+    "content_type": 7,
+    "codename": "add_categoriagasto"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 26,
+  "fields": {
+    "name": "Can change Categoría de Gasto",
+    "content_type": 7,
+    "codename": "change_categoriagasto"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 27,
+  "fields": {
+    "name": "Can delete Categoría de Gasto",
+    "content_type": 7,
+    "codename": "delete_categoriagasto"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 28,
+  "fields": {
+    "name": "Can view Categoría de Gasto",
+    "content_type": 7,
+    "codename": "view_categoriagasto"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 29,
+  "fields": {
+    "name": "Can add Clasificación",
+    "content_type": 8,
+    "codename": "add_clasificacion"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 30,
+  "fields": {
+    "name": "Can change Clasificación",
+    "content_type": 8,
+    "codename": "change_clasificacion"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 31,
+  "fields": {
+    "name": "Can delete Clasificación",
+    "content_type": 8,
+    "codename": "delete_clasificacion"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 32,
+  "fields": {
+    "name": "Can view Clasificación",
+    "content_type": 8,
+    "codename": "view_clasificacion"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 33,
+  "fields": {
+    "name": "Can add Cliente",
+    "content_type": 9,
+    "codename": "add_cliente"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 34,
+  "fields": {
+    "name": "Can change Cliente",
+    "content_type": 9,
+    "codename": "change_cliente"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 35,
+  "fields": {
+    "name": "Can delete Cliente",
+    "content_type": 9,
+    "codename": "delete_cliente"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 36,
+  "fields": {
+    "name": "Can view Cliente",
+    "content_type": 9,
+    "codename": "view_cliente"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 37,
+  "fields": {
+    "name": "Can add Liquidación de Inventario",
+    "content_type": 10,
+    "codename": "add_liquidacioninventario"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 38,
+  "fields": {
+    "name": "Can change Liquidación de Inventario",
+    "content_type": 10,
+    "codename": "change_liquidacioninventario"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 39,
+  "fields": {
+    "name": "Can delete Liquidación de Inventario",
+    "content_type": 10,
+    "codename": "delete_liquidacioninventario"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 40,
+  "fields": {
+    "name": "Can view Liquidación de Inventario",
+    "content_type": 10,
+    "codename": "view_liquidacioninventario"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 41,
+  "fields": {
+    "name": "Can add Producto",
+    "content_type": 11,
+    "codename": "add_producto"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 42,
+  "fields": {
+    "name": "Can change Producto",
+    "content_type": 11,
+    "codename": "change_producto"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 43,
+  "fields": {
+    "name": "Can delete Producto",
+    "content_type": 11,
+    "codename": "delete_producto"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 44,
+  "fields": {
+    "name": "Can view Producto",
+    "content_type": 11,
+    "codename": "view_producto"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 45,
+  "fields": {
+    "name": "Can add Proveedor",
+    "content_type": 12,
+    "codename": "add_proveedor"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 46,
+  "fields": {
+    "name": "Can change Proveedor",
+    "content_type": 12,
+    "codename": "change_proveedor"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 47,
+  "fields": {
+    "name": "Can delete Proveedor",
+    "content_type": 12,
+    "codename": "delete_proveedor"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 48,
+  "fields": {
+    "name": "Can view Proveedor",
+    "content_type": 12,
+    "codename": "view_proveedor"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 49,
+  "fields": {
+    "name": "Can add Venta en Efectivo",
+    "content_type": 13,
+    "codename": "add_ventaefectivo"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 50,
+  "fields": {
+    "name": "Can change Venta en Efectivo",
+    "content_type": 13,
+    "codename": "change_ventaefectivo"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 51,
+  "fields": {
+    "name": "Can delete Venta en Efectivo",
+    "content_type": 13,
+    "codename": "delete_ventaefectivo"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 52,
+  "fields": {
+    "name": "Can view Venta en Efectivo",
+    "content_type": 13,
+    "codename": "view_ventaefectivo"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 53,
+  "fields": {
+    "name": "Can add Gasto",
+    "content_type": 14,
+    "codename": "add_gasto"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 54,
+  "fields": {
+    "name": "Can change Gasto",
+    "content_type": 14,
+    "codename": "change_gasto"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 55,
+  "fields": {
+    "name": "Can delete Gasto",
+    "content_type": 14,
+    "codename": "delete_gasto"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 56,
+  "fields": {
+    "name": "Can view Gasto",
+    "content_type": 14,
+    "codename": "view_gasto"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 57,
+  "fields": {
+    "name": "Can add Detalle de Inventario",
+    "content_type": 15,
+    "codename": "add_detalleinventario"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 58,
+  "fields": {
+    "name": "Can change Detalle de Inventario",
+    "content_type": 15,
+    "codename": "change_detalleinventario"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 59,
+  "fields": {
+    "name": "Can delete Detalle de Inventario",
+    "content_type": 15,
+    "codename": "delete_detalleinventario"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 60,
+  "fields": {
+    "name": "Can view Detalle de Inventario",
+    "content_type": 15,
+    "codename": "view_detalleinventario"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 61,
+  "fields": {
+    "name": "Can add Venta a Crédito",
+    "content_type": 16,
+    "codename": "add_ventacredito"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 62,
+  "fields": {
+    "name": "Can change Venta a Crédito",
+    "content_type": 16,
+    "codename": "change_ventacredito"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 63,
+  "fields": {
+    "name": "Can delete Venta a Crédito",
+    "content_type": 16,
+    "codename": "delete_ventacredito"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 64,
+  "fields": {
+    "name": "Can view Venta a Crédito",
+    "content_type": 16,
+    "codename": "view_ventacredito"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 65,
+  "fields": {
+    "name": "Can add Pago de Venta",
+    "content_type": 17,
+    "codename": "add_pagoventacredito"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 66,
+  "fields": {
+    "name": "Can change Pago de Venta",
+    "content_type": 17,
+    "codename": "change_pagoventacredito"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 67,
+  "fields": {
+    "name": "Can delete Pago de Venta",
+    "content_type": 17,
+    "codename": "delete_pagoventacredito"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 68,
+  "fields": {
+    "name": "Can view Pago de Venta",
+    "content_type": 17,
+    "codename": "view_pagoventacredito"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 69,
+  "fields": {
+    "name": "Can add Detalle de Venta",
+    "content_type": 18,
+    "codename": "add_detalleventacredito"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 70,
+  "fields": {
+    "name": "Can change Detalle de Venta",
+    "content_type": 18,
+    "codename": "change_detalleventacredito"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 71,
+  "fields": {
+    "name": "Can delete Detalle de Venta",
+    "content_type": 18,
+    "codename": "delete_detalleventacredito"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 72,
+  "fields": {
+    "name": "Can view Detalle de Venta",
+    "content_type": 18,
+    "codename": "view_detalleventacredito"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 73,
+  "fields": {
+    "name": "Can add Viaje",
+    "content_type": 19,
+    "codename": "add_viaje"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 74,
+  "fields": {
+    "name": "Can change Viaje",
+    "content_type": 19,
+    "codename": "change_viaje"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 75,
+  "fields": {
+    "name": "Can delete Viaje",
+    "content_type": 19,
+    "codename": "delete_viaje"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 76,
+  "fields": {
+    "name": "Can view Viaje",
+    "content_type": 19,
+    "codename": "view_viaje"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 77,
+  "fields": {
+    "name": "Can add Pago a Proveedor",
+    "content_type": 20,
+    "codename": "add_pagoproveedor"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 78,
+  "fields": {
+    "name": "Can change Pago a Proveedor",
+    "content_type": 20,
+    "codename": "change_pagoproveedor"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 79,
+  "fields": {
+    "name": "Can delete Pago a Proveedor",
+    "content_type": 20,
+    "codename": "delete_pagoproveedor"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 80,
+  "fields": {
+    "name": "Can view Pago a Proveedor",
+    "content_type": 20,
+    "codename": "view_pagoproveedor"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 81,
+  "fields": {
+    "name": "Can add Lote por Clasificación",
+    "content_type": 21,
+    "codename": "add_loteclasificacion"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 82,
+  "fields": {
+    "name": "Can change Lote por Clasificación",
+    "content_type": 21,
+    "codename": "change_loteclasificacion"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 83,
+  "fields": {
+    "name": "Can delete Lote por Clasificación",
+    "content_type": 21,
+    "codename": "delete_loteclasificacion"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 84,
+  "fields": {
+    "name": "Can view Lote por Clasificación",
+    "content_type": 21,
+    "codename": "view_loteclasificacion"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 85,
+  "fields": {
+    "name": "Can add Pesada",
+    "content_type": 22,
+    "codename": "add_pesadaviaje"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 86,
+  "fields": {
+    "name": "Can change Pesada",
+    "content_type": 22,
+    "codename": "change_pesadaviaje"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 87,
+  "fields": {
+    "name": "Can delete Pesada",
+    "content_type": 22,
+    "codename": "delete_pesadaviaje"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 88,
+  "fields": {
+    "name": "Can view Pesada",
+    "content_type": 22,
+    "codename": "view_pesadaviaje"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 89,
+  "fields": {
+    "name": "Can add Detalle de Venta Efectivo",
+    "content_type": 23,
+    "codename": "add_detalleventaefectivo"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 90,
+  "fields": {
+    "name": "Can change Detalle de Venta Efectivo",
+    "content_type": 23,
+    "codename": "change_detalleventaefectivo"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 91,
+  "fields": {
+    "name": "Can delete Detalle de Venta Efectivo",
+    "content_type": 23,
+    "codename": "delete_detalleventaefectivo"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 92,
+  "fields": {
+    "name": "Can view Detalle de Venta Efectivo",
+    "content_type": 23,
+    "codename": "view_detalleventaefectivo"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 93,
+  "fields": {
+    "name": "Can add Inventario Semanal",
+    "content_type": 24,
+    "codename": "add_weeklyinventory"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 94,
+  "fields": {
+    "name": "Can change Inventario Semanal",
+    "content_type": 24,
+    "codename": "change_weeklyinventory"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 95,
+  "fields": {
+    "name": "Can delete Inventario Semanal",
+    "content_type": 24,
+    "codename": "delete_weeklyinventory"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 96,
+  "fields": {
+    "name": "Can view Inventario Semanal",
+    "content_type": 24,
+    "codename": "view_weeklyinventory"
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 1,
+  "fields": {
+    "password": "pbkdf2_sha256$600000$Wrvi0uASm3XDXq8dLDRZNX$2z4aO8PN3AcldEreVtzfF5CvtLQk7h0PasyUKvnCFQk=",
+    "last_login": "2026-05-02T21:18:35.557Z",
+    "is_superuser": true,
+    "username": "admin",
+    "first_name": "",
+    "last_name": "",
+    "email": "",
+    "is_staff": true,
+    "is_active": true,
+    "date_joined": "2026-03-22T03:26:03.878Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 1,
+  "fields": {
+    "app_label": "admin",
+    "model": "logentry"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 2,
+  "fields": {
+    "app_label": "auth",
+    "model": "permission"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 3,
+  "fields": {
+    "app_label": "auth",
+    "model": "group"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 4,
+  "fields": {
+    "app_label": "auth",
+    "model": "user"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 5,
+  "fields": {
+    "app_label": "contenttypes",
+    "model": "contenttype"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 6,
+  "fields": {
+    "app_label": "sessions",
+    "model": "session"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 7,
+  "fields": {
+    "app_label": "core",
+    "model": "categoriagasto"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 8,
+  "fields": {
+    "app_label": "core",
+    "model": "clasificacion"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 9,
+  "fields": {
+    "app_label": "core",
+    "model": "cliente"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 10,
+  "fields": {
+    "app_label": "core",
+    "model": "liquidacioninventario"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 11,
+  "fields": {
+    "app_label": "core",
+    "model": "producto"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 12,
+  "fields": {
+    "app_label": "core",
+    "model": "proveedor"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 13,
+  "fields": {
+    "app_label": "core",
+    "model": "ventaefectivo"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 14,
+  "fields": {
+    "app_label": "core",
+    "model": "gasto"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 15,
+  "fields": {
+    "app_label": "core",
+    "model": "detalleinventario"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 16,
+  "fields": {
+    "app_label": "core",
+    "model": "ventacredito"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 17,
+  "fields": {
+    "app_label": "core",
+    "model": "pagoventacredito"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 18,
+  "fields": {
+    "app_label": "core",
+    "model": "detalleventacredito"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 19,
+  "fields": {
+    "app_label": "core",
+    "model": "viaje"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 20,
+  "fields": {
+    "app_label": "core",
+    "model": "pagoproveedor"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 21,
+  "fields": {
+    "app_label": "core",
+    "model": "loteclasificacion"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 22,
+  "fields": {
+    "app_label": "core",
+    "model": "pesadaviaje"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 23,
+  "fields": {
+    "app_label": "core",
+    "model": "detalleventaefectivo"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 24,
+  "fields": {
+    "app_label": "core",
+    "model": "weeklyinventory"
+  }
+},
+{
+  "model": "sessions.session",
+  "pk": "03dok6x8ysh3f143afwxv5zz7orunyyk",
+  "fields": {
+    "session_data": ".eJxVjMEOwiAQRP-FsyHSIgsevfcbyC4sUjWQlPZk_Hdp0oPeJvPezFt43Nbst8aLn6O4CiVOvx1heHLZQXxguVcZalmXmeSuyIM2OdXIr9vh_h1kbLmvMV1sIFYOcUw6OrCg-UzAgXpWFjXQoO0IDnDgnoAdY4rGRG1CGMXnC_qqOFg:1wBj2t:joqoHJ9SnuiHRpU8JCvvrX5yIwDqc4ekqKNCEblNWYg",
+    "expire_date": "2026-04-26T00:51:27.479Z"
+  }
+},
+{
+  "model": "sessions.session",
+  "pk": "45kloeiuorykqyehg2v1926hwwd4dv15",
+  "fields": {
+    "session_data": ".eJxVjMEOwiAQRP-FsyHSIgsevfcbyC4sUjWQlPZk_Hdp0oPeJvPezFt43Nbst8aLn6O4CiVOvx1heHLZQXxguVcZalmXmeSuyIM2OdXIr9vh_h1kbLmvMV1sIFYOcUw6OrCg-UzAgXpWFjXQoO0IDnDgnoAdY4rGRG1CGMXnC_qqOFg:1wGRyR:UBzdCved-wo4X1rD9WqOk8R_WGLhdL8KtXCmVS0snxc",
+    "expire_date": "2026-05-09T01:38:23.216Z"
+  }
+},
+{
+  "model": "sessions.session",
+  "pk": "4iraawo51xn535mbke0ptb0c3q9gq6zm",
+  "fields": {
+    "session_data": ".eJxVjDsOwjAQBe_iGll24l8o6TmDtd5d4wCypTipEHeHSCmgfTPzXiLCtpa4dV7iTOIstDj9bgnwwXUHdId6axJbXZc5yV2RB-3y2oifl8P9OyjQy7dGJp-NsaPBEGxynI3GoDgnrcgbj6SBHevgrB09JyAeJp6GTIaUAifeH_z3OJo:1w85Js:_jvijrFhR96OeiNQV3Clsbf-C7JXeg31yMJB4g8W0dU",
+    "expire_date": "2026-04-15T23:49:56.523Z"
+  }
+},
+{
+  "model": "sessions.session",
+  "pk": "60aj90dstfrgibs4lo97d54ho6u0sf5b",
+  "fields": {
+    "session_data": ".eJxVjMEOwiAQRP-FsyHSIgsevfcbyC4sUjWQlPZk_Hdp0oPeJvPezFt43Nbst8aLn6O4CiVOvx1heHLZQXxguVcZalmXmeSuyIM2OdXIr9vh_h1kbLmvMV1sIFYOcUw6OrCg-UzAgXpWFjXQoO0IDnDgnoAdY4rGRG1CGMXnC_qqOFg:1wGM0k:AUbS4N8WzegBJWyhLzp1E9KSQnuR2rACcg_nvcuAA4o",
+    "expire_date": "2026-05-08T19:16:22.015Z"
+  }
+},
+{
+  "model": "sessions.session",
+  "pk": "62cnmy5rv1waboinly9rwdef99odzhn9",
+  "fields": {
+    "session_data": ".eJxVjMEOwiAQRP-FsyHSIgsevfcbyC4sUjWQlPZk_Hdp0oPeJvPezFt43Nbst8aLn6O4CiVOvx1heHLZQXxguVcZalmXmeSuyIM2OdXIr9vh_h1kbLmvMV1sIFYOcUw6OrCg-UzAgXpWFjXQoO0IDnDgnoAdY4rGRG1CGMXnC_qqOFg:1wBHN0:qY1W5mZLdOHKVtKieMgHWISZcOBB4pXHoWlMOjF18aw",
+    "expire_date": "2026-04-24T19:18:22.667Z"
+  }
+},
+{
+  "model": "sessions.session",
+  "pk": "735gvlfvpzn4nmzwqprj9mdm625u8ohc",
+  "fields": {
+    "session_data": ".eJxVjMEOwiAQRP-FsyHSIgsevfcbyC4sUjWQlPZk_Hdp0oPeJvPezFt43Nbst8aLn6O4CiVOvx1heHLZQXxguVcZalmXmeSuyIM2OdXIr9vh_h1kbLmvMV1sIFYOcUw6OrCg-UzAgXpWFjXQoO0IDnDgnoAdY4rGRG1CGMXnC_qqOFg:1wJHjP:z3YCBMDSZuOKtKLJ_rPAfmZvz8RDdNN-oBn0k5RiPDI",
+    "expire_date": "2026-05-16T21:18:35.564Z"
+  }
+},
+{
+  "model": "sessions.session",
+  "pk": "97bgt5vh5dv2myohgymolpmfx5u6ppg9",
+  "fields": {
+    "session_data": ".eJxVjDsOwjAQBe_iGln-xR9Kes5grXdtHEC2FCcV4u4QKQW0b2bei0XY1hq3kZc4EzszyU6_WwJ85LYDukO7dY69rcuc-K7wgw5-7ZSfl8P9O6gw6rfW6MFpmZQiEax1pRTylJRJTpQgfJFo0iRNQFFoMpqQhPBgwCJ4T4q9P-faOCw:1w4MjE:UbPj0WUQYvCe-hZhx05SxrVPxaay0U8_d5Kou4fPvwI",
+    "expire_date": "2026-04-05T17:36:44.951Z"
+  }
+},
+{
+  "model": "sessions.session",
+  "pk": "lugh6esuimg6iwuv7ck466z9gy2d381n",
+  "fields": {
+    "session_data": ".eJxVjMEOwiAQRP-FsyHSIgsevfcbyC4sUjWQlPZk_Hdp0oPeJvPezFt43Nbst8aLn6O4CiVOvx1heHLZQXxguVcZalmXmeSuyIM2OdXIr9vh_h1kbLmvMV1sIFYOcUw6OrCg-UzAgXpWFjXQoO0IDnDgnoAdY4rGRG1CGMXnC_qqOFg:1wGl2X:i-e9ui0wcTHFrvk0xxut6-Exhy3c_gg4ISe1xLlNP2w",
+    "expire_date": "2026-05-09T21:59:53.984Z"
+  }
+},
+{
+  "model": "sessions.session",
+  "pk": "m6k163n3wucl6rtexdb21ymi7qsk4qlx",
+  "fields": {
+    "session_data": ".eJxVjDsOwjAQBe_iGln-xR9Kes5grXdtHEC2FCcV4u4QKQW0b2bei0XY1hq3kZc4EzszyU6_WwJ85LYDukO7dY69rcuc-K7wgw5-7ZSfl8P9O6gw6rfW6MFpmZQiEax1pRTylJRJTpQgfJFo0iRNQFFoMpqQhPBgwCJ4T4q9P-faOCw:1w49Sa:s0WB2T0dm5vFxLLIzir1Jr3jIN5egGqXXk6U9Oe_ldg",
+    "expire_date": "2026-04-05T03:26:40.116Z"
+  }
+},
+{
+  "model": "sessions.session",
+  "pk": "pkozylw9o25kyz2gdyhck7ocksycuqu5",
+  "fields": {
+    "session_data": ".eJxVjMEOwiAQRP-FsyHSIgsevfcbyC4sUjWQlPZk_Hdp0oPeJvPezFt43Nbst8aLn6O4CiVOvx1heHLZQXxguVcZalmXmeSuyIM2OdXIr9vh_h1kbLmvMV1sIFYOcUw6OrCg-UzAgXpWFjXQoO0IDnDgnoAdY4rGRG1CGMXnC_qqOFg:1wJ1ch:wnm5xiuEpBUZ0Rkh10skJUpQ-lirbjk_y8M5E8WCv2M",
+    "expire_date": "2026-05-16T04:06:35.893Z"
+  }
+},
+{
+  "model": "sessions.session",
+  "pk": "rncsqd6y5tv306ejq7y3sgcgyzbe9s8s",
+  "fields": {
+    "session_data": ".eJxVjMEOwiAQRP-FsyHSIgsevfcbyC4sUjWQlPZk_Hdp0oPeJvPezFt43Nbst8aLn6O4CiVOvx1heHLZQXxguVcZalmXmeSuyIM2OdXIr9vh_h1kbLmvMV1sIFYOcUw6OrCg-UzAgXpWFjXQoO0IDnDgnoAdY4rGRG1CGMXnC_qqOFg:1wIu5M:2hpp2mZMapxYgsY4fXRhTqunLd2akXq3YHgBvxEbnBE",
+    "expire_date": "2026-05-15T20:03:40.553Z"
+  }
+},
+{
+  "model": "sessions.session",
+  "pk": "ufions9a0vmp89jz4r1yef5eijq34zvi",
+  "fields": {
+    "session_data": ".eJxVjDsOwjAQBe_iGln-xR9Kes5grXdtHEC2FCcV4u4QKQW0b2bei0XY1hq3kZc4EzszyU6_WwJ85LYDukO7dY69rcuc-K7wgw5-7ZSfl8P9O6gw6rfW6MFpmZQiEax1pRTylJRJTpQgfJFo0iRNQFFoMpqQhPBgwCJ4T4q9P-faOCw:1w5x92:e99GefpWkOmejl_YhNy8rRc3VHyph72jbvaeq5zSto4",
+    "expire_date": "2026-04-10T02:41:56.898Z"
+  }
+},
+{
+  "model": "sessions.session",
+  "pk": "y6dyx2j9fj38u0rxyrptiq4ubx07pjdm",
+  "fields": {
+    "session_data": ".eJxVjMEOwiAQRP-FsyHSIgsevfcbyC4sUjWQlPZk_Hdp0oPeJvPezFt43Nbst8aLn6O4CiVOvx1heHLZQXxguVcZalmXmeSuyIM2OdXIr9vh_h1kbLmvMV1sIFYOcUw6OrCg-UzAgXpWFjXQoO0IDnDgnoAdY4rGRG1CGMXnC_qqOFg:1wGkxT:GFa1jDwYTNHckk_1phskyFjLAHKSEG8aU3PHArvG4Wc",
+    "expire_date": "2026-05-09T21:54:39.925Z"
+  }
+},
+{
+  "model": "sessions.session",
+  "pk": "z8492wggy9jodnt3v7uabuwcpfry57qi",
+  "fields": {
+    "session_data": ".eJxVjMEOwiAQRP-FsyHSIgsevfcbyC4sUjWQlPZk_Hdp0oPeJvPezFt43Nbst8aLn6O4CiVOvx1heHLZQXxguVcZalmXmeSuyIM2OdXIr9vh_h1kbLmvMV1sIFYOcUw6OrCg-UzAgXpWFjXQoO0IDnDgnoAdY4rGRG1CGMXnC_qqOFg:1w8SE0:xgV-XAd0Uot0JEF3qGCOIDgpRp-VGIyylWFmAaMTo6U",
+    "expire_date": "2026-04-17T00:17:24.014Z"
+  }
+},
+{
+  "model": "core.proveedor",
+  "pk": 2,
+  "fields": {
+    "nombre": "Villa",
+    "telefono": "3004211908",
+    "direccion": "",
+    "activo": true
+  }
+},
+{
+  "model": "core.cliente",
+  "pk": 2,
+  "fields": {
+    "nombre": "Samuel",
+    "telefono": "3004211908",
+    "direccion": "",
+    "activo": true
+  }
+},
+{
+  "model": "core.producto",
+  "pk": 7,
+  "fields": {
+    "nombre": "Mandarina",
+    "tiene_descuento_gobierno": false,
+    "porcentaje_descuento": "0.00",
+    "activo": true
+  }
+},
+{
+  "model": "core.clasificacion",
+  "pk": 37,
+  "fields": {
+    "producto": 7,
+    "nombre": "Clasificación 1",
+    "orden": 1,
+    "activo": true,
+    "stock_kg": "20.00"
+  }
+},
+{
+  "model": "core.clasificacion",
+  "pk": 38,
+  "fields": {
+    "producto": 7,
+    "nombre": "Clasificación 2",
+    "orden": 2,
+    "activo": true,
+    "stock_kg": "50.00"
+  }
+},
+{
+  "model": "core.clasificacion",
+  "pk": 39,
+  "fields": {
+    "producto": 7,
+    "nombre": "Clasificación 3",
+    "orden": 3,
+    "activo": true,
+    "stock_kg": "100.00"
+  }
+},
+{
+  "model": "core.clasificacion",
+  "pk": 40,
+  "fields": {
+    "producto": 7,
+    "nombre": "Clasificación 4",
+    "orden": 4,
+    "activo": true,
+    "stock_kg": "30.00"
+  }
+},
+{
+  "model": "core.clasificacion",
+  "pk": 41,
+  "fields": {
+    "producto": 7,
+    "nombre": "Clasificación 5",
+    "orden": 5,
+    "activo": true,
+    "stock_kg": "50.00"
+  }
+},
+{
+  "model": "core.clasificacion",
+  "pk": 42,
+  "fields": {
+    "producto": 7,
+    "nombre": "Clasificación 6",
+    "orden": 6,
+    "activo": true,
+    "stock_kg": "200.00"
+  }
+},
+{
+  "model": "core.categoriagasto",
+  "pk": 1,
+  "fields": {
+    "nombre": "Pagos a Proveedores"
+  }
+},
+{
+  "model": "core.viaje",
+  "pk": 29,
+  "fields": {
+    "proveedor": 2,
+    "producto": 7,
+    "fecha": "2026-04-25",
+    "observaciones": "",
+    "kg_podridos": "120.00",
+    "precio_total_acordado": "10000000.00",
+    "created_at": "2026-04-25T22:02:22.123Z"
+  }
+},
+{
+  "model": "core.pesadaviaje",
+  "pk": 18,
+  "fields": {
+    "viaje": 29,
+    "num_canastillas_negras": 10,
+    "num_canastillas_colores": 10,
+    "kg_bruto": "200.00"
+  }
+},
+{
+  "model": "core.pesadaviaje",
+  "pk": 19,
+  "fields": {
+    "viaje": 29,
+    "num_canastillas_negras": 10,
+    "num_canastillas_colores": 20,
+    "kg_bruto": "500.00"
+  }
+},
+{
+  "model": "core.pesadaviaje",
+  "pk": 20,
+  "fields": {
+    "viaje": 29,
+    "num_canastillas_negras": 9,
+    "num_canastillas_colores": 7,
+    "kg_bruto": "300.00"
+  }
+},
+{
+  "model": "core.pesadaviaje",
+  "pk": 21,
+  "fields": {
+    "viaje": 29,
+    "num_canastillas_negras": 5,
+    "num_canastillas_colores": 2,
+    "kg_bruto": "150.00"
+  }
+},
+{
+  "model": "core.loteclasificacion",
+  "pk": 46,
+  "fields": {
+    "viaje": 29,
+    "clasificacion": 37,
+    "kg_neto": "100.00"
+  }
+},
+{
+  "model": "core.loteclasificacion",
+  "pk": 47,
+  "fields": {
+    "viaje": 29,
+    "clasificacion": 38,
+    "kg_neto": "100.00"
+  }
+},
+{
+  "model": "core.loteclasificacion",
+  "pk": 48,
+  "fields": {
+    "viaje": 29,
+    "clasificacion": 39,
+    "kg_neto": "100.00"
+  }
+},
+{
+  "model": "core.loteclasificacion",
+  "pk": 49,
+  "fields": {
+    "viaje": 29,
+    "clasificacion": 40,
+    "kg_neto": "100.00"
+  }
+},
+{
+  "model": "core.loteclasificacion",
+  "pk": 50,
+  "fields": {
+    "viaje": 29,
+    "clasificacion": 41,
+    "kg_neto": "200.00"
+  }
+},
+{
+  "model": "core.loteclasificacion",
+  "pk": 51,
+  "fields": {
+    "viaje": 29,
+    "clasificacion": 42,
+    "kg_neto": "280.00"
+  }
+},
+{
+  "model": "core.pagoproveedor",
+  "pk": 16,
+  "fields": {
+    "viaje": 29,
+    "monto": "2000000.00",
+    "medio_pago": "efectivo",
+    "fecha": "2026-04-25",
+    "observaciones": ""
+  }
+},
+{
+  "model": "core.gasto",
+  "pk": 10,
+  "fields": {
+    "categoria": 1,
+    "descripcion": "Pago a Villa - Mandarina",
+    "monto": "2000000.00",
+    "fecha": "2026-04-25",
+    "pago_proveedor": 16
+  }
+},
+{
+  "model": "core.weeklyinventory",
+  "pk": 1,
+  "fields": {
+    "week_start": "2026-04-20",
+    "initial_inventory_kg": "0.00",
+    "created_at": "2026-04-25T22:40:22.655Z",
+    "updated_at": "2026-04-25T22:40:22.656Z"
+  }
+},
+{
+  "model": "core.weeklyinventory",
+  "pk": 2,
+  "fields": {
+    "week_start": "2026-04-27",
+    "initial_inventory_kg": "880.00",
+    "created_at": "2026-04-28T00:23:12.737Z",
+    "updated_at": "2026-04-28T00:23:12.748Z"
+  }
+},
+{
+  "model": "core.ventaefectivo",
+  "pk": 1,
+  "fields": {
+    "fecha": "2026-03-21",
+    "cliente": null,
+    "descripcion": "mandarina",
+    "observaciones": ""
+  }
+},
+{
+  "model": "core.ventaefectivo",
+  "pk": 2,
+  "fields": {
+    "fecha": "2026-03-22",
+    "cliente": null,
+    "descripcion": "mandarina",
+    "observaciones": ""
+  }
+},
+{
+  "model": "core.ventaefectivo",
+  "pk": 8,
+  "fields": {
+    "fecha": "2026-04-24",
+    "cliente": 2,
+    "descripcion": "",
+    "observaciones": ""
+  }
+},
+{
+  "model": "core.ventaefectivo",
+  "pk": 9,
+  "fields": {
+    "fecha": "2026-04-24",
+    "cliente": 2,
+    "descripcion": "",
+    "observaciones": ""
+  }
+},
+{
+  "model": "core.ventaefectivo",
+  "pk": 13,
+  "fields": {
+    "fecha": "2026-04-24",
+    "cliente": 2,
+    "descripcion": "",
+    "observaciones": ""
+  }
+},
+{
+  "model": "core.ventaefectivo",
+  "pk": 14,
+  "fields": {
+    "fecha": "2026-04-25",
+    "cliente": 2,
+    "descripcion": "",
+    "observaciones": ""
+  }
+},
+{
+  "model": "core.ventaefectivo",
+  "pk": 15,
+  "fields": {
+    "fecha": "2026-04-25",
+    "cliente": 2,
+    "descripcion": "",
+    "observaciones": ""
+  }
+},
+{
+  "model": "core.ventaefectivo",
+  "pk": 16,
+  "fields": {
+    "fecha": "2026-04-25",
+    "cliente": 2,
+    "descripcion": "",
+    "observaciones": ""
+  }
+},
+{
+  "model": "core.ventaefectivo",
+  "pk": 18,
+  "fields": {
+    "fecha": "2026-04-25",
+    "cliente": 2,
+    "descripcion": "",
+    "observaciones": ""
+  }
+},
+{
+  "model": "core.ventaefectivo",
+  "pk": 19,
+  "fields": {
+    "fecha": "2026-04-25",
+    "cliente": 2,
+    "descripcion": "",
+    "observaciones": ""
+  }
+},
+{
+  "model": "core.ventaefectivo",
+  "pk": 20,
+  "fields": {
+    "fecha": "2026-04-25",
+    "cliente": 2,
+    "descripcion": "",
+    "observaciones": ""
+  }
+},
+{
+  "model": "core.ventaefectivo",
+  "pk": 21,
+  "fields": {
+    "fecha": "2026-04-25",
+    "cliente": 2,
+    "descripcion": "",
+    "observaciones": ""
+  }
+},
+{
+  "model": "core.ventaefectivo",
+  "pk": 22,
+  "fields": {
+    "fecha": "2026-05-01",
+    "cliente": 2,
+    "descripcion": "",
+    "observaciones": ""
+  }
+},
+{
+  "model": "core.detalleventaefectivo",
+  "pk": 11,
+  "fields": {
+    "venta": 20,
+    "clasificacion": 39,
+    "kg_vendido": "20.00",
+    "precio_por_kg": "4000.00"
+  }
+},
+{
+  "model": "core.detalleventaefectivo",
+  "pk": 12,
+  "fields": {
+    "venta": 19,
+    "clasificacion": 38,
+    "kg_vendido": "50.00",
+    "precio_por_kg": "6000.00"
+  }
+},
+{
+  "model": "core.detalleventaefectivo",
+  "pk": 13,
+  "fields": {
+    "venta": 20,
+    "clasificacion": 41,
+    "kg_vendido": "100.00",
+    "precio_por_kg": "3500.00"
+  }
+},
+{
+  "model": "core.detalleventaefectivo",
+  "pk": 14,
+  "fields": {
+    "venta": 20,
+    "clasificacion": 42,
+    "kg_vendido": "80.00",
+    "precio_por_kg": "1000.00"
+  }
+},
+{
+  "model": "core.detalleventaefectivo",
+  "pk": 15,
+  "fields": {
+    "venta": 21,
+    "clasificacion": 37,
+    "kg_vendido": "50.00",
+    "precio_por_kg": "4000.00"
+  }
+},
+{
+  "model": "core.detalleventaefectivo",
+  "pk": 16,
+  "fields": {
+    "venta": 21,
+    "clasificacion": 40,
+    "kg_vendido": "70.00",
+    "precio_por_kg": "5000.00"
+  }
+},
+{
+  "model": "core.ventacredito",
+  "pk": 10,
+  "fields": {
+    "cliente": 2,
+    "producto": null,
+    "fecha": "2026-04-26",
+    "fecha_vencimiento": "2026-04-30",
+    "observaciones": "",
+    "created_at": "2026-04-27T02:01:44.201Z"
+  }
+},
+{
+  "model": "core.ventacredito",
+  "pk": 11,
+  "fields": {
+    "cliente": 2,
+    "producto": null,
+    "fecha": "2026-04-27",
+    "fecha_vencimiento": "2026-04-27",
+    "observaciones": "",
+    "created_at": "2026-04-28T00:24:21.038Z"
+  }
+},
+{
+  "model": "core.detalleventacredito",
+  "pk": 14,
+  "fields": {
+    "venta": 10,
+    "clasificacion": 41,
+    "kg_vendido": "50.00",
+    "precio_por_kg": "100.00"
+  }
+},
+{
+  "model": "core.detalleventacredito",
+  "pk": 15,
+  "fields": {
+    "venta": 10,
+    "clasificacion": 39,
+    "kg_vendido": "30.00",
+    "precio_por_kg": "2500.00"
+  }
+},
+{
+  "model": "core.detalleventacredito",
+  "pk": 16,
+  "fields": {
+    "venta": 11,
+    "clasificacion": 37,
+    "kg_vendido": "30.00",
+    "precio_por_kg": "2500.00"
+  }
+},
+{
+  "model": "core.pagoventacredito",
+  "pk": 11,
+  "fields": {
+    "venta": 10,
+    "monto": "5000.00",
+    "medio_pago": "efectivo",
+    "fecha": "2026-04-26",
+    "observaciones": ""
+  }
+},
+{
+  "model": "core.pagoventacredito",
+  "pk": 12,
+  "fields": {
+    "venta": 10,
+    "monto": "5000.00",
+    "medio_pago": "efectivo",
+    "fecha": "2026-04-26",
+    "observaciones": ""
+  }
+},
+{
+  "model": "core.pagoventacredito",
+  "pk": 13,
+  "fields": {
+    "venta": 11,
+    "monto": "50000.00",
+    "medio_pago": "efectivo",
+    "fecha": "2026-04-27",
+    "observaciones": ""
+  }
+},
+{
+  "model": "core.pagoventacredito",
+  "pk": 14,
+  "fields": {
+    "venta": 11,
+    "monto": "25000.00",
+    "medio_pago": "efectivo",
+    "fecha": "2026-05-01",
+    "observaciones": ""
+  }
+},
+{
+  "model": "core.pagoventacredito",
+  "pk": 15,
+  "fields": {
+    "venta": 10,
+    "monto": "50000.00",
+    "medio_pago": "efectivo",
+    "fecha": "2026-05-01",
+    "observaciones": ""
+  }
+},
+{
+  "model": "core.pagoventacredito",
+  "pk": 16,
+  "fields": {
+    "venta": 10,
+    "monto": "2000.00",
+    "medio_pago": "efectivo",
+    "fecha": "2026-05-01",
+    "observaciones": ""
+  }
+},
+{
+  "model": "core.pagoventacredito",
+  "pk": 17,
+  "fields": {
+    "venta": 10,
+    "monto": "18000.00",
+    "medio_pago": "efectivo",
+    "fecha": "2026-05-01",
+    "observaciones": ""
+  }
+}
+]
