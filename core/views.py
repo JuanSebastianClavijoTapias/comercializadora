@@ -720,12 +720,11 @@ def viaje_create(request):
     form = ViajeForm(request.POST or None)
     if form.is_valid():
         viaje = form.save(commit=False)
-        # Primer producto seleccionado va al FK para compatibilidad
         selected = form.cleaned_data['productos']
         if selected:
             viaje.producto = selected[0]
         viaje.save()
-        form.save_m2m()
+        viaje.productos.set(form.cleaned_data['productos'])
         messages.success(request, 'Viaje registrado. Ahora ingrese las pesadas del viaje.')
         return redirect('viaje_detail', pk=viaje.pk)
     return render(request, 'core/genericos/form_generic.html', {'form': form, 'titulo': 'Registrar Nuevo Viaje', 'back_url': 'viaje_list'})
