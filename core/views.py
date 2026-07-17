@@ -734,7 +734,7 @@ def viaje_detail(request, pk):
     from decimal import Decimal, InvalidOperation
     viaje = get_object_or_404(Viaje, pk=pk)
     lotes = viaje.lotes.select_related('clasificacion').all()
-    pesadas = viaje.pesadas.select_related('clasificacion').all()
+    pesadas = viaje.pesadas.select_related('clasificacion__producto').all()
 
     # Clasificaciones de todos los productos seleccionados en el viaje
     productos_ids = list(viaje.productos.values_list('pk', flat=True))

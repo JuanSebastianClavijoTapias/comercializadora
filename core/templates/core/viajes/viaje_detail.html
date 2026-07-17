@@ -89,7 +89,7 @@
                 <td class="text-muted small">{{ forloop.counter }}</td>
                 <td>
                   {% if p.clasificacion %}
-                    <span class="badge bg-info text-dark">{{ p.clasificacion.nombre }}</span>
+                    <span class="badge bg-info text-dark">{{ p.clasificacion.producto.nombre }} - {{ p.clasificacion.nombre|abr_clasif }}</span>
                   {% else %}
                     <span class="text-muted">-</span>
                   {% endif %}
@@ -392,7 +392,7 @@
               {% for d in desglose_clasificaciones %}
               <tr>
                 <td class="fw-medium">
-                  <span class="badge bg-info text-dark">{{ d.clasificacion.nombre }}</span>
+                  <span class="badge bg-info text-dark">{{ d.clasificacion.producto.nombre }} - {{ d.clasificacion.nombre|abr_clasif }}</span>
                 </td>
                 <td class="text-end fw-bold text-success">{{ d.kg_neto|floatformat:2 }} kg</td>
                 <td class="text-end text-danger">{% if d.desecho_kg > 0 %}-{{ d.desecho_kg|floatformat:2 }} kg{% else %}-{% endif %}</td>
@@ -440,7 +440,7 @@
             {% for d in desglose_clasificaciones %}
             <tr>
               <td class="fw-medium align-middle">
-                <span class="badge bg-info text-dark">{{ d.clasificacion.nombre }}</span>
+                <span class="badge bg-info text-dark">{{ d.clasificacion.producto.nombre }} - {{ d.clasificacion.nombre|abr_clasif }}</span>
                 <span class="text-muted small ms-1">({{ d.kg_neto_final|floatformat:0 }} kg neto)</span>
               </td>
               <td>
