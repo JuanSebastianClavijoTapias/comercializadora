@@ -1,4 +1,5 @@
 from django import template
+import re
 
 register = template.Library()
 
@@ -11,3 +12,9 @@ def cop(value):
         return f"{n:,}".replace(",", ".")
     except (ValueError, TypeError):
         return value
+
+
+@register.filter
+def abr_clasif(value):
+    """Abrevia 'Clasificación X' → 'C. X'"""
+    return re.sub(r'^[Cc]lasificaci[oó]n\s*', 'C. ', str(value))
