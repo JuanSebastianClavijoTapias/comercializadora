@@ -178,7 +178,7 @@
                       <select name="clasificacion_0" class="form-select form-select-sm">
                         <option value="">-- Seleccionar --</option>
                         {% for c in clasificaciones %}
-                        <option value="{{ c.pk }}">{{ c.producto.nombre }} - {{ c.nombre|abr_clasif }}</option>
+                        <option value="{{ c.pk }}">{{ c.producto.nombre }} - {{ c.nombre|abr_clasif }} ({{ c.stock_kg|floatformat:0 }} kg)</option>
                         {% endfor %}
                       </select>
                     </div>
