@@ -18,12 +18,29 @@
           {% csrf_token %}
           <div class="row g-3">
           {% for field in form %}
+            {% if field.field.widget.input_type == 'checkbox' %}
+            <div class="col-12">
+              <label class="form-label form-control-sm text-uppercase fw-semibold mb-2" style="color: var(--text-sec); letter-spacing: 0.5px;">{{ field.label }}</label>
+              <div class="row g-2">
+                {% for choice in field %}
+                <div class="col-12 col-md-6 col-lg-4">
+                  <div class="form-check">
+                    {{ choice.tag }}
+                    <label class="form-check-label" for="{{ choice.id_for_label }}">{{ choice.choice_label }}</label>
+                  </div>
+                </div>
+                {% endfor %}
+              </div>
+              {% if field.errors %}<div class="text-danger small mt-1 py-1 px-2 bg-danger bg-opacity-10 rounded">{{ field.errors }}</div>{% endif %}
+            </div>
+            {% else %}
             <div class="col-12 {% if field.field.widget.input_type == 'select' %}col-md-6{% endif %}">
               <label class="form-label form-control-sm text-uppercase fw-semibold mb-1" style="color: var(--text-sec); letter-spacing: 0.5px;">{{ field.label }}</label>
               {{ field }}
               {% if field.errors %}<div class="text-danger small mt-1 py-1 px-2 bg-danger bg-opacity-10 rounded">{{ field.errors }}</div>{% endif %}
               {% if field.help_text %}<div class="form-text mt-1 text-muted"><small>{{ field.help_text }}</small></div>{% endif %}
             </div>
+            {% endif %}
           {% endfor %}
           </div>
 
