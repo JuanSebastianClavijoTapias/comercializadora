@@ -752,13 +752,22 @@ def viaje_detail(request, pk):
 
     # Desglose de kg_neto por clasificacion (calculado desde las pesadas)
     kg_por_clasificacion = {}
+    negras_por_clasificacion = {}
+    colores_por_clasificacion = {}
     total_neto_clasificado = Decimal('0')
     for p in pesadas:
-        if p.clasificacion_id is not None and p.kg_neto is not None:
-            kg_por_clasificacion[p.clasificacion_id] = (
-                kg_por_clasificacion.get(p.clasificacion_id, Decimal('0')) + p.kg_neto
+        if p.clasificacion_id is not None:
+            if p.kg_neto is not None:
+                kg_por_clasificacion[p.clasificacion_id] = (
+                    kg_por_clasificacion.get(p.clasificacion_id, Decimal('0')) + p.kg_neto
+                )
+                total_neto_clasificado += p.kg_neto
+            negras_por_clasificacion[p.clasificacion_id] = (
+                negras_por_clasificacion.get(p.clasificacion_id, 0) + (p.num_canastillas_negras or 0)
             )
-            total_neto_clasificado += p.kg_neto
+            colores_por_clasificacion[p.clasificacion_id] = (
+                colores_por_clasificacion.get(p.clasificacion_id, 0) + (p.num_canastillas_colores or 0)
+            )
 
     pagos = viaje.pagos_proveedor.all()
     pago_form = PagoProveedorForm()
@@ -825,6 +834,10 @@ def viaje_detail(request, pk):
                 'kg_neto': kg,
                 'desecho_kg': d_kg,
                 'kg_neto_final': kg - d_kg,
+                'can_negras': negras_por_clasificacion.get(c.id, 0),
+                'can_colores': colores_por_clasificacion.get(c.id, 0),
+                'kg_can_negras': negras_por_clasificacion.get(c.id, 0) * Decimal('1.6'),
+                'kg_can_colores': colores_por_clasificacion.get(c.id, 0) * Decimal('2.2'),
             })
 
     ctx = {
