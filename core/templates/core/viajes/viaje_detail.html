@@ -85,14 +85,8 @@
             </thead>
             <tbody id="pesadas_tbody">
               {% for p in pesadas %}
-              <tr class="pesada-page-row">
-                <td>
-                  <a href="{% url 'pesada_edit' p.pk %}"
-                     class="btn btn-sm btn-outline-secondary"
-                     title="Editar pesada">
-                    <i class="bi bi-pencil"></i>
-                  </a>
-                </td>
+              <tr class="pesada-page-row" data-pesada-id="{{ p.pk }}">
+                <td class="text-muted small">{{ forloop.counter }}</td>
                 <td>
                   {% if p.clasificacion %}
                     <span class="badge bg-info text-dark">{{ p.clasificacion.producto.nombre }} - {{ p.clasificacion.nombre|abr_clasif }}</span>
@@ -100,21 +94,9 @@
                     <span class="text-muted">-</span>
                   {% endif %}
                 </td>
-                <td class="fw-semibold text-orange">{{ p.kg_bruto|floatformat:2 }} kg</td>
-                <td class="fw-bold">
-                  {% if p.num_canastillas_negras %}
-                    {{ p.num_canastillas_negras }}
-                  {% else %}
-                    <span class="text-muted">-</span>
-                  {% endif %}
-                </td>
-                <td class="fw-bold">
-                  {% if p.num_canastillas_colores %}
-                    {{ p.num_canastillas_colores }}
-                  {% else %}
-                    <span class="text-muted">-</span>
-                  {% endif %}
-                </td>
+                <td><input type="number" min="0" step="0.01" class="form-control form-control-sm editable-pesada" data-field="kg_bruto" value="{{ p.kg_bruto|floatformat:2 }}" style="width:80px;"></td>
+                <td><input type="number" min="0" class="form-control form-control-sm editable-pesada" data-field="num_canastillas_negras" value="{{ p.num_canastillas_negras|default:0 }}" style="width:55px;"></td>
+                <td><input type="number" min="0" class="form-control form-control-sm editable-pesada" data-field="num_canastillas_colores" value="{{ p.num_canastillas_colores|default:0 }}" style="width:55px;"></td>
                 <td class="text-danger fw-semibold">
                   {% if p.kg_podridos or p.desecho_kg %}
                     -{{ p.kg_podridos|default:0|add:p.desecho_kg|floatformat:2 }} kg
@@ -122,8 +104,8 @@
                     <span class="text-muted">-</span>
                   {% endif %}
                 </td>
-                <td class="text-danger small">-{{ p.peso_canastillas|floatformat:2 }} kg</td>
-                <td class="fw-bold text-success">{{ p.kg_neto|floatformat:2 }} kg</td>
+                <td class="text-danger small peso-celda">-{{ p.peso_canastillas|floatformat:2 }} kg</td>
+                <td class="fw-bold text-success neto-celda">{{ p.kg_neto|floatformat:2 }} kg</td>
                 <td>
                   <a href="{% url 'pesada_delete' p.pk %}"
                      class="btn btn-sm btn-outline-danger"
@@ -136,7 +118,7 @@
             </tbody>
             <tfoot>
               <tr>
-                <th></th>
+                <th class="text-end">Tot.:</th>
                 <th></th>
                 <th class="text-orange">{{ kg_bruto_total|floatformat:2 }} kg</th>
                 <th>{{ cant_neg }}</th>
@@ -356,6 +338,54 @@
           });
 
           showPage(1);
+        })();
+        </script>
+
+        <script>
+        // Auto-guardado de campos editables en tabla de pesadas
+        (function() {
+          function calcPesoCan(n, c) { return (n * 1.6 + c * 2.2); }
+          function calcKgNeto(b, p) { return Math.max(0, b - p); }
+
+          function actualizarCeldas(tr) {
+            var bruto = parseFloat(tr.querySelector('[data-field="kg_bruto"]').value) || 0;
+            var negras = parseInt(tr.querySelector('[data-field="num_canastillas_negras"]').value) || 0;
+            var colores = parseInt(tr.querySelector('[data-field="num_canastillas_colores"]').value) || 0;
+            var pc = calcPesoCan(negras, colores);
+            var kn = calcKgNeto(bruto, pc);
+            var pcEl = tr.querySelector('.peso-celda');
+            var knEl = tr.querySelector('.neto-celda');
+            if (pcEl) pcEl.textContent = '-' + pc.toFixed(2) + ' kg';
+            if (knEl) knEl.textContent = kn.toFixed(2) + ' kg';
+          }
+
+          var timeouts = {};
+          document.querySelectorAll('.editable-pesada').forEach(function(inp) {
+            inp.addEventListener('input', function() {
+              actualizarCeldas(this.closest('tr'));
+            });
+            inp.addEventListener('change', function() {
+              var tr = this.closest('tr');
+              var pid = tr.getAttribute('data-pesada-id');
+              var fd = new FormData();
+              fd.append('field', this.getAttribute('data-field'));
+              fd.append('value', this.value);
+              fd.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+              clearTimeout(timeouts[pid]);
+              timeouts[pid] = setTimeout(function() {
+                fetch('/pesadas/' + pid + '/update-field/', {method:'POST', body:fd})
+                  .then(function(r){return r.json()})
+                  .then(function(d){
+                    if (d.ok) {
+                      var pcEl = tr.querySelector('.peso-celda');
+                      var knEl = tr.querySelector('.neto-celda');
+                      if (pcEl) pcEl.textContent = '-' + d.peso_canastillas.toFixed(2) + ' kg';
+                      if (knEl) knEl.textContent = d.kg_neto.toFixed(2) + ' kg';
+                    }
+                  });
+              }, 400);
+            });
+          });
         })();
         </script>
 

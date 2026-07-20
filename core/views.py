@@ -936,6 +936,35 @@ def pesada_edit(request, pk):
 
 
 @login_required
+def pesada_update_field(request, pk):
+    """AJAX: actualiza un campo editable de la pesada (kg_bruto, canastillas)."""
+    pesada = get_object_or_404(PesadaViaje, pk=pk)
+    field = request.POST.get('field', '')
+    value = request.POST.get('value', '')
+
+    allowed = {'kg_bruto', 'num_canastillas_negras', 'num_canastillas_colores'}
+    if field not in allowed:
+        return JsonResponse({'ok': False, 'error': 'Campo no permitido'}, status=400)
+
+    try:
+        if field == 'kg_bruto':
+            pesada.kg_bruto = Decimal(value) if value else Decimal('0')
+        else:
+            pesada.__setattr__(field, int(value) if value else 0)
+        pesada.save(update_fields=[field])
+    except (ValueError, InvalidOperation) as e:
+        return JsonResponse({'ok': False, 'error': str(e)}, status=400)
+
+    pesada.refresh_from_db()
+    return JsonResponse({
+        'ok': True,
+        'kg_bruto': float(pesada.kg_bruto),
+        'peso_canastillas': float(pesada.peso_canastillas),
+        'kg_neto': float(pesada.kg_neto),
+    })
+
+
+@login_required
 def viaje_pago_add(request, pk):
     """
     Registra un pago al proveedor y automáticamente crea un gasto correspondiente.
