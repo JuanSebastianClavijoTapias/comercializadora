@@ -72,7 +72,7 @@
           <table class="table table-hover mb-0" style="font-size:0.87rem;">
             <thead>
               <tr>
-                <th>#</th>
+                <th></th>
                 <th>Clasificación</th>
                 <th>Kg Bruto</th>
                 <th><span class="badge" style="background:#333;">Negras</span></th>
@@ -86,13 +86,12 @@
             <tbody id="pesadas_tbody">
               {% for p in pesadas %}
               <tr class="pesada-page-row">
-                <td class="text-muted small">
+                <td>
                   <a href="{% url 'pesada_edit' p.pk %}"
-                     class="btn btn-sm btn-outline-secondary me-1"
+                     class="btn btn-sm btn-outline-secondary"
                      title="Editar pesada">
                     <i class="bi bi-pencil"></i>
                   </a>
-                  {{ forloop.counter }}
                 </td>
                 <td>
                   {% if p.clasificacion %}
@@ -137,7 +136,7 @@
             </tbody>
             <tfoot>
               <tr>
-                <th class="text-end">Tot.:</th>
+                <th></th>
                 <th></th>
                 <th class="text-orange">{{ kg_bruto_total|floatformat:2 }} kg</th>
                 <th>{{ cant_neg }}</th>
