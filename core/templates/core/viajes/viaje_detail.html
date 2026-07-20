@@ -94,9 +94,9 @@
                     <span class="text-muted">-</span>
                   {% endif %}
                 </td>
-                <td><input type="number" min="0" step="0.01" class="form-control form-control-sm editable-pesada fw-semibold" data-field="kg_bruto" value="{{ p.kg_bruto|floatformat:2 }}" style="width:100%;min-width:90px;color:#E65100;"></td>
-                <td><input type="number" min="0" class="form-control form-control-sm editable-pesada fw-bold" data-field="num_canastillas_negras" value="{{ p.num_canastillas_negras|default:0 }}" style="width:100%;min-width:60px;"></td>
-                <td><input type="number" min="0" class="form-control form-control-sm editable-pesada fw-bold" data-field="num_canastillas_colores" value="{{ p.num_canastillas_colores|default:0 }}" style="width:100%;min-width:60px;"></td>
+                <td style="min-width:85px;"><input type="number" min="0" step="0.01" class="form-control form-control-sm editable-pesada fw-semibold" data-field="kg_bruto" value="{{ p.kg_bruto|floatformat:2 }}" style="width:100%;color:#E65100;"></td>
+                <td style="min-width:55px;"><input type="number" min="0" class="form-control form-control-sm editable-pesada fw-bold" data-field="num_canastillas_negras" value="{{ p.num_canastillas_negras|default:0 }}" style="width:100%;"></td>
+                <td style="min-width:55px;"><input type="number" min="0" class="form-control form-control-sm editable-pesada fw-bold" data-field="num_canastillas_colores" value="{{ p.num_canastillas_colores|default:0 }}" style="width:100%;"></td>
                 <td class="text-danger fw-semibold">
                   {% if p.kg_podridos or p.desecho_kg %}
                     -{{ p.kg_podridos|default:0|add:p.desecho_kg|floatformat:2 }} kg
@@ -105,7 +105,7 @@
                   {% endif %}
                 </td>
                 <td class="text-danger small peso-celda">-{{ p.peso_canastillas|floatformat:2 }} kg</td>
-                <td class="fw-bold text-success neto-celda">{{ p.kg_neto|floatformat:2 }} kg</td>
+                <td class="fw-bold text-success neto-celda" style="min-width:70px;">{{ p.kg_neto|floatformat:2 }} kg</td>
                 <td>
                   <a href="{% url 'pesada_delete' p.pk %}"
                      class="btn btn-sm btn-outline-danger"
