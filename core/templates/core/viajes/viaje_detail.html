@@ -94,9 +94,9 @@
                     <span class="text-muted">-</span>
                   {% endif %}
                 </td>
-                <td style="min-width:110px;"><input type="number" min="0" step="0.01" class="editable-pesada fw-semibold" data-field="kg_bruto" value="{{ p.kg_bruto|stringformat:'.2f' }}" style="width:100%;border:1px solid #ddd;border-radius:4px;padding:4px 6px;font-size:0.85rem;color:#E65100;"></td>
-                <td style="min-width:65px;"><input type="number" min="0" class="editable-pesada fw-bold" data-field="num_canastillas_negras" value="{{ p.num_canastillas_negras|default:0 }}" style="width:100%;border:1px solid #ddd;border-radius:4px;padding:4px 6px;font-size:0.85rem;"></td>
-                <td style="min-width:65px;"><input type="number" min="0" class="editable-pesada fw-bold" data-field="num_canastillas_colores" value="{{ p.num_canastillas_colores|default:0 }}" style="width:100%;border:1px solid #ddd;border-radius:4px;padding:4px 6px;font-size:0.85rem;"></td>
+                <td style="min-width:150px;"><input type="number" min="0" step="0.01" class="editable-pesada fw-semibold" data-field="kg_bruto" value="{{ p.kg_bruto|stringformat:'.2f' }}" style="width:100%;border:1px solid #ddd;border-radius:4px;padding:4px 6px;font-size:0.85rem;color:#E65100;"></td>
+                <td style="min-width:75px;"><input type="number" min="0" class="editable-pesada fw-bold" data-field="num_canastillas_negras" value="{{ p.num_canastillas_negras|default:0 }}" style="width:100%;border:1px solid #ddd;border-radius:4px;padding:4px 6px;font-size:0.85rem;"></td>
+                <td style="min-width:75px;"><input type="number" min="0" class="editable-pesada fw-bold" data-field="num_canastillas_colores" value="{{ p.num_canastillas_colores|default:0 }}" style="width:100%;border:1px solid #ddd;border-radius:4px;padding:4px 6px;font-size:0.85rem;"></td>
                 <td class="text-danger fw-semibold">
                   {% if p.kg_podridos or p.desecho_kg %}
                     -{{ p.kg_podridos|default:0|add:p.desecho_kg|floatformat:2 }} kg
