@@ -718,7 +718,7 @@
 
   // Paginación del desglose en Resumen de Kg Neto
   (function() {
-    var dsPageSize = 3;
+    var dsPageSize = 4;
     var dsRows = document.querySelectorAll('#desglose_container .desglose-page-row');
     if (!dsRows.length || dsRows.length <= dsPageSize) return;
     var dsTotal = Math.ceil(dsRows.length / dsPageSize), dsCurrent = 1;
