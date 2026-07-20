@@ -389,6 +389,34 @@
         })();
         </script>
 
+        <script>
+        // Paginación del desglose en Resumen de Kg Neto
+        (function() {
+          var dsPageSize = 3;
+          var dsCurrent = 1, dsTotal = 1;
+          var dsRows = document.querySelectorAll('#desglose_container .desglose-page-row');
+          if (dsRows.length <= dsPageSize) return;
+          dsTotal = Math.ceil(dsRows.length / dsPageSize);
+          var dsPag = document.getElementById('desglose_pagination');
+          if (!dsPag) return;
+          dsPag.style.display = 'flex';
+
+          function dsShow(p) {
+            dsCurrent = Math.max(1, Math.min(p, dsTotal));
+            dsRows.forEach(function(r, i) {
+              r.style.display = (i >= (dsCurrent-1)*dsPageSize && i < dsCurrent*dsPageSize) ? '' : 'none';
+            });
+            document.getElementById('desglose_current').textContent = dsCurrent;
+            document.getElementById('desglose_total').textContent = dsTotal;
+            document.getElementById('btn_desglose_prev').disabled = dsCurrent === 1;
+            document.getElementById('btn_desglose_next').disabled = dsCurrent === dsTotal;
+          }
+          document.getElementById('btn_desglose_prev').addEventListener('click', function(){dsShow(dsCurrent-1)});
+          document.getElementById('btn_desglose_next').addEventListener('click', function(){dsShow(dsCurrent+1)});
+          dsShow(1);
+        })();
+        </script>
+
       </div>
     </div>
   </div>
@@ -436,8 +464,9 @@
           {% if desglose_clasificaciones %}
           <div class="mt-2 pt-2 border-top" style="border-color:rgba(255,255,255,0.25);">
             <div class="small fw-semibold mb-2" style="opacity:0.85;">Desglose por clasificación:</div>
+            <div id="desglose_container">
             {% for d in desglose_clasificaciones %}
-            <div class="mb-2" style="font-size:0.82rem;">
+            <div class="mb-2 desglose-page-row" style="font-size:0.82rem;">
               <div class="fw-semibold mb-1">{{ d.clasificacion.producto.nombre }} - {{ d.clasificacion.nombre|abr_clasif }}</div>
               <div class="ps-2" style="border-left:2px solid rgba(255,255,255,0.3);">
                 {% if d.can_negras %}
@@ -465,6 +494,18 @@
               </div>
             </div>
             {% endfor %}
+            </div>
+            <div id="desglose_pagination" class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top" style="display:none;font-size:0.75rem;border-color:rgba(255,255,255,0.2);">
+              <button type="button" class="btn btn-sm btn-outline-light" id="btn_desglose_prev" style="font-size:0.7rem;">
+                <i class="bi bi-chevron-left"></i>
+              </button>
+              <span class="small" style="opacity:0.8;">
+                <span id="desglose_current">1</span>/<span id="desglose_total">1</span>
+              </span>
+              <button type="button" class="btn btn-sm btn-outline-light" id="btn_desglose_next" style="font-size:0.7rem;">
+                <i class="bi bi-chevron-right"></i>
+              </button>
+            </div>
           </div>
           {% endif %}
         </div>
