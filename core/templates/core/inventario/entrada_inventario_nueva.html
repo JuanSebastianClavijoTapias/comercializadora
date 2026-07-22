@@ -62,7 +62,7 @@
               </tr>
             </thead>
             <tbody id="pesadas_rows">
-              <tr class="pesada-row">
+              <tr class="pesada-row pesada-page-row">
                 <td class="ps-2 text-muted small row-num">1</td>
                 <td>
                   <select name="clasificacion_0" class="form-select form-select-sm input-clasif" required>
@@ -86,6 +86,18 @@
               </tr>
             </tfoot>
           </table>
+        </div>
+        <div id="pesadas_pagination" class="d-flex justify-content-between align-items-center px-3 py-2 border-top" style="display:none;font-size:0.85rem;">
+          <button type="button" class="btn btn-sm btn-outline-secondary" id="btn_prev_page">
+            <i class="bi bi-chevron-left"></i> Anterior
+          </button>
+          <span class="text-muted small">
+            Página <span id="page_current">1</span> de <span id="page_total">1</span>
+            &nbsp;(<span id="page_total_rows">0</span> pesadas)
+          </span>
+          <button type="button" class="btn btn-sm btn-outline-secondary" id="btn_next_page">
+            Siguiente <i class="bi bi-chevron-right"></i>
+          </button>
         </div>
       </div>
     </div>
@@ -311,7 +323,7 @@
   function buildRow(i) {
     const opts = CLASIF_OPTIONS.map(o => '<option value="' + o.pk + '">' + o.label + '</option>').join('');
     const tr = document.createElement('tr');
-    tr.className = 'pesada-row';
+    tr.className = 'pesada-row pesada-page-row';
     tr.innerHTML =
       '<td class="ps-2 text-muted small row-num">' + (tbody.querySelectorAll('.pesada-row').length + 1) + '</td>' +
       '<td><select name="clasificacion_' + i + '" class="form-select form-select-sm input-clasif" required><option value="">--</option>' + opts + '</select></td>' +
@@ -426,6 +438,40 @@
 
   updateRemoveButtons();
   recalcAll();
+
+  // Paginación
+  (function() {
+    var pageSize = 5;
+    var currentPage = 1, totalPages = 1;
+
+    function doPagination() {
+      var rows = tbody.querySelectorAll('.pesada-page-row');
+      var totalRows = rows.length;
+      var pagDiv = document.getElementById('pesadas_pagination');
+      if (totalRows <= pageSize) { if (pagDiv) pagDiv.style.display = 'none'; return; }
+      totalPages = Math.ceil(totalRows / pageSize);
+      if (pagDiv) { pagDiv.style.display = 'flex'; }
+      document.getElementById('page_total_rows').textContent = totalRows;
+
+      function showPage(page) {
+        currentPage = Math.max(1, Math.min(page, totalPages));
+        rows.forEach(function(row, i) {
+          row.style.display = (i >= (currentPage-1)*pageSize && i < currentPage*pageSize) ? '' : 'none';
+        });
+        document.getElementById('page_current').textContent = currentPage;
+        document.getElementById('page_total').textContent = totalPages;
+        document.getElementById('btn_prev_page').disabled = currentPage === 1;
+        document.getElementById('btn_next_page').disabled = currentPage === totalPages;
+      }
+
+      document.getElementById('btn_prev_page').onclick = function(){ showPage(currentPage-1); };
+      document.getElementById('btn_next_page').onclick = function(){ showPage(currentPage+1); };
+      showPage(1);
+    }
+
+    doPagination();
+    new MutationObserver(function(){ doPagination(); }).observe(tbody, { childList: true });
+  })();
 })();
 </script>
 {% endblock %}

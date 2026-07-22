@@ -299,6 +299,21 @@
       </div>
     </button>
   </div>
+
+  <div class="col">
+    <button type="button" class="stat-card-white weekly-card-trigger h-100" data-bs-toggle="modal" data-bs-target="#modalProveedores" style="background: linear-gradient(135deg, #37474F 0%, #212121 100%);">
+      <div class="d-flex justify-content-between align-items-start gap-3">
+        <div>
+          <div class="small fw-semibold" style="color: white;">Proveedores</div>
+          <div class="fs-4 fw-bold" style="color: white;">{{ resumen_proveedores|length }}</div>
+          <div class="small" style="color: rgba(255,255,255,0.9);">{{ total_compras_semana|cop }} COP</div>
+        </div>
+        <div class="stat-icon-wrapper" style="background: rgba(255,255,255,0.25); color: white;">
+          <i class="bi bi-shop"></i>
+        </div>
+      </div>
+    </button>
+  </div>
 </div>
 
 <div class="row g-4 mb-4">
@@ -1229,6 +1244,48 @@
               </tr>
               {% empty %}
               <tr><td colspan="2" class="text-center text-muted py-4">No hay desechos locales en esta semana.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Proveedores -->
+<div class="modal fade" id="modalProveedores" tabindex="-1" aria-labelledby="modalProveedoresLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header" style="background: linear-gradient(135deg, #37474F 0%, #212121 100%); color: white;">
+        <h5 class="modal-title" id="modalProveedoresLabel">Resumen por Proveedor</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <div class="d-flex justify-content-between align-items-center modal-summary-pill mb-3">
+          <div>
+            <div class="small text-muted">Total ingresado</div>
+            <div class="fs-5 fw-bold" style="color: #37474F;">{{ total_compras_semana|cop }} COP</div>
+          </div>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead>
+              <tr>
+                <th>Proveedor</th>
+                <th class="text-end">Kg Neto</th>
+                <th class="text-end">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for p in resumen_proveedores %}
+              <tr>
+                <td class="fw-semibold">{{ p.proveedor }}</td>
+                <td class="text-end">{{ p.kg|floatformat:2 }} kg</td>
+                <td class="text-end fw-semibold">${{ p.total|floatformat:0|cop }}</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="3" class="text-center text-muted py-4">No hay entradas registradas en esta semana.</td></tr>
               {% endfor %}
             </tbody>
           </table>

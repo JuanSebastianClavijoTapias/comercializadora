@@ -81,7 +81,6 @@ def get_week_inventory_data(fecha):
 
 def get_current_week_inventory_data():
     """Obtiene los datos de inventario inicial y total para la semana actual
-    
     Lógica de reset de lunes:
     - Cada lunes, el inventario inicial = total de inventario del domingo anterior
     - El total de inventario = inicial + compras de esta semana
@@ -1698,6 +1697,25 @@ def inventario_weekly_summary(request):
     compras_semana_kg = sum(e.kg for e in compras_semana) or Decimal('0')
     total_compras_semana = sum(e.total for e in compras_semana) or Decimal('0')
 
+    # Agrupación por proveedor
+    from collections import defaultdict
+    proveedores_data = defaultdict(lambda: {'kg': Decimal('0'), 'total': Decimal('0')})
+    for e in compras_semana:
+        pid = e.proveedor_id
+        proveedores_data[pid]['kg'] += e.kg
+        proveedores_data[pid]['total'] += e.total
+    resumen_proveedores = []
+    for pid, data in proveedores_data.items():
+        # find the proveedor name
+        prov = next((e.proveedor for e in compras_semana if e.proveedor_id == pid), None)
+        if prov:
+            resumen_proveedores.append({
+                'proveedor': prov.nombre,
+                'kg': data['kg'],
+                'total': data['total'],
+            })
+    resumen_proveedores.sort(key=lambda x: x['kg'], reverse=True)
+
     viajes_kg_semana = sum(
         sum(l.kg_neto for l in v.lotes.all()) for v in viajes_semana
     ) or Decimal('0')
@@ -1776,6 +1794,7 @@ def inventario_weekly_summary(request):
         'desechos_locales': desechos_locales,
         'total_desecho_local': total_desecho_local,
         'compras_semana': compras_semana,
+        'resumen_proveedores': resumen_proveedores,
         'ingresos_semana': ingresos_semana,
         'weekly_history': get_weekly_history(),
         'nomina_form': nomina_form,
