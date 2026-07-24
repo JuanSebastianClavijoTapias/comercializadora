@@ -1966,6 +1966,22 @@ def entrada_inventario_detail(request, pk):
     cant_neg = sum(p.num_canastillas_negras for p in pesadas)
     cant_col = sum(p.num_canastillas_colores for p in pesadas)
 
+    # Agrupación por clasificación desde las pesadas
+    from collections import defaultdict
+    clasif_kg = defaultdict(Decimal)
+    for p in pesadas:
+        cid = p.clasificacion_id or p.entrada.clasificacion_id
+        if cid:
+            clasif_kg[cid] += p.kg_neto
+    # Buscar objetos Clasificacion para los IDs encontrados
+    clasif_ids = list(clasif_kg.keys())
+    clasif_map = {c.pk: c for c in Clasificacion.objects.filter(pk__in=clasif_ids).select_related('producto')}
+    resumen_clasificaciones = []
+    for cid, kg in clasif_kg.items():
+        cobj = clasif_map.get(cid)
+        if cobj:
+            resumen_clasificaciones.append({'clasificacion': cobj, 'kg': kg})
+
     return render(request, 'core/inventario/entrada_inventario_detail.html', {
         'entrada': entrada,
         'pesadas': pesadas,
@@ -1976,6 +1992,7 @@ def entrada_inventario_detail(request, pk):
         'kg_neto_total': kg_neto_total,
         'cant_neg': cant_neg,
         'cant_col': cant_col,
+        'resumen_clasificaciones': resumen_clasificaciones,
     })
 
 
