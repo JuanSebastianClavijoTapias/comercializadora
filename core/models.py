@@ -442,6 +442,7 @@ class PesadaEntrada(models.Model):
     num_canastillas_negras = models.PositiveIntegerField(default=0, verbose_name='Canastillas Negras (1.6 kg)')
     num_canastillas_colores = models.PositiveIntegerField(default=0, verbose_name='Canastillas Color (2.2 kg)')
     kg_bruto = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Kg Bruto')
+    clasificacion = models.ForeignKey(Clasificacion, null=True, blank=True, on_delete=models.SET_NULL, verbose_name='Clasificación')
 
     @property
     def peso_canastillas(self):

@@ -1970,6 +1970,7 @@ def entrada_inventario_detail(request, pk):
         'entrada': entrada,
         'pesadas': pesadas,
         'precio_form': precio_form,
+        'clasificaciones': Clasificacion.objects.filter(activo=True).select_related('producto').order_by('producto__nombre', 'nombre'),
         'kg_bruto_total': kg_bruto_total,
         'peso_total_canastillas': peso_total_canastillas,
         'kg_neto_total': kg_neto_total,
@@ -1988,10 +1989,12 @@ def pesada_entrada_add(request, pk):
             while f'kg_bruto_{i}' in request.POST:
                 kg_bruto_val = request.POST.get(f'kg_bruto_{i}', '').strip()
                 if kg_bruto_val:
+                    clasif_id = request.POST.get(f'clasificacion_{i}', '').strip()
                     data = {
                         'num_canastillas_negras': request.POST.get(f'num_canastillas_negras_{i}', '') or 0,
                         'num_canastillas_colores': request.POST.get(f'num_canastillas_colores_{i}', '') or 0,
                         'kg_bruto': kg_bruto_val,
+                        'clasificacion': clasif_id or None,
                     }
                     form = PesadaEntradaForm(data)
                     if form.is_valid():

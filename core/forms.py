@@ -207,12 +207,18 @@ class EntradaInventarioForm(COPInputNormalizationMixin, forms.ModelForm):
 class PesadaEntradaForm(forms.ModelForm):
     class Meta:
         model = PesadaEntrada
-        fields = ['num_canastillas_negras', 'num_canastillas_colores', 'kg_bruto']
+        fields = ['num_canastillas_negras', 'num_canastillas_colores', 'kg_bruto', 'clasificacion']
         widgets = {
             'num_canastillas_negras': forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'min': '0', 'placeholder': '0'}),
             'num_canastillas_colores': forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'min': '0', 'placeholder': '0'}),
             'kg_bruto': forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'min': '0', 'step': '0.01', 'placeholder': '0.00'}),
+            'clasificacion': forms.Select(attrs={'class': 'form-select form-select-sm'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['clasificacion'].required = False
+        self.fields['clasificacion'].queryset = Clasificacion.objects.filter(activo=True).select_related('producto').order_by('producto__nombre', 'nombre')
 
 class VentaEfectivoForm(COPInputNormalizationMixin, forms.ModelForm):
     cop_fields = ('total_dia',)
