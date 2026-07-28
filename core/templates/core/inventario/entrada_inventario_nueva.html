@@ -52,7 +52,7 @@
           <div class="pesada-row pesada-page-row mb-2 p-2 rounded" style="background:#f8f9fa;">
             <div class="row g-2">
               <div class="col-12 col-md-6">
-                <label class="small fw-semibold mb-1">Clasificación <span class="row-num" style="font-weight:400;color:#999;">1</span></label>
+                <label class="small fw-semibold mb-1 d-md-none">Clasificación <span class="row-num" style="font-weight:400;color:#999;">1</span></label>
                 <select name="clasificacion_0" class="form-select input-clasif" required style="font-size:0.87rem;">
                   <option value="">-- Seleccionar --</option>
                   {% for c in clasificaciones %}<option value="{{ c.pk }}">{{ c.producto.nombre }} - {{ c.nombre }}</option>{% endfor %}
@@ -62,10 +62,10 @@
                 <label class="small fw-semibold mb-1 d-md-none">Kg Bruto</label>
                 <input type="number" min="0" step="0.01" name="kg_bruto_0" class="form-control input-bruto" placeholder="Kg Bruto *" style="font-size:0.87rem;">
               </div>
-              <div class="col-3 col-md-2 d-flex align-items-end">
+              <div class="col-3 col-md-2 d-flex align-items-center">
                 <span class="fw-bold text-success kg-neto" style="font-size:1rem;">-</span>
               </div>
-              <div class="col-3 col-md-1 d-flex align-items-end justify-content-end">
+              <div class="col-3 col-md-1 d-flex align-items-center justify-content-end">
                 <button type="button" class="btn btn-sm btn-outline-danger btn-rm-row"><i class="bi bi-x"></i></button>
               </div>
             </div>
@@ -316,17 +316,17 @@
     div.innerHTML =
       '<div class="row g-2">' +
         '<div class="col-12 col-md-6">' +
-          '<label class="small fw-semibold mb-1">Clasificación <span class="row-num" style="font-weight:400;color:#999;">'+(container.querySelectorAll('.pesada-row').length+1)+'</span></label>' +
+          '<label class="small fw-semibold mb-1 d-md-none">Clasificación <span class="row-num" style="font-weight:400;color:#999;">'+(container.querySelectorAll('.pesada-row').length+1)+'</span></label>' +
           '<select name="clasificacion_'+i+'" class="form-select input-clasif" required style="font-size:0.87rem;"><option value="">-- Seleccionar --</option>'+opts+'</select>' +
         '</div>' +
         '<div class="col-6 col-md-3">' +
           '<label class="small fw-semibold mb-1 d-md-none">Kg Bruto</label>' +
           '<input type="number" min="0" step="0.01" name="kg_bruto_'+i+'" class="form-control input-bruto" placeholder="Kg Bruto *" style="font-size:0.87rem;">' +
         '</div>' +
-        '<div class="col-3 col-md-2 d-flex align-items-end">' +
+        '<div class="col-3 col-md-2 d-flex align-items-center">' +
           '<span class="fw-bold text-success kg-neto" style="font-size:1rem;">-</span>' +
         '</div>' +
-        '<div class="col-3 col-md-1 d-flex align-items-end justify-content-end">' +
+        '<div class="col-3 col-md-1 d-flex align-items-center justify-content-end">' +
           '<button type="button" class="btn btn-sm btn-outline-danger btn-rm-row"><i class="bi bi-x"></i></button>' +
         '</div>' +
       '</div>' +
