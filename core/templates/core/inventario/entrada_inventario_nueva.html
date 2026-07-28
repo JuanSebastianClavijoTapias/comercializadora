@@ -49,15 +49,15 @@
       </div>
       <div class="card-body p-0">
         <div class="table-responsive">
-          <table class="table table-sm mb-0 align-middle" style="font-size:0.83rem;">
+          <table class="table table-sm mb-0 align-middle" style="font-size:0.87rem;">
             <thead style="background:var(--bg-base);">
               <tr>
                 <th class="ps-2" style="width:30px;">#</th>
-                <th style="min-width:165px;">Clasificacion</th>
-                <th style="min-width:75px;"><span class="badge bg-dark">N</span> Negras</th>
-                <th style="min-width:75px;"><span class="badge" style="background:#1976D2;">C</span> Colores</th>
-                <th style="min-width:90px;">Kg Bruto</th>
-                <th style="min-width:85px;" class="text-success fw-bold">Kg Neto</th>
+                <th style="min-width:180px;">Clasificación</th>
+                <th style="min-width:85px;"><span class="badge bg-dark">N</span> Negras</th>
+                <th style="min-width:85px;"><span class="badge" style="background:#1976D2;">C</span> Colores</th>
+                <th style="min-width:100px;">Kg Bruto</th>
+                <th style="min-width:90px;" class="text-success fw-bold">Kg Neto</th>
                 <th style="width:40px;"></th>
               </tr>
             </thead>
@@ -65,15 +65,15 @@
               <tr class="pesada-row pesada-page-row">
                 <td class="ps-2 text-muted small row-num">1</td>
                 <td>
-                  <select name="clasificacion_0" class="form-select form-select-sm input-clasif" required>
-                    <option value="">--</option>
+                  <select name="clasificacion_0" class="form-select input-clasif" required style="width:100%;min-width:160px;font-size:0.87rem;">
+                    <option value="">-- Seleccionar --</option>
                     {% for c in clasificaciones %}<option value="{{ c.pk }}">{{ c.producto.nombre }} - {{ c.nombre }}</option>{% endfor %}
                   </select>
                 </td>
-                <td><input type="number" min="0" name="num_canastillas_negras_0" class="form-control form-control-sm input-neg w-100" placeholder="0" value=""></td>
-                <td><input type="number" min="0" name="num_canastillas_colores_0" class="form-control form-control-sm input-col w-100" placeholder="0" value=""></td>
-                <td><input type="number" min="0" step="0.01" name="kg_bruto_0" class="form-control form-control-sm input-bruto w-100" placeholder="0.00"></td>
-                <td class="fw-bold text-success kg-neto">-</td>
+                <td><input type="number" min="0" name="num_canastillas_negras_0" class="form-control input-neg" placeholder="0" value="" style="width:100%;min-width:65px;font-size:0.87rem;"></td>
+                <td><input type="number" min="0" name="num_canastillas_colores_0" class="form-control input-col" placeholder="0" value="" style="width:100%;min-width:65px;font-size:0.87rem;"></td>
+                <td><input type="number" min="0" step="0.01" name="kg_bruto_0" class="form-control input-bruto" placeholder="0.00" style="width:100%;min-width:85px;font-size:0.87rem;"></td>
+                <td class="fw-bold text-success kg-neto" style="font-size:0.9rem;">-</td>
                 <td><button type="button" class="btn btn-sm btn-outline-danger btn-rm-row"><i class="bi bi-x"></i></button></td>
               </tr>
             </tbody>
@@ -309,7 +309,7 @@
         '</table>' +
         '<div class="d-flex align-items-center gap-2">' +
           '<label class="small text-muted mb-0" style="white-space:nowrap;">Precio/kg</label>' +
-          '<input type="text" name="precio_clasif_' + cid + '" class="form-control form-control-sm price-cop recv-precio-input" placeholder="0" inputmode="numeric" data-cid="' + cid + '" value="' + precioFmt + '">' +
+          '<input type="text" name="precio_clasif_' + cid + '" class="form-control price-cop recv-precio-input" placeholder="0" inputmode="numeric" data-cid="' + cid + '" value="' + precioFmt + '">' +
         '</div>' +
         '<div id="recv_total_' + cid + '" class="d-flex justify-content-between fw-bold mt-1"' + (!subtotal ? ' style="display:none;"' : '') + '>' +
           (subtotal ? '<span>Total</span><span style="color:#0288D1;">' + fmtCOP(subtotal) + '</span>' : '') +
@@ -326,11 +326,11 @@
     tr.className = 'pesada-row pesada-page-row';
     tr.innerHTML =
       '<td class="ps-2 text-muted small row-num">' + (tbody.querySelectorAll('.pesada-row').length + 1) + '</td>' +
-      '<td><select name="clasificacion_' + i + '" class="form-select form-select-sm input-clasif" required><option value="">--</option>' + opts + '</select></td>' +
-      '<td><input type="number" min="0" name="num_canastillas_negras_' + i + '" class="form-control form-control-sm input-neg w-100" placeholder="0" value=""></td>' +
-      '<td><input type="number" min="0" name="num_canastillas_colores_' + i + '" class="form-control form-control-sm input-col w-100" placeholder="0" value=""></td>' +
-      '<td><input type="number" min="0" step="0.01" name="kg_bruto_' + i + '" class="form-control form-control-sm input-bruto w-100" placeholder="0.00"></td>' +
-      '<td class="fw-bold text-success kg-neto">-</td>' +
+      '<td><select name="clasificacion_' + i + '" class="form-select input-clasif" required style="width:100%;min-width:160px;font-size:0.87rem;"><option value="">-- Seleccionar --</option>' + opts + '</select></td>' +
+      '<td><input type="number" min="0" name="num_canastillas_negras_' + i + '" class="form-control input-neg" placeholder="0" value="" style="width:100%;min-width:65px;font-size:0.87rem;"></td>' +
+      '<td><input type="number" min="0" name="num_canastillas_colores_' + i + '" class="form-control input-col" placeholder="0" value="" style="width:100%;min-width:65px;font-size:0.87rem;"></td>' +
+      '<td><input type="number" min="0" step="0.01" name="kg_bruto_' + i + '" class="form-control input-bruto" placeholder="0.00" style="width:100%;min-width:85px;font-size:0.87rem;"></td>' +
+      '<td class="fw-bold text-success kg-neto" style="font-size:0.9rem;">-</td>' +
       '<td><button type="button" class="btn btn-sm btn-outline-danger btn-rm-row"><i class="bi bi-x"></i></button></td>';
     return tr;
   }
