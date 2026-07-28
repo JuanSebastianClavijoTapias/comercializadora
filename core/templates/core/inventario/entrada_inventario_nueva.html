@@ -47,47 +47,54 @@
           <i class="bi bi-plus-lg me-1"></i>Agregar fila
         </button>
       </div>
-      <div class="card-body p-0">
-        <div class="table-responsive">
-          <table class="table table-sm mb-0 align-middle" style="font-size:0.87rem;">
-            <thead style="background:var(--bg-base);">
-              <tr>
-                <th class="ps-2" style="width:30px;">#</th>
-                <th style="min-width:180px;">Clasificación</th>
-                <th style="min-width:85px;"><span class="badge bg-dark">N</span> Negras</th>
-                <th style="min-width:85px;"><span class="badge" style="background:#1976D2;">C</span> Colores</th>
-                <th style="min-width:100px;">Kg Bruto</th>
-                <th style="min-width:90px;" class="text-success fw-bold">Kg Neto</th>
-                <th style="width:40px;"></th>
-              </tr>
-            </thead>
-            <tbody id="pesadas_rows">
-              <tr class="pesada-row pesada-page-row">
-                <td class="ps-2 text-muted small row-num">1</td>
-                <td>
-                  <select name="clasificacion_0" class="form-select input-clasif" required style="width:100%;min-width:160px;font-size:0.87rem;">
-                    <option value="">-- Seleccionar --</option>
-                    {% for c in clasificaciones %}<option value="{{ c.pk }}">{{ c.producto.nombre }} - {{ c.nombre }}</option>{% endfor %}
-                  </select>
-                </td>
-                <td><input type="number" min="0" name="num_canastillas_negras_0" class="form-control input-neg" placeholder="0" value="" style="width:100%;min-width:65px;font-size:0.87rem;"></td>
-                <td><input type="number" min="0" name="num_canastillas_colores_0" class="form-control input-col" placeholder="0" value="" style="width:100%;min-width:65px;font-size:0.87rem;"></td>
-                <td><input type="number" min="0" step="0.01" name="kg_bruto_0" class="form-control input-bruto" placeholder="0.00" style="width:100%;min-width:85px;font-size:0.87rem;"></td>
-                <td class="fw-bold text-success kg-neto" style="font-size:0.9rem;">-</td>
-                <td><button type="button" class="btn btn-sm btn-outline-danger btn-rm-row"><i class="bi bi-x"></i></button></td>
-              </tr>
-            </tbody>
-            <tfoot style="background:var(--bg-base);font-weight:700;">
-              <tr>
-                <td class="ps-2 text-muted small text-uppercase" colspan="3">Total</td>
-                <td id="total_bruto" style="color:var(--orange-primary);">-</td>
-                <td id="total_neto" class="text-success">-</td>
-                <td></td>
-              </tr>
-            </tfoot>
-          </table>
+      <div class="card-body p-3">
+        <div id="pesadas_rows" class="mb-2">
+          <div class="pesada-row pesada-page-row mb-2 p-2 rounded" style="background:#f8f9fa;">
+            <div class="row g-2">
+              <div class="col-12 col-md-6">
+                <label class="small fw-semibold mb-1">Clasificación <span class="row-num" style="font-weight:400;color:#999;">1</span></label>
+                <select name="clasificacion_0" class="form-select input-clasif" required style="font-size:0.87rem;">
+                  <option value="">-- Seleccionar --</option>
+                  {% for c in clasificaciones %}<option value="{{ c.pk }}">{{ c.producto.nombre }} - {{ c.nombre }}</option>{% endfor %}
+                </select>
+              </div>
+              <div class="col-6 col-md-3">
+                <label class="small fw-semibold mb-1 d-md-none">Kg Bruto</label>
+                <input type="number" min="0" step="0.01" name="kg_bruto_0" class="form-control input-bruto" placeholder="Kg Bruto *" style="font-size:0.87rem;">
+              </div>
+              <div class="col-3 col-md-2 d-flex align-items-end">
+                <span class="fw-bold text-success kg-neto" style="font-size:1rem;">-</span>
+              </div>
+              <div class="col-3 col-md-1 d-flex align-items-end justify-content-end">
+                <button type="button" class="btn btn-sm btn-outline-danger btn-rm-row"><i class="bi bi-x"></i></button>
+              </div>
+            </div>
+            <div class="row g-2 mt-2">
+              <div class="col-6 col-md-3">
+                <label class="small fw-semibold mb-1 d-md-none"><span style="background:#333;color:#fff;padding:1px 5px;border-radius:3px;font-size:0.7rem;">N</span> Negras</label>
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text d-none d-md-flex" style="background:#333;color:#fff;font-weight:700;font-size:0.75rem;">N</span>
+                  <input type="number" min="0" name="num_canastillas_negras_0" class="form-control input-neg" placeholder="Negras" style="font-size:0.87rem;">
+                </div>
+              </div>
+              <div class="col-6 col-md-3">
+                <label class="small fw-semibold mb-1 d-md-none"><span style="background:#1976D2;color:#fff;padding:1px 5px;border-radius:3px;font-size:0.7rem;">C</span> Colores</label>
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text d-none d-md-flex" style="background:#1976D2;color:#fff;font-weight:700;font-size:0.75rem;">C</span>
+                  <input type="number" min="0" name="num_canastillas_colores_0" class="form-control input-col" placeholder="Colores" style="font-size:0.87rem;">
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-        <div id="pesadas_pagination" class="d-flex justify-content-between align-items-center px-3 py-2 border-top" style="display:none;font-size:0.85rem;">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <span class="text-muted small">
+            Total bruto: <strong id="total_bruto" style="color:var(--orange-primary);">-</strong>
+            &nbsp;|&nbsp;
+            Total neto: <strong id="total_neto" class="text-success">-</strong>
+          </span>
+        </div>
+        <div id="pesadas_pagination" class="d-flex justify-content-between align-items-center pt-2 border-top" style="display:none;font-size:0.85rem;">
           <button type="button" class="btn btn-sm btn-outline-secondary" id="btn_prev_page">
             <i class="bi bi-chevron-left"></i> Anterior
           </button>
@@ -217,23 +224,17 @@
   const PESO_COLOR = 2.2;
 
   let rowIndex = 1;
-  const tbody = document.getElementById('pesadas_rows');
+  const container = document.getElementById('pesadas_rows');
   const btnAdd = document.getElementById('btn_add_row');
-  const clasifPrecios = {}; // cid -> numeric value
+  const clasifPrecios = {};
 
-  // Build clasificaciones map from existing select options
   const CLASIF_OPTIONS = [];
   document.querySelector('.input-clasif').querySelectorAll('option').forEach(o => {
     if (o.value) CLASIF_OPTIONS.push({ pk: o.value, label: o.text });
   });
 
-  function parseCOP(val) {
-    return parseFloat((val || '').replace(/\./g, '').replace(',', '.')) || 0;
-  }
-
-  function fmtCOP(n) {
-    return '$' + Math.round(n).toLocaleString('es-CO');
-  }
+  function parseCOP(val) { return parseFloat((val||'').replace(/\./g,'').replace(',','.'))||0; }
+  function fmtCOP(n) { return '$' + Math.round(n).toLocaleString('es-CO'); }
 
   function calcRow(row) {
     const neg = parseFloat(row.querySelector('.input-neg').value) || 0;
@@ -241,21 +242,19 @@
     const bruto = parseFloat(row.querySelector('.input-bruto').value) || 0;
     const pesoCan = neg * PESO_NEGRA + col * PESO_COLOR;
     const neto = Math.max(bruto - pesoCan, 0);
-    row.querySelector('.kg-neto').textContent = bruto > 0 ? neto.toFixed(2) + ' kg' : '-';
+    const el = row.querySelector('.kg-neto');
+    if (el) el.textContent = bruto > 0 ? neto.toFixed(2) + ' kg' : '-';
     return { bruto, pesoCan, neto };
   }
 
   function recalcAll() {
     let sumBruto = 0, sumNeto = 0, grandTotal = 0, hasData = false;
-
-    // Collect data grouped by clasificacion
     const groups = {};
-    tbody.querySelectorAll('.pesada-row').forEach(row => {
+    container.querySelectorAll('.pesada-row').forEach(row => {
       const { bruto, pesoCan, neto } = calcRow(row);
-      const clasifSel = row.querySelector('.input-clasif');
-      const cid = clasifSel.value;
-      const clabel = cid ? clasifSel.options[clasifSel.selectedIndex].text : null;
-
+      const sel = row.querySelector('.input-clasif');
+      const cid = sel.value;
+      const clabel = cid ? sel.options[sel.selectedIndex].text : null;
       if (bruto > 0) {
         sumBruto += bruto; sumNeto += neto; hasData = true;
         if (cid) {
@@ -265,90 +264,108 @@
         }
       }
     });
-
     document.getElementById('total_bruto').textContent = hasData ? sumBruto.toFixed(2) + ' kg' : '-';
     document.getElementById('total_neto').textContent = hasData ? sumNeto.toFixed(2) + ' kg' : '-';
 
-    // Build receipt
     const recvGroups = document.getElementById('recv_groups');
     const recvEmpty = document.getElementById('recv_empty');
     const recvContent = document.getElementById('recv_content');
-
-    if (!hasData) {
-      recvEmpty.style.display = ''; recvContent.style.display = 'none';
-      return;
-    }
+    if (!hasData) { recvEmpty.style.display = ''; recvContent.style.display = 'none'; return; }
     recvEmpty.style.display = 'none'; recvContent.style.display = '';
-
     recvGroups.innerHTML = '';
+
     Object.entries(groups).forEach(([cid, g]) => {
       const precio = clasifPrecios[cid] || 0;
       const subtotal = precio > 0 ? g.neto * precio : null;
       if (subtotal) grandTotal += subtotal;
-
-      let rowsHtml = g.rows.map((r, i) =>
-        '<tr><td class="text-muted ps-0">' + (i+1) + '</td>' +
-        '<td>' + r.bruto.toFixed(2) + '</td>' +
-        '<td class="text-danger">-' + r.pesoCan.toFixed(2) + '</td>' +
-        '<td class="text-success fw-semibold">' + r.neto.toFixed(2) + ' kg</td></tr>'
+      let rowsHtml = g.rows.map((r,i) =>
+        '<tr><td class="text-muted ps-0">'+(i+1)+'</td>' +
+        '<td>'+r.bruto.toFixed(2)+'</td>' +
+        '<td class="text-danger">-'+r.pesoCan.toFixed(2)+'</td>' +
+        '<td class="text-success fw-semibold">'+r.neto.toFixed(2)+' kg</td></tr>'
       ).join('');
-
       const precioFmt = precio > 0 ? Math.round(precio).toLocaleString('es-CO') : '';
-
       const div = document.createElement('div');
       div.id = 'recv_group_' + cid;
       div.className = 'mb-3 pb-2 border-bottom';
       div.innerHTML =
-        '<div class="fw-bold mb-1" style="color:var(--orange-primary);">' + g.label + '</div>' +
+        '<div class="fw-bold mb-1" style="color:var(--orange-primary);">'+g.label+'</div>' +
         '<table class="table table-sm mb-2" style="font-size:0.8rem;">' +
-          '<thead><tr style="background:var(--bg-base);">' +
-            '<th class="ps-0">#</th><th>Bruto</th><th class="text-danger">Tara</th><th class="text-success">Neto</th>' +
-          '</tr></thead><tbody>' + rowsHtml + '</tbody>' +
+          '<thead><tr style="background:var(--bg-base);"><th class="ps-0">#</th><th>Bruto</th><th class="text-danger">Tara</th><th class="text-success">Neto</th></tr></thead>' +
+          '<tbody>'+rowsHtml+'</tbody>' +
           '<tfoot><tr><td colspan="3" class="fw-bold ps-0 text-muted small">Total neto</td>' +
-            '<td id="recv_neto_' + cid + '" data-neto="' + g.neto + '" class="fw-bold text-success">' + g.neto.toFixed(2) + ' kg</td></tr></tfoot>' +
+            '<td id="recv_neto_'+cid+'" data-neto="'+g.neto+'" class="fw-bold text-success">'+g.neto.toFixed(2)+' kg</td></tr></tfoot>' +
         '</table>' +
         '<div class="d-flex align-items-center gap-2">' +
           '<label class="small text-muted mb-0" style="white-space:nowrap;">Precio/kg</label>' +
-          '<input type="text" name="precio_clasif_' + cid + '" class="form-control price-cop recv-precio-input" placeholder="0" inputmode="numeric" data-cid="' + cid + '" value="' + precioFmt + '">' +
+          '<input type="text" name="precio_clasif_'+cid+'" class="form-control price-cop recv-precio-input" placeholder="0" inputmode="numeric" data-cid="'+cid+'" value="'+precioFmt+'">' +
         '</div>' +
-        '<div id="recv_total_' + cid + '" class="d-flex justify-content-between fw-bold mt-1"' + (!subtotal ? ' style="display:none;"' : '') + '>' +
-          (subtotal ? '<span>Total</span><span style="color:#0288D1;">' + fmtCOP(subtotal) + '</span>' : '') +
+        '<div id="recv_total_'+cid+'" class="d-flex justify-content-between fw-bold mt-1"'+(!subtotal?' style="display:none;"':'')+'>'+
+          (subtotal?'<span>Total</span><span style="color:#0288D1;">'+fmtCOP(subtotal)+'</span>':'')+
         '</div>';
       recvGroups.appendChild(div);
     });
-
     document.getElementById('recv_grand_total').textContent = grandTotal > 0 ? fmtCOP(grandTotal) : '-';
   }
 
   function buildRow(i) {
-    const opts = CLASIF_OPTIONS.map(o => '<option value="' + o.pk + '">' + o.label + '</option>').join('');
-    const tr = document.createElement('tr');
-    tr.className = 'pesada-row pesada-page-row';
-    tr.innerHTML =
-      '<td class="ps-2 text-muted small row-num">' + (tbody.querySelectorAll('.pesada-row').length + 1) + '</td>' +
-      '<td><select name="clasificacion_' + i + '" class="form-select input-clasif" required style="width:100%;min-width:160px;font-size:0.87rem;"><option value="">-- Seleccionar --</option>' + opts + '</select></td>' +
-      '<td><input type="number" min="0" name="num_canastillas_negras_' + i + '" class="form-control input-neg" placeholder="0" value="" style="width:100%;min-width:65px;font-size:0.87rem;"></td>' +
-      '<td><input type="number" min="0" name="num_canastillas_colores_' + i + '" class="form-control input-col" placeholder="0" value="" style="width:100%;min-width:65px;font-size:0.87rem;"></td>' +
-      '<td><input type="number" min="0" step="0.01" name="kg_bruto_' + i + '" class="form-control input-bruto" placeholder="0.00" style="width:100%;min-width:85px;font-size:0.87rem;"></td>' +
-      '<td class="fw-bold text-success kg-neto" style="font-size:0.9rem;">-</td>' +
-      '<td><button type="button" class="btn btn-sm btn-outline-danger btn-rm-row"><i class="bi bi-x"></i></button></td>';
-    return tr;
+    const opts = CLASIF_OPTIONS.map(o => '<option value="'+o.pk+'">'+o.label+'</option>').join('');
+    const div = document.createElement('div');
+    div.className = 'pesada-row pesada-page-row mb-2 p-2 rounded';
+    div.style.background = '#f8f9fa';
+    div.innerHTML =
+      '<div class="row g-2">' +
+        '<div class="col-12 col-md-6">' +
+          '<label class="small fw-semibold mb-1">Clasificación <span class="row-num" style="font-weight:400;color:#999;">'+(container.querySelectorAll('.pesada-row').length+1)+'</span></label>' +
+          '<select name="clasificacion_'+i+'" class="form-select input-clasif" required style="font-size:0.87rem;"><option value="">-- Seleccionar --</option>'+opts+'</select>' +
+        '</div>' +
+        '<div class="col-6 col-md-3">' +
+          '<label class="small fw-semibold mb-1 d-md-none">Kg Bruto</label>' +
+          '<input type="number" min="0" step="0.01" name="kg_bruto_'+i+'" class="form-control input-bruto" placeholder="Kg Bruto *" style="font-size:0.87rem;">' +
+        '</div>' +
+        '<div class="col-3 col-md-2 d-flex align-items-end">' +
+          '<span class="fw-bold text-success kg-neto" style="font-size:1rem;">-</span>' +
+        '</div>' +
+        '<div class="col-3 col-md-1 d-flex align-items-end justify-content-end">' +
+          '<button type="button" class="btn btn-sm btn-outline-danger btn-rm-row"><i class="bi bi-x"></i></button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="row g-2 mt-2">' +
+        '<div class="col-6 col-md-3">' +
+          '<label class="small fw-semibold mb-1 d-md-none"><span style="background:#333;color:#fff;padding:1px 5px;border-radius:3px;font-size:0.7rem;">N</span> Negras</label>' +
+          '<div class="input-group input-group-sm">' +
+            '<span class="input-group-text d-none d-md-flex" style="background:#333;color:#fff;font-weight:700;font-size:0.75rem;">N</span>' +
+            '<input type="number" min="0" name="num_canastillas_negras_'+i+'" class="form-control input-neg" placeholder="Negras" style="font-size:0.87rem;">' +
+          '</div>' +
+        '</div>' +
+        '<div class="col-6 col-md-3">' +
+          '<label class="small fw-semibold mb-1 d-md-none"><span style="background:#1976D2;color:#fff;padding:1px 5px;border-radius:3px;font-size:0.7rem;">C</span> Colores</label>' +
+          '<div class="input-group input-group-sm">' +
+            '<span class="input-group-text d-none d-md-flex" style="background:#1976D2;color:#fff;font-weight:700;font-size:0.75rem;">C</span>' +
+            '<input type="number" min="0" name="num_canastillas_colores_'+i+'" class="form-control input-col" placeholder="Colores" style="font-size:0.87rem;">' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    return div;
   }
 
   function renumberRows() {
-    tbody.querySelectorAll('.pesada-row').forEach((row, i) => {
-      row.querySelector('.row-num').textContent = i + 1;
+    container.querySelectorAll('.pesada-row').forEach((row, i) => {
+      const num = row.querySelector('.row-num');
+      if (num) num.textContent = i + 1;
       row.querySelectorAll('input, select').forEach(inp => {
         const name = inp.getAttribute('name');
         if (name) inp.setAttribute('name', name.replace(/_\d+$/, '_' + i));
       });
     });
-    rowIndex = tbody.querySelectorAll('.pesada-row').length;
+    rowIndex = container.querySelectorAll('.pesada-row').length;
   }
 
   function updateRemoveButtons() {
-    const rows = tbody.querySelectorAll('.pesada-row');
-    rows.forEach(row => { row.querySelector('.btn-rm-row').disabled = rows.length === 1; });
+    container.querySelectorAll('.pesada-row').forEach(row => {
+      const btn = row.querySelector('.btn-rm-row');
+      if (btn) btn.disabled = container.querySelectorAll('.pesada-row').length === 1;
+    });
   }
 
   function updateSubtotal(cid) {
@@ -358,52 +375,45 @@
     const neto = parseFloat(netoEl.dataset.neto || '0');
     const precio = clasifPrecios[cid] || 0;
     if (precio > 0 && neto > 0) {
-      const subtotal = neto * precio;
-      totalEl.innerHTML = '<span>Total</span><span style="color:#0288D1;">' + fmtCOP(subtotal) + '</span>';
+      totalEl.innerHTML = '<span>Total</span><span style="color:#0288D1;">' + fmtCOP(neto * precio) + '</span>';
       totalEl.style.display = 'flex';
-    } else {
-      totalEl.innerHTML = '';
-      totalEl.style.display = 'none';
-    }
-    // Recompute grand total
+    } else { totalEl.innerHTML = ''; totalEl.style.display = 'none'; }
     let grandTotal = 0;
-    document.querySelectorAll('#recv_groups .recv-precio-input').forEach(function(inp) {
-      const c = inp.dataset.cid;
-      const p = clasifPrecios[c] || 0;
+    document.querySelectorAll('#recv_groups .recv-precio-input').forEach(inp => {
+      const c = inp.dataset.cid, p = clasifPrecios[c] || 0;
       const n = parseFloat((document.getElementById('recv_neto_' + c) || {}).dataset.neto || '0');
       if (p > 0 && n > 0) grandTotal += n * p;
     });
     document.getElementById('recv_grand_total').textContent = grandTotal > 0 ? fmtCOP(grandTotal) : '-';
   }
 
-  // Listen to precio inputs in the receipt (event delegation) — update in-place to avoid losing focus
   document.getElementById('recv_content').addEventListener('input', function(e) {
     if (e.target.classList.contains('recv-precio-input')) {
-      const raw = e.target.value.replace(/\D/g, '');
       const cid = e.target.dataset.cid;
-      clasifPrecios[cid] = parseInt(raw, 10) || 0;
+      clasifPrecios[cid] = parseInt(e.target.value.replace(/\D/g, ''), 10) || 0;
       updateSubtotal(cid);
     }
   });
 
-  // When a clasificacion is selected, trigger recalc
-  tbody.addEventListener('change', function(e) {
+  container.addEventListener('change', function(e) {
     if (e.target.classList.contains('input-clasif')) recalcAll();
   });
 
   btnAdd.addEventListener('click', function () {
-    const tr = buildRow(rowIndex);
-    tbody.appendChild(tr);
+    const row = buildRow(rowIndex);
+    container.appendChild(row);
     rowIndex++;
     updateRemoveButtons();
     recalcAll();
-    tr.querySelector('.input-bruto').focus();
+    row.querySelector('.input-bruto').focus();
   });
 
-  tbody.addEventListener('click', function (e) {
-    if (e.target.closest('.btn-rm-row')) {
-      if (tbody.querySelectorAll('.pesada-row').length > 1) {
-        e.target.closest('.pesada-row').remove();
+  container.addEventListener('click', function (e) {
+    const btn = e.target.closest('.btn-rm-row');
+    if (btn) {
+      const rows = container.querySelectorAll('.pesada-row');
+      if (rows.length > 1) {
+        btn.closest('.pesada-row').remove();
         renumberRows();
         updateRemoveButtons();
         recalcAll();
@@ -411,24 +421,22 @@
     }
   });
 
-  tbody.addEventListener('input', function (e) {
+  container.addEventListener('input', function (e) {
     if (e.target.closest('.pesada-row')) recalcAll();
   });
 
-  // Canasta inputs: clear on focus, restore 0 placeholder on blur
-  tbody.addEventListener('focusin', function(e) {
+  container.addEventListener('focusin', function(e) {
     if (e.target.classList.contains('input-neg') || e.target.classList.contains('input-col')) {
       if (e.target.value === '0') e.target.value = '';
       e.target.select();
     }
   });
-  tbody.addEventListener('focusout', function(e) {
+  container.addEventListener('focusout', function(e) {
     if (e.target.classList.contains('input-neg') || e.target.classList.contains('input-col')) {
       if (e.target.value === '' || e.target.value === '-') e.target.value = '';
     }
   });
 
-  // COP formatting for precio inputs
   document.addEventListener('input', function(e) {
     if (e.target.classList.contains('price-cop')) {
       const raw = e.target.value.replace(/\D/g, '');
@@ -441,8 +449,34 @@
 
   // Paginación
   (function() {
-    var pageSize = 5;
-    var currentPage = 1, totalPages = 1;
+    var pageSize = 5, currentPage = 1, totalPages = 1;
+    function doPagination() {
+      var rows = container.querySelectorAll('.pesada-page-row');
+      var totalRows = rows.length;
+      var pagDiv = document.getElementById('pesadas_pagination');
+      if (totalRows <= pageSize) { if (pagDiv) pagDiv.style.display = 'none'; return; }
+      totalPages = Math.ceil(totalRows / pageSize);
+      if (pagDiv) pagDiv.style.display = 'flex';
+      document.getElementById('page_total_rows').textContent = totalRows;
+      function showPage(page) {
+        currentPage = Math.max(1, Math.min(page, totalPages));
+        rows.forEach(function(row, i) {
+          row.style.display = (i >= (currentPage-1)*pageSize && i < currentPage*pageSize) ? '' : 'none';
+        });
+        document.getElementById('page_current').textContent = currentPage;
+        document.getElementById('page_total').textContent = totalPages;
+        document.getElementById('btn_prev_page').disabled = currentPage === 1;
+        document.getElementById('btn_next_page').disabled = currentPage === totalPages;
+      }
+      document.getElementById('btn_prev_page').onclick = function(){showPage(currentPage-1)};
+      document.getElementById('btn_next_page').onclick = function(){showPage(currentPage+1)};
+      showPage(1);
+    }
+    doPagination();
+    new MutationObserver(function(){doPagination()}).observe(container, {childList: true});
+  })();
+})();
+</script>
 
     function doPagination() {
       var rows = tbody.querySelectorAll('.pesada-page-row');
