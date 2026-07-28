@@ -21,6 +21,7 @@
             {% if field.field.widget.input_type == 'checkbox' %}
             <div class="col-12">
               <label class="form-label form-control-sm text-uppercase fw-semibold mb-2" style="color: var(--text-sec); letter-spacing: 0.5px;">{{ field.label }}</label>
+              {% if field.field.choices %}
               <div class="row g-2">
                 {% for choice in field %}
                 <div class="col-12 col-md-6 col-lg-4">
@@ -31,6 +32,12 @@
                 </div>
                 {% endfor %}
               </div>
+              {% else %}
+              <div class="form-check">
+                {{ field }}
+                <label class="form-check-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+              </div>
+              {% endif %}
               {% if field.errors %}<div class="text-danger small mt-1 py-1 px-2 bg-danger bg-opacity-10 rounded">{{ field.errors }}</div>{% endif %}
             </div>
             {% else %}
