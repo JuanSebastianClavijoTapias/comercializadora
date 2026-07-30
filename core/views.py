@@ -1230,7 +1230,7 @@ def venta_efectivo_create(request):
         if form.is_valid():
             venta = form.save()
             messages.success(request, f'Venta registrada: {venta.producto} - {venta.kg_vendido} kg - ${venta.total}')
-            return redirect('venta_efectivo_list')
+            return redirect(f"{reverse('venta_efectivo_list')}?fecha={venta.fecha.isoformat()}")
     else:
         form = VentaEfectivoForm(initial={'fecha': date.today()})
     return render(request, 'core/ventas/venta_efectivo_create.html', {
