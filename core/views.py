@@ -268,7 +268,7 @@ def get_weekly_history():
 def dashboard(request):
     hoy = date.today()
     ventas_efectivo_hoy = VentaEfectivo.objects.filter(fecha=hoy)
-    ventas_credito_hoy = VentaCredito.objects.filter(fecha=hoy)
+    ventas_credito_hoy = VentaCredito.objects.filter(fecha=hoy).prefetch_related('detalles')
     gastos_hoy = Gasto.objects.filter(fecha=hoy)
     abonos_hoy = PagoVentaCredito.objects.filter(fecha=hoy)
     
@@ -280,6 +280,8 @@ def dashboard(request):
     # Credito del dia - Saldo pendiente
     saldo_credito_hoy = sum(v.saldo_pendiente for v in ventas_credito_hoy)
     total_credito_hoy = sum(v.total for v in ventas_credito_hoy)
+    kg_credito_hoy = sum(v.total_kg for v in ventas_credito_hoy)
+    num_ventas_credito = len(ventas_credito_hoy)
     
     total_gastos = sum(g.monto for g in gastos_hoy)
     balance_hoy = total_efectivo - total_gastos
@@ -468,6 +470,8 @@ def dashboard(request):
         'total_ventas_efectivo': total_ventas_efectivo,
         'total_abonos': total_abonos,
         'total_credito_hoy': total_credito_hoy,
+        'kg_credito_hoy': kg_credito_hoy,
+        'num_ventas_credito': num_ventas_credito,
         'saldo_credito_hoy': saldo_credito_hoy,
         'total_gastos': total_gastos,
         'balance_hoy': balance_hoy,
