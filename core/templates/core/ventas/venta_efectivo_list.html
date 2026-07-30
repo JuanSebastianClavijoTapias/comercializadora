@@ -35,20 +35,14 @@
 <div class="card border-0 shadow-sm mb-4" style="border-radius:12px;">
   <div class="card-body py-2">
     <form method="get" class="d-flex flex-wrap align-items-center gap-2">
+      {% if mostrar_todas %}
+      <input type="hidden" name="todas" value="1">
+      <span class="fw-semibold text-success small"><i class="bi bi-check-circle me-1"></i>Mostrando todas</span>
+      <a href="{% url 'venta_efectivo_list' %}" class="btn btn-sm btn-outline-secondary">Ver hoy</a>
+      {% else %}
       <label class="small fw-semibold mb-0">Fecha:</label>
-      <input type="date" name="fecha" class="form-control form-control-sm" value="{% if not mostrar_todas %}{{ fecha }}{% endif %}" style="max-width:160px;">
-      <span class="text-muted small" id="rng_toggle" style="cursor:pointer;user-select:none;">
-        <i class="bi bi-calendar-range me-1"></i>Rango
-      </span>
-      <span id="rng_fields" style="display:{% if desde or hasta %}inline{% else %}none{% endif %};">
-        <label class="small fw-semibold mb-0 ms-1">Desde:</label>
-        <input type="date" name="desde" class="form-control form-control-sm" value="{{ desde }}" style="max-width:160px;">
-        <label class="small fw-semibold mb-0 ms-1">Hasta:</label>
-        <input type="date" name="hasta" class="form-control form-control-sm" value="{{ hasta }}" style="max-width:160px;">
-      </span>
-      <button type="submit" class="btn btn-sm btn-outline-secondary">Filtrar</button>
-      {% if mostrar_todas or desde or hasta %}
-      <a href="{% url 'venta_efectivo_list' %}" class="btn btn-sm btn-outline-secondary">Hoy</a>
+      <input type="date" name="fecha" class="form-control form-control-sm" value="{{ fecha }}" style="max-width:160px;" onchange="this.form.submit()">
+      <a href="?todas=1" class="btn btn-sm btn-outline-secondary">Ver todas</a>
       {% endif %}
       <a href="{% url 'venta_efectivo_create' %}" class="btn btn-sm px-3 fw-semibold ms-auto" style="background: var(--orange-primary); color: white; border: none; border-radius: 6px;">
         <i class="bi bi-plus-lg me-1"></i> Nueva Venta
@@ -56,14 +50,6 @@
     </form>
   </div>
 </div>
-
-<script>
-document.getElementById('rng_toggle').addEventListener('click', function(){
-  var f = document.getElementById('rng_fields');
-  if (f.style.display === 'none') f.style.display = 'inline';
-  else f.style.display = 'none';
-});
-</script>
 
 <div class="row g-4">
   <!-- TABLA DE VENTAS DEL DÍA -->
