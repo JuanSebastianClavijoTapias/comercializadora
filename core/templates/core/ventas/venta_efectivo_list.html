@@ -34,15 +34,36 @@
 <!-- SELECTOR DE FECHA -->
 <div class="card border-0 shadow-sm mb-4" style="border-radius:12px;">
   <div class="card-body py-2">
-    <form method="get" class="d-flex align-items-center gap-2">
-      <label class="small fw-semibold text-muted mb-0">Ver día:</label>
-      <input type="date" name="fecha" class="form-control form-control-sm" value="{{ fecha }}" style="max-width:180px;" onchange="this.form.submit()">
-      <a href="{% url 'venta_efectivo_create' %}" class="btn btn-sm px-3 py-1 fw-semibold" style="background: var(--orange-primary); color: white; border: none; border-radius: 6px;">
+    <form method="get" class="d-flex flex-wrap align-items-center gap-2">
+      <label class="small fw-semibold mb-0">Fecha:</label>
+      <input type="date" name="fecha" class="form-control form-control-sm" value="{% if not mostrar_todas %}{{ fecha }}{% endif %}" style="max-width:160px;">
+      <span class="text-muted small" id="rng_toggle" style="cursor:pointer;user-select:none;">
+        <i class="bi bi-calendar-range me-1"></i>Rango
+      </span>
+      <span id="rng_fields" style="display:{% if desde or hasta %}inline{% else %}none{% endif %};">
+        <label class="small fw-semibold mb-0 ms-1">Desde:</label>
+        <input type="date" name="desde" class="form-control form-control-sm" value="{{ desde }}" style="max-width:160px;">
+        <label class="small fw-semibold mb-0 ms-1">Hasta:</label>
+        <input type="date" name="hasta" class="form-control form-control-sm" value="{{ hasta }}" style="max-width:160px;">
+      </span>
+      <button type="submit" class="btn btn-sm btn-outline-secondary">Filtrar</button>
+      {% if mostrar_todas or desde or hasta %}
+      <a href="{% url 'venta_efectivo_list' %}" class="btn btn-sm btn-outline-secondary">Hoy</a>
+      {% endif %}
+      <a href="{% url 'venta_efectivo_create' %}" class="btn btn-sm px-3 fw-semibold ms-auto" style="background: var(--orange-primary); color: white; border: none; border-radius: 6px;">
         <i class="bi bi-plus-lg me-1"></i> Nueva Venta
       </a>
     </form>
   </div>
 </div>
+
+<script>
+document.getElementById('rng_toggle').addEventListener('click', function(){
+  var f = document.getElementById('rng_fields');
+  if (f.style.display === 'none') f.style.display = 'inline';
+  else f.style.display = 'none';
+});
+</script>
 
 <div class="row g-4">
   <!-- TABLA DE VENTAS DEL DÍA -->
@@ -54,7 +75,7 @@
           <div class="stat-icon-wrapper d-inline-flex me-3 shadow-sm" style="width: 36px; height: 36px; font-size: 1.1rem; background: var(--bg-base); color: var(--text-main);">
             <i class="bi bi-list-ul"></i>
           </div>
-          <h6 class="mb-0 fw-bold" style="color: white;">Ventas del Día</h6>
+          <h6 class="mb-0 fw-bold text-dark">{% if mostrar_todas %}Todas las ventas{% else %}Ventas del {{ fecha }}{% endif %}</h6>
         </div>
         <a href="{% url 'venta_efectivo_create' %}" class="btn px-4 py-2 fw-semibold shadow-sm" style="background: var(--orange-primary); color: white; border: none; border-radius: 8px;">
           <i class="bi bi-plus-lg me-1"></i> Nueva Venta

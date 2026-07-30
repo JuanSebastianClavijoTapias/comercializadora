@@ -1292,8 +1292,27 @@ def detalle_venta_efectivo_delete(request, pk):
 
 @login_required
 def venta_efectivo_list(request):
-    fecha = request.GET.get('fecha', str(date.today()))
-    ventas = VentaEfectivo.objects.filter(fecha=fecha).select_related('producto').order_by('-pk')
+    desde = request.GET.get('desde', '')
+    hasta = request.GET.get('hasta', '')
+    fecha = request.GET.get('fecha', '')
+
+    qs = VentaEfectivo.objects.select_related('producto').order_by('-fecha', '-pk')
+
+    if desde or hasta:
+        if desde:
+            qs = qs.filter(fecha__gte=desde)
+        if hasta:
+            qs = qs.filter(fecha__lte=hasta)
+        ventas = qs
+        mostrar_todas = True
+    elif fecha:
+        ventas = qs.filter(fecha=fecha)
+        mostrar_todas = False
+    else:
+        fecha = str(date.today())
+        ventas = qs.filter(fecha=fecha)
+        mostrar_todas = False
+
     total = sum(v.total for v in ventas)
     num_ventas = len(ventas)
     ctx = {
@@ -1301,6 +1320,9 @@ def venta_efectivo_list(request):
         'total': total,
         'num_ventas': num_ventas,
         'fecha': fecha,
+        'desde': desde,
+        'hasta': hasta,
+        'mostrar_todas': mostrar_todas,
     }
     return render(request, 'core/ventas/venta_efectivo_list.html', ctx)
 
