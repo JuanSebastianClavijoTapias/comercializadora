@@ -211,7 +211,7 @@
   </div>
 
   <div class="col">
-    <button type="button" class="stat-card-white h-100" style="background: linear-gradient(135deg, #7B1FA2 0%, #4A148C 100%); cursor:default;">
+    <button type="button" class="stat-card-white weekly-card-trigger h-100" data-bs-toggle="modal" data-bs-target="#modalKgCredito" style="background: linear-gradient(135deg, #7B1FA2 0%, #4A148C 100%);">
       <div class="d-flex justify-content-between align-items-start gap-3">
         <div>
           <div class="small fw-semibold" style="color: white;">Kg vendido a crédito</div>
@@ -1301,6 +1301,52 @@
               </tr>
               {% empty %}
               <tr><td colspan="3" class="text-center text-muted py-4">No hay entradas registradas en esta semana.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Kg vendido a crédito -->
+<div class="modal fade" id="modalKgCredito" tabindex="-1" aria-labelledby="modalKgCreditoLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header" style="background: linear-gradient(135deg, #7B1FA2 0%, #4A148C 100%); color: white;">
+        <h5 class="modal-title" id="modalKgCreditoLabel">Kg vendido a crédito</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <div class="d-flex justify-content-between align-items-center modal-summary-pill mb-3">
+          <div>
+            <div class="small text-muted">Total kg a crédito</div>
+            <div class="fs-5 fw-bold" style="color: #7B1FA2;">{{ kg_credito_semana|floatformat:0 }} kg</div>
+          </div>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Cliente</th>
+                <th>Producto</th>
+                <th class="text-end">Kg</th>
+                <th class="text-end">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for v in ventas_credito_semana %}
+              <tr>
+                <td>{{ v.fecha|date:"d/m/Y" }}</td>
+                <td class="fw-semibold">{{ v.cliente.nombre }}</td>
+                <td>{{ v.producto.nombre|default:"—" }}</td>
+                <td class="text-end fw-semibold">{{ v.total_kg|floatformat:2 }} kg</td>
+                <td class="text-end">${{ v.total|cop }}</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="5" class="text-center text-muted py-4">No hay ventas a crédito en esta semana.</td></tr>
               {% endfor %}
             </tbody>
           </table>
