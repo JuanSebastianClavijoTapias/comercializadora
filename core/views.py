@@ -1660,6 +1660,7 @@ def inventario_weekly_summary(request):
         fecha__range=[inicio_semana, fin_semana]
     ).select_related('cliente').prefetch_related('detalles', 'pagos').order_by('-fecha', '-id')
     total_credito_semana = sum(v.total for v in ventas_credito_semana) or Decimal('0')
+    kg_credito_semana = sum(sum(d.kg_vendido for d in v.detalles.all()) for v in ventas_credito_semana) or Decimal('0')
     num_ventas_credito = ventas_credito_semana.count()
     promedio_credito = total_credito_semana / num_ventas_credito if num_ventas_credito else Decimal('0')
 
@@ -1779,6 +1780,7 @@ def inventario_weekly_summary(request):
         'total_egresos_semana': total_gastos_semana + monto_nomina,
         'total_efectivo_semana': total_efectivo_semana,
         'total_credito_semana': total_credito_semana,
+        'kg_credito_semana': kg_credito_semana,
         'total_ventas_semana': total_ventas_semana,
         'total_abonos_semana': total_abonos_semana,
         'balance_neto': balance_neto,

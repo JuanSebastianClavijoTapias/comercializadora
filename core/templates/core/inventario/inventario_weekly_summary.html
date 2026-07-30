@@ -211,6 +211,21 @@
   </div>
 
   <div class="col">
+    <button type="button" class="stat-card-white h-100" style="background: linear-gradient(135deg, #7B1FA2 0%, #4A148C 100%); cursor:default;">
+      <div class="d-flex justify-content-between align-items-start gap-3">
+        <div>
+          <div class="small fw-semibold" style="color: white;">Kg vendido a crédito</div>
+          <div class="fs-4 fw-bold" style="color: white;">{{ kg_credito_semana|floatformat:0 }} kg</div>
+          <div class="small" style="color: rgba(255,255,255,0.9);">{{ num_ventas_credito }} venta{{ num_ventas_credito|pluralize:"s" }}</div>
+        </div>
+        <div class="stat-icon-wrapper" style="background: rgba(255,255,255,0.25); color: white;">
+          <i class="bi bi-box-seam"></i>
+        </div>
+      </div>
+    </button>
+  </div>
+
+  <div class="col">
     <button type="button" class="stat-card-white weekly-card-trigger h-100" data-bs-toggle="modal" data-bs-target="#modalTotalVentas" style="background: linear-gradient(135deg, #FF9800 0%, #F57C00 100%);">
       <div class="d-flex justify-content-between align-items-start gap-3">
         <div>
