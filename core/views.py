@@ -863,6 +863,8 @@ def viaje_detail(request, pk):
         'peso_can_colores': float(peso_can_colores),
         'peso_total_canastillas': float(peso_total_canastillas),
         'neto_final': float(neto_final),
+        'total_pagado_valor': float(viaje.total_pagado),
+        'total_valor_actual': float(viaje.total_valor),
     }
     return render(request, 'core/viajes/viaje_detail.html', ctx)
 
@@ -959,11 +961,16 @@ def pesada_update_field(request, pk):
         return JsonResponse({'ok': False, 'error': str(e)}, status=400)
 
     pesada.refresh_from_db()
+    viaje = pesada.viaje
     return JsonResponse({
         'ok': True,
         'kg_bruto': float(pesada.kg_bruto),
         'peso_canastillas': float(pesada.peso_canastillas),
         'kg_neto': float(pesada.kg_neto),
+        'total_kg_neto': float(viaje.total_kg_neto),
+        'total_valor': float(viaje.total_valor),
+        'total_pagado': float(viaje.total_pagado),
+        'saldo_pendiente': float(viaje.saldo_pendiente),
     })
 
 
@@ -1028,26 +1035,30 @@ def viaje_delete(request, pk):
 
 @login_required
 def viaje_precio_update(request, pk):
-    """Actualiza solo el precio total acordado del viaje desde el detalle."""
+    """Actualiza el precio por kg acordado del viaje vía AJAX."""
     viaje = get_object_or_404(Viaje, pk=pk)
     if request.method == 'POST':
         val = request.POST.get('precio_total_acordado', '').strip()
-        # Limpiar separadores de miles y normalizar separador decimal
-        val = val.replace('.', '').replace(',', '.')  # Elimina puntos (miles), reemplaza coma por punto
+        val = val.replace('.', '').replace(',', '.')
         try:
             if val:
                 precio = Decimal(val)
                 if precio >= 0:
                     viaje.precio_total_acordado = precio
                     viaje.save(update_fields=['precio_total_acordado'])
-                    messages.success(request, 'Precio acordado actualizado.')
+                    return JsonResponse({
+                        'ok': True,
+                        'total_valor': float(viaje.total_valor),
+                        'total_pagado': float(viaje.total_pagado),
+                        'saldo_pendiente': float(viaje.saldo_pendiente),
+                    })
                 else:
-                    messages.error(request, 'El precio no puede ser negativo.')
+                    return JsonResponse({'ok': False, 'error': 'El precio no puede ser negativo.'}, status=400)
             else:
-                messages.error(request, 'Por favor ingrese un valor.')
+                return JsonResponse({'ok': False, 'error': 'Ingrese un valor.'}, status=400)
         except (ValueError, InvalidOperation):
-            messages.error(request, 'Valor inválido para el precio acordado.')
-    return redirect('viaje_detail', pk=pk)
+            return JsonResponse({'ok': False, 'error': 'Valor inválido.'}, status=400)
+    return JsonResponse({'ok': False, 'error': 'Método no permitido.'}, status=405)
 
 @login_required
 def lote_delete(request, pk):
