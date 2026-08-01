@@ -111,10 +111,20 @@ class Viaje(models.Model):
 
     @property
     def total_kg_neto(self): return sum(lote.kg_neto for lote in self.lotes.all())
+
+    @property
+    def kg_neto_despues_podrido(self):
+        """Kg neto total después de restar desechos y podridos."""
+        neto = self.total_kg_neto or Decimal('0')
+        podrido = (self.total_kg_podridos or Decimal('0'))
+        extra = DesechoInventario.objects.filter(viaje=self).aggregate(t=Sum('kg'))['t'] or Decimal('0')
+        podrido += extra
+        return max(neto - podrido, Decimal('0'))
+
     @property
     def total_valor(self):
-        """Precio por kg × kg neto total del viaje."""
-        return (self.total_kg_neto or Decimal('0')) * self.precio_total_acordado
+        """(Kg neto después de podrido) × precio por kg."""
+        return (self.kg_neto_despues_podrido or Decimal('0')) * self.precio_total_acordado
     @property
     def total_pagado(self):
         cached = self.__dict__.get('_total_pagado')

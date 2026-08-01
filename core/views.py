@@ -967,7 +967,7 @@ def pesada_update_field(request, pk):
         'kg_bruto': float(pesada.kg_bruto),
         'peso_canastillas': float(pesada.peso_canastillas),
         'kg_neto': float(pesada.kg_neto),
-        'total_kg_neto': float(viaje.total_kg_neto),
+        'total_kg_neto': float(viaje.kg_neto_despues_podrido),
         'total_valor': float(viaje.total_valor),
         'total_pagado': float(viaje.total_pagado),
         'saldo_pendiente': float(viaje.saldo_pendiente),
