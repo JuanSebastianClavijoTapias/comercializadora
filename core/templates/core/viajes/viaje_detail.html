@@ -396,9 +396,10 @@
                       // Actualizar total kg neto y saldo
                       var netoEl = document.getElementById('neto_total_display');
                       if (netoEl && d.total_kg_neto !== undefined) netoEl.textContent = d.total_kg_neto.toFixed(2);
+                      var hiddenPag = document.getElementById('total_pagado_hidden');
+                      if (hiddenPag && d.total_pagado !== undefined) hiddenPag.value = d.total_pagado;
                       if (d.saldo_pendiente !== undefined) {
-                        var formatter = new Intl.NumberFormat('es-CO');
-                        var fmt = function(v) { return '$' + formatter.format(Math.round(v)); };
+                        var fmt = function(v) { return '$' + Math.round(v).toLocaleString('es-CO'); };
                         var sc = document.getElementById('saldo_proveedor_card');
                         var tvc = document.getElementById('total_valor_card');
                         var tvr = document.getElementById('total_valor_resumen');
@@ -628,6 +629,8 @@
   </div>
 </div>
 
+<input type="hidden" id="total_pagado_hidden" value="{{ total_pagado_valor|floatformat:2 }}">
+
 <div class="card">
   <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
     <span><i class="bi bi-cash me-2"></i>Pagos al Proveedor</span>
@@ -770,15 +773,23 @@
 
   // ===== Saldo Proveedor: kg neto × precio por kg =====
   (function() {
-    var totalPagado = {{ total_pagado_valor|default:0 }};
+    var initialPagado = {{ total_pagado_valor|default:0 }};
 
     function formatCOP(val) {
-      val = Math.round(val);
-      return '$' + val.toLocaleString('es-CO');
+      return '$' + Math.round(val).toLocaleString('es-CO');
     }
 
     function parseCOP(val) {
       return parseFloat((val || '').toString().replace(/\./g, '').replace(',', '.')) || 0;
+    }
+
+    function getTotalPagado() {
+      var el = document.getElementById('total_pagado_hidden');
+      if (el) {
+        var v = parseFloat(el.value);
+        if (!isNaN(v)) return v;
+      }
+      return initialPagado;
     }
 
     window.recalcularSaldo = function() {
@@ -789,42 +800,31 @@
       var neto = parseFloat(netoEl.textContent) || 0;
       var precio = parseCOP(precioEl.value);
 
-      if (!neto || !precio || isNaN(neto) || isNaN(precio)) {
+      if (neto <= 0 || precio <= 0 || isNaN(neto) || isNaN(precio)) {
         actualizarSaldoDOM(0, 0);
         return;
       }
 
       var totalValor = neto * precio;
-      var saldo = Math.max(0, totalValor - totalPagado);
+      var saldo = Math.max(0, totalValor - getTotalPagado());
       actualizarSaldoDOM(totalValor, saldo);
     };
 
     function actualizarSaldoDOM(totalValor, saldo) {
-      var formatter = new Intl.NumberFormat('es-CO');
-      var format = function(v) { return '$' + formatter.format(Math.round(v)); };
+      var fmt = function(v) { return '$' + Math.round(v).toLocaleString('es-CO'); };
 
       var saldoCard = document.getElementById('saldo_proveedor_card');
       var totalValorCard = document.getElementById('total_valor_card');
       var totalValorResumen = document.getElementById('total_valor_resumen');
       var saldoPagos = document.getElementById('saldo_pagos');
 
-      if (totalValor > 0) {
-        if (saldoCard) {
-          saldoCard.textContent = format(saldo);
-          saldoCard.className = 'fw-bold fs-5 ' + (saldo > 0 ? 'text-danger' : 'text-success');
-        }
-        if (totalValorCard) totalValorCard.textContent = format(totalValor);
-        if (totalValorResumen) totalValorResumen.textContent = format(totalValor);
-        if (saldoPagos) saldoPagos.textContent = format(saldo);
-      } else {
-        if (saldoCard) {
-          saldoCard.textContent = '$0';
-          saldoCard.className = 'fw-bold fs-5 text-success';
-        }
-        if (totalValorCard) totalValorCard.textContent = '$0';
-        if (totalValorResumen) totalValorResumen.textContent = '$0';
-        if (saldoPagos) saldoPagos.textContent = '$0';
+      if (saldoCard) {
+        saldoCard.textContent = fmt(saldo);
+        saldoCard.className = 'fw-bold fs-5 ' + (saldo > 0 ? 'text-danger' : 'text-success');
       }
+      if (totalValorCard) totalValorCard.textContent = fmt(totalValor);
+      if (totalValorResumen) totalValorResumen.textContent = fmt(totalValor);
+      if (saldoPagos) saldoPagos.textContent = fmt(saldo);
     }
 
     // Recalcular mientras escribe en el input de precio
@@ -843,11 +843,20 @@
           .then(function(r) { return r.json(); })
           .then(function(d) {
             if (d.ok) {
-              totalPagado = d.total_pagado;
+              var hidden = document.getElementById('total_pagado_hidden');
+              if (hidden) hidden.value = d.total_pagado;
+              initialPagado = d.total_pagado;
               actualizarSaldoDOM(d.total_valor, d.saldo_pendiente);
             }
           });
       });
+    }
+
+    // Sincronizar al cargar la página (por si el servidor ya tiene datos)
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', recalcularSaldo);
+    } else {
+      recalcularSaldo();
     }
   })();
 </script>
