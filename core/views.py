@@ -1483,6 +1483,8 @@ def reporte_diario(request):
     total_abonos = sum(a.monto for a in abonos)
     total_gastos = sum(g.monto for g in gastos)
     balance = total_efectivo + total_abonos - total_gastos
+    total_kg_efectivo = sum(v.kg_vendido for v in ventas_ef)
+    total_kg_credito = sum(v.total_kg for v in ventas_cr)
 
     # Historial de los últimos 30 días
     thirty_days_ago = date.today() - timedelta(days=30)
@@ -1539,6 +1541,7 @@ def reporte_diario(request):
         'gastos': gastos, 'abonos': abonos,
         'total_efectivo': total_efectivo, 'total_abonos': total_abonos,
         'total_credito': total_credito, 'total_gastos': total_gastos, 'balance': balance,
+        'total_kg_efectivo': total_kg_efectivo, 'total_kg_credito': total_kg_credito,
         'historial_dias': historial_dias,
     }
     return render(request, 'core/reportes/reporte_diario.html', ctx)
