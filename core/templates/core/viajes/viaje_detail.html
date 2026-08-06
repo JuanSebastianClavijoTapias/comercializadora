@@ -53,6 +53,22 @@
       <div class="stat-icon-wrapper"><i class="bi bi-cash-stack"></i></div>
     </div>
   </div>
+  {% if viaje.tipo == 'al_corte' %}
+  <div class="col-md-6 col-lg-3">
+    <div class="stat-card-white h-100">
+      <div>
+        <div class="small text-muted mb-1">Tipo de viaje</div>
+        <div class="fw-bold fs-5">
+          Al corte
+          {% if viaje.pendiente_clasificar %}
+            <span class="badge bg-warning text-dark ms-1">Pendiente</span>
+          {% endif %}
+        </div>
+      </div>
+      <div class="stat-icon-wrapper"><i class="bi bi-tags"></i></div>
+    </div>
+  </div>
+  {% endif %}
 </div>
 
 <!-- PESADAS + RESUMEN (al lado) -->
@@ -87,12 +103,13 @@
               {% for p in pesadas %}
               <tr class="pesada-page-row" data-pesada-id="{{ p.pk }}">
                 <td class="text-muted small">{{ forloop.counter }}</td>
-                <td>
-                  {% if p.clasificacion %}
-                    <span class="badge bg-info text-dark">{{ p.clasificacion.producto.nombre }} - {{ p.clasificacion.nombre|abr_clasif }}</span>
-                  {% else %}
-                    <span class="text-muted">-</span>
-                  {% endif %}
+                <td style="min-width:170px;">
+                  <select class="editable-pesada" data-field="clasificacion" style="width:100%;border:1px solid #ddd;border-radius:4px;padding:4px 6px;font-size:0.85rem;">
+                    <option value="">-- Sin clasificar --</option>
+                    {% for c in clasificaciones %}
+                    <option value="{{ c.pk }}" {% if p.clasificacion_id == c.pk %}selected{% endif %}>{{ c.producto.nombre }} - {{ c.nombre|abr_clasif }}</option>
+                    {% endfor %}
+                  </select>
                 </td>
                 <td style="min-width:150px;"><input type="number" min="0" step="0.01" class="editable-pesada fw-semibold" data-field="kg_bruto" value="{{ p.kg_bruto|stringformat:'.2f' }}" style="width:100%;border:1px solid #ddd;border-radius:4px;padding:4px 6px;font-size:0.85rem;color:#E65100;"></td>
                 <td style="min-width:75px;"><input type="number" min="0" class="editable-pesada fw-bold" data-field="num_canastillas_negras" value="{{ p.num_canastillas_negras|default:0 }}" style="width:100%;border:1px solid #ddd;border-radius:4px;padding:4px 6px;font-size:0.85rem;"></td>
@@ -169,6 +186,7 @@
             <div id="pesadas_container" class="mb-2">
               <div class="pesada-row mb-2">
                 <div class="row g-2">
+                  {% if viaje.tipo == 'normal' %}
                   <div class="col-12 col-md-8">
                     <label class="form-label small fw-semibold mb-1 d-md-none">
                       <span class="num-label">1ra</span> clasificación
@@ -184,13 +202,16 @@
                     </div>
                   </div>
                   <div class="col-6 col-md-3">
+                  {% else %}
+                  <div class="col-9 col-md-9">
+                  {% endif %}
                     <label class="form-label small fw-semibold mb-1 d-md-none">Kg Bruto</label>
                     <div class="input-group input-group-sm">
                       <span class="input-group-text d-none d-md-flex" style="font-weight:600;min-width:34px;justify-content:center;font-size:0.78rem;">Kg</span>
                       <input type="number" min="0" step="0.01" name="kg_bruto_0" class="form-control form-control-sm" placeholder="Bruto *" required>
                     </div>
                   </div>
-                  <div class="col-6 col-md-1">
+                  <div class="col-3 col-md-1">
                     <button type="button" class="btn btn-sm btn-outline-danger btn-rm-row w-100" title="Eliminar fila">
                       <i class="bi bi-x"></i>
                     </button>
@@ -379,8 +400,9 @@
             inp.addEventListener('change', function() {
               var tr = this.closest('tr');
               var pid = tr.getAttribute('data-pesada-id');
+              var field = this.getAttribute('data-field');
               var fd = new FormData();
-              fd.append('field', this.getAttribute('data-field'));
+              fd.append('field', field);
               fd.append('value', this.value);
               fd.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
               clearTimeout(timeouts[pid]);
@@ -388,6 +410,10 @@
                 fetch('/pesadas/' + pid + '/update-field/', {method:'POST', body:fd})
                   .then(function(r){return r.json()})
                   .then(function(d){
+                    if (d.ok && field === 'clasificacion') {
+                      location.reload();
+                      return;
+                    }
                     if (d.ok) {
                       var pcEl = tr.querySelector('.peso-celda');
                       var knEl = tr.querySelector('.neto-celda');
@@ -455,58 +481,49 @@
           <span class="text-danger fw-semibold">-{{ kg_podrido|floatformat:2 }} kg</span>
         </div>
 
-        <div class="px-3 py-3" style="background: linear-gradient(135deg, var(--orange-primary), var(--orange-secondary)); color:#fff;">
-          <div class="d-flex justify-content-between align-items-center mb-2">
-            <span class="fw-bold"><i class="bi bi-box me-2"></i>Productos</span>
-            <span class="fw-bold" style="font-size:1rem;">{{ viaje.nombres_productos }}</span>
+        <div class="px-3 py-2 border-bottom">
+          <div class="d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-box me-2 text-orange"></i>Productos</span>
+            <span class="fw-bold text-orange">{{ viaje.nombres_productos }}</span>
           </div>
 
           {% if desglose_clasificaciones %}
-          <div class="mt-2 pt-2 border-top" style="border-color:rgba(255,255,255,0.25);">
-            <div class="small fw-semibold mb-2" style="opacity:0.85;">Desglose por clasificación:</div>
-            <div id="desglose_container">
+          <div class="d-flex flex-wrap gap-2 mt-2">
             {% for d in desglose_clasificaciones %}
-            <div class="mb-2 desglose-page-row" style="font-size:0.82rem;">
+            <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="collapse" data-bs-target="#desglose-{{ d.clasificacion.pk }}" title="Ver desglose de {{ d.clasificacion.producto.nombre }} - {{ d.clasificacion.nombre|abr_clasif }}">
+              <i class="bi bi-tags me-1"></i>{{ d.clasificacion.nombre|abr_clasif }}
+            </button>
+            {% endfor %}
+          </div>
+          {% for d in desglose_clasificaciones %}
+          <div class="collapse mt-2" id="desglose-{{ d.clasificacion.pk }}">
+            <div class="ps-2 border-start" style="font-size:0.85rem;">
               <div class="fw-semibold mb-1">{{ d.clasificacion.producto.nombre }} - {{ d.clasificacion.nombre|abr_clasif }}</div>
-              <div class="ps-2" style="border-left:2px solid rgba(255,255,255,0.3);">
-                {% if d.can_negras %}
-                <div class="d-flex justify-content-between">
-                  <span style="opacity:0.8;">Can. Negras ({{ d.can_negras }} x 1.6 kg)</span>
-                  <span class="text-warning">-{{ d.kg_can_negras|floatformat:2 }} kg</span>
-                </div>
-                {% endif %}
-                {% if d.can_colores %}
-                <div class="d-flex justify-content-between">
-                  <span style="opacity:0.8;">Can. Color ({{ d.can_colores }} x 2.2 kg)</span>
-                  <span class="text-warning">-{{ d.kg_can_colores|floatformat:2 }} kg</span>
-                </div>
-                {% endif %}
-                {% if d.desecho_kg > 0 %}
-                <div class="d-flex justify-content-between">
-                  <span style="opacity:0.8;">Kg Podrido / Rechazo</span>
-                  <span class="text-warning">-{{ d.desecho_kg|floatformat:2 }} kg</span>
-                </div>
-                {% endif %}
-                <div class="d-flex justify-content-between mt-1 pt-1 border-top" style="border-color:rgba(255,255,255,0.15);">
-                  <span class="fw-bold">Neto</span>
-                  <span class="fw-bold">{{ d.kg_neto_final|floatformat:2 }} kg</span>
-                </div>
+              {% if d.can_negras %}
+              <div class="d-flex justify-content-between text-muted">
+                <span>Can. Negras ({{ d.can_negras }} x 1.6 kg)</span>
+                <span class="text-danger">-{{ d.kg_can_negras|floatformat:2 }} kg</span>
+              </div>
+              {% endif %}
+              {% if d.can_colores %}
+              <div class="d-flex justify-content-between text-muted">
+                <span>Can. Color ({{ d.can_colores }} x 2.2 kg)</span>
+                <span class="text-danger">-{{ d.kg_can_colores|floatformat:2 }} kg</span>
+              </div>
+              {% endif %}
+              {% if d.desecho_kg > 0 %}
+              <div class="d-flex justify-content-between text-muted">
+                <span>Kg Podrido / Rechazo</span>
+                <span class="text-danger">-{{ d.desecho_kg|floatformat:2 }} kg</span>
+              </div>
+              {% endif %}
+              <div class="d-flex justify-content-between fw-bold mt-1 pt-1 border-top">
+                <span>Neto</span>
+                <span class="text-success">{{ d.kg_neto_final|floatformat:2 }} kg</span>
               </div>
             </div>
-            {% endfor %}
-            </div>
-            <div id="desglose_pagination" class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top" style="display:none;font-size:0.75rem;border-color:rgba(255,255,255,0.2);">
-              <button type="button" class="btn btn-sm btn-outline-light" id="btn_desglose_prev" style="font-size:0.7rem;">
-                <i class="bi bi-chevron-left"></i>
-              </button>
-              <span class="small" style="opacity:0.8;">
-                <span id="desglose_current">1</span>/<span id="desglose_total">1</span>
-              </span>
-              <button type="button" class="btn btn-sm btn-outline-light" id="btn_desglose_next" style="font-size:0.7rem;">
-                <i class="bi bi-chevron-right"></i>
-              </button>
-            </div>
           </div>
+          {% endfor %}
           {% endif %}
         </div>
 
@@ -534,7 +551,6 @@
 <div class="card mb-3">
   <div class="card-header d-flex justify-content-between align-items-center">
     <span><i class="bi bi-list-check me-2"></i>Resumen por Clasificacion</span>
-    <span class="badge bg-secondary">Solo lectura</span>
   </div>
   <div class="card-body p-0">
     <div class="table-responsive">
@@ -554,7 +570,11 @@
                   <span class="badge bg-info text-dark">{{ d.clasificacion.producto.nombre }} - {{ d.clasificacion.nombre|abr_clasif }}</span>
                 </td>
                 <td class="text-end fw-bold text-success">{{ d.kg_neto|floatformat:2 }} kg</td>
-                <td class="text-end text-danger">{% if d.desecho_kg > 0 %}-{{ d.desecho_kg|floatformat:2 }} kg{% else %}-{% endif %}</td>
+                <td class="text-end">
+                  <input type="number" min="0" step="0.01" class="editable-desecho" data-clasificacion-id="{{ d.clasificacion.id }}"
+                         value="{{ d.desecho_kg|default:0|stringformat:'.2f' }}"
+                         style="width:110px;text-align:right;border:1px solid #ddd;border-radius:4px;padding:4px 6px;font-size:0.85rem;color:#d32f2f;">
+                </td>
                 <td class="text-end fw-bold text-success">{{ d.kg_neto_final|floatformat:2 }} kg</td>
               </tr>
               {% empty %}
@@ -576,58 +596,22 @@
   </div>
 </div>
 
-<!-- REGISTRAR DESECHO (full width) -->
-<div class="card mb-3">
-  <div class="card-header py-2 d-flex justify-content-between align-items-center" style="background: linear-gradient(135deg, #E64A19 0%, #B71C1C 100%); color: white;">
-    <span><i class="bi bi-exclamation-triangle me-2"></i>Registrar Desecho / Rechazo</span>
-  </div>
-  <div class="card-body">
-    {% if desglose_clasificaciones %}
-    <form method="post">
-      {% csrf_token %}
-      <input type="hidden" name="form_type" value="desecho_viaje">
-      <input type="hidden" name="fecha" value="{{ viaje.fecha|date:'Y-m-d' }}">
-      <div class="table-responsive">
-        <table class="table table-sm mb-2" style="font-size:0.85rem;">
-          <thead>
-            <tr>
-              <th>Clasificación</th>
-              <th style="width:150px;">Kg Podridos</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for d in desglose_clasificaciones %}
-            <tr>
-              <td class="fw-medium align-middle">
-                <span class="badge bg-info text-dark">{{ d.clasificacion.producto.nombre }} - {{ d.clasificacion.nombre|abr_clasif }}</span>
-                <span class="text-muted small ms-1">({{ d.kg_neto_final|floatformat:0 }} kg neto)</span>
-              </td>
-              <td>
-                <input type="number" min="0" step="0.01"
-                       name="kg_desecho_{{ d.clasificacion.id }}"
-                       class="form-control form-control-sm"
-                       placeholder="0"
-                       {% if d.desecho_kg > 0 %}value="{{ d.desecho_kg|floatformat:2 }}"{% endif %}>
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-      <div class="d-grid">
-        <button type="submit" class="btn btn-danger btn-sm">
-          <i class="bi bi-save me-1"></i>Registrar Desechos
-        </button>
-      </div>
-    </form>
-    {% else %}
-    <div class="text-center py-3 text-muted">
-      <i class="bi bi-inbox" style="font-size:2rem; opacity:0.3;"></i>
-      <p class="mb-0 mt-2 small">Primero registre pesadas con clasificación.</p>
-    </div>
-    {% endif %}
-  </div>
-</div>
+<script>
+(function() {
+  var csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+  document.querySelectorAll('.editable-desecho').forEach(function(inp) {
+    inp.addEventListener('change', function() {
+      var clasifId = this.getAttribute('data-clasificacion-id');
+      var fd = new FormData();
+      fd.append('value', this.value);
+      fd.append('csrfmiddlewaretoken', csrfToken);
+      fetch('/viajes/{{ viaje.pk }}/desecho/' + clasifId + '/update/', {method: 'POST', body: fd})
+        .then(function(r) { return r.json(); })
+        .then(function(d) { if (d.ok) location.reload(); });
+    });
+  });
+})();
+</script>
 
 <input type="hidden" id="total_pagado_hidden" value="{{ total_pagado_valor|floatformat:2 }}">
 
@@ -745,31 +729,6 @@
     inicializarFormateador('input_precio_acordado');
     inicializarFormateador('input_monto_proveedor');
   });
-
-  // Paginación del desglose en Resumen de Kg Neto
-  (function() {
-    var dsPageSize = 4;
-    var dsRows = document.querySelectorAll('#desglose_container .desglose-page-row');
-    if (!dsRows.length || dsRows.length <= dsPageSize) return;
-    var dsTotal = Math.ceil(dsRows.length / dsPageSize), dsCurrent = 1;
-    var dsPag = document.getElementById('desglose_pagination');
-    if (!dsPag) return;
-    dsPag.style.display = 'flex';
-
-    function dsShow(p) {
-      dsCurrent = Math.max(1, Math.min(p, dsTotal));
-      dsRows.forEach(function(r, i) {
-        r.style.display = (i >= (dsCurrent-1)*dsPageSize && i < dsCurrent*dsPageSize) ? '' : 'none';
-      });
-      document.getElementById('desglose_current').textContent = dsCurrent;
-      document.getElementById('desglose_total').textContent = dsTotal;
-      document.getElementById('btn_desglose_prev').disabled = dsCurrent === 1;
-      document.getElementById('btn_desglose_next').disabled = dsCurrent === dsTotal;
-    }
-    document.getElementById('btn_desglose_prev').addEventListener('click', function(){dsShow(dsCurrent-1)});
-    document.getElementById('btn_desglose_next').addEventListener('click', function(){dsShow(dsCurrent+1)});
-    dsShow(1);
-  })();
 
   // ===== Saldo Proveedor: kg neto × precio por kg =====
   (function() {

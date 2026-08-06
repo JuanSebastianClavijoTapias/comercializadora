@@ -3,6 +3,84 @@
 {% block title %}Nueva Entrada de Inventario{% endblock %}
 {% block page_title %}<i class="bi bi-box-seam me-2"></i>Nueva Entrada de Inventario{% endblock %}
 
+{% block extra_css %}
+<style>
+  /* Fila de pesadas: mismo alto y tipografia en todos los campos */
+  .pesada-row-card {
+    background: var(--bg-light);
+    border: 1px solid var(--border-light);
+  }
+  .pesada-row-card .form-control,
+  .pesada-row-card .form-select,
+  .pesada-row-card .input-group-text {
+    font-size: 0.95rem;
+    height: 44px;
+  }
+  .pesada-row-card .input-group-text {
+    display: flex;
+    align-items: center;
+    padding: 0 0.5rem;
+  }
+  .pesada-row-card .input-group {
+    flex-wrap: nowrap;
+  }
+  .pesada-row-card .input-group .form-control {
+    min-width: 0;
+  }
+  .pesada-row-card .kg-neto {
+    font-size: 0.95rem;
+  }
+  .pesada-col-headers {
+    padding: 0 0.5rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: var(--text-sec);
+  }
+  .pesada-col-headers > div {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .btn-rm-row {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  /* Resumen por clasificacion: que nada quede recortado */
+  #recv_groups {
+    overflow-x: auto;
+  }
+  #recv_groups .table th,
+  #recv_groups .table td {
+    padding: 0.45rem 0.5rem;
+    font-size: 0.8rem;
+  }
+  #recv_groups .recv-clasif-label {
+    overflow-wrap: anywhere;
+  }
+  #recv_groups .recv-precio-input {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.85rem;
+  }
+
+  .desecho-local-label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: var(--text-sec);
+    white-space: nowrap;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .card, .card * { transition: none !important; }
+    .card:hover { transform: none !important; }
+  }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="mb-3">
   <a href="{% url 'entrada_inventario_list' %}" class="btn btn-outline-secondary btn-sm">
@@ -11,7 +89,7 @@
 </div>
 
 {% if form_errors %}
-<div class="alert alert-danger py-2">
+<div class="alert alert-danger py-2" role="alert">
   {% for e in form_errors %}<div><i class="bi bi-exclamation-triangle me-1"></i>{{ e }}</div>{% endfor %}
 </div>
 {% endif %}
@@ -39,50 +117,56 @@
 <div class="row g-3">
 
   <!-- COLUMNA PESADAS -->
-  <div class="col-lg-7">
+  <div class="col-12 col-xxl-8">
     <div class="card border-0 shadow-sm" style="border-radius:14px;overflow:hidden;">
-      <div class="card-header py-3 d-flex justify-content-between align-items-center" style="background:linear-gradient(135deg,#0288D1 0%,#01579B 100%);">
+      <div class="card-header py-3 d-flex justify-content-between align-items-center">
         <span class="fw-semibold text-white"><i class="bi bi-speedometer2 me-2"></i>Pesadas</span>
         <button type="button" id="btn_add_row" class="btn btn-sm" style="background:rgba(255,255,255,0.2);color:white;border:1px solid rgba(255,255,255,0.3);">
           <i class="bi bi-plus-lg me-1"></i>Agregar fila
         </button>
       </div>
       <div class="card-body p-3">
+        <div class="row g-2 d-none d-md-flex pesada-col-headers mb-1">
+          <div class="col-md-3">Clasificación</div>
+          <div class="col-md-2">Kg Bruto</div>
+          <div class="col-md-2">Negras</div>
+          <div class="col-md-2">Colores</div>
+          <div class="col-md-2">Kg Neto</div>
+          <div class="col-md-1"></div>
+        </div>
         <div id="pesadas_rows" class="mb-2">
-          <div class="pesada-row pesada-page-row mb-2 p-2 rounded" style="background:#f8f9fa;">
-            <div class="row g-2">
-              <div class="col-12 col-md-6">
+          <div class="pesada-row pesada-page-row pesada-row-card mb-2 p-2 rounded">
+            <div class="row g-2 align-items-center">
+              <div class="col-12 col-md-3">
                 <label class="small fw-semibold mb-1 d-md-none">Clasificación <span class="row-num" style="font-weight:400;color:#999;">1</span></label>
-                <select name="clasificacion_0" class="form-select input-clasif" required style="font-size:0.87rem;">
+                <select name="clasificacion_0" class="form-select input-clasif" required>
                   <option value="">-- Seleccionar --</option>
                   {% for c in clasificaciones %}<option value="{{ c.pk }}">{{ c.producto.nombre }} - {{ c.nombre }}</option>{% endfor %}
                 </select>
               </div>
-              <div class="col-6 col-md-3">
+              <div class="col-6 col-md-2">
                 <label class="small fw-semibold mb-1 d-md-none">Kg Bruto</label>
-                <input type="number" min="0" step="0.01" name="kg_bruto_0" class="form-control input-bruto" placeholder="Kg Bruto *" style="font-size:0.87rem;">
+                <input type="number" min="0" step="0.01" name="kg_bruto_0" class="form-control input-bruto" placeholder="Kg Bruto *">
               </div>
-              <div class="col-3 col-md-2 d-flex align-items-center">
-                <span class="fw-bold text-success kg-neto" style="font-size:1rem;">-</span>
-              </div>
-              <div class="col-3 col-md-1 d-flex align-items-center justify-content-end">
-                <button type="button" class="btn btn-sm btn-outline-danger btn-rm-row"><i class="bi bi-x"></i></button>
-              </div>
-            </div>
-            <div class="row g-2 mt-2">
-              <div class="col-6 col-md-3">
+              <div class="col-6 col-md-2">
                 <label class="small fw-semibold mb-1 d-md-none"><span style="background:#333;color:#fff;padding:1px 5px;border-radius:3px;font-size:0.7rem;">N</span> Negras</label>
-                <div class="input-group input-group-sm">
-                  <span class="input-group-text d-none d-md-flex" style="background:#333;color:#fff;font-weight:700;font-size:0.75rem;">N</span>
-                  <input type="number" min="0" name="num_canastillas_negras_0" class="form-control input-neg" placeholder="Negras" style="font-size:0.87rem;">
+                <div class="input-group">
+                  <span class="input-group-text d-none d-md-flex" style="background:#333;color:#fff;font-weight:700;">N</span>
+                  <input type="number" min="0" name="num_canastillas_negras_0" class="form-control input-neg" placeholder="Negras">
                 </div>
               </div>
-              <div class="col-6 col-md-3">
+              <div class="col-6 col-md-2">
                 <label class="small fw-semibold mb-1 d-md-none"><span style="background:#1976D2;color:#fff;padding:1px 5px;border-radius:3px;font-size:0.7rem;">C</span> Colores</label>
-                <div class="input-group input-group-sm">
-                  <span class="input-group-text d-none d-md-flex" style="background:#1976D2;color:#fff;font-weight:700;font-size:0.75rem;">C</span>
-                  <input type="number" min="0" name="num_canastillas_colores_0" class="form-control input-col" placeholder="Colores" style="font-size:0.87rem;">
+                <div class="input-group">
+                  <span class="input-group-text d-none d-md-flex" style="background:#1976D2;color:#fff;font-weight:700;">C</span>
+                  <input type="number" min="0" name="num_canastillas_colores_0" class="form-control input-col" placeholder="Colores">
                 </div>
+              </div>
+              <div class="col-4 col-md-2 d-flex align-items-center">
+                <span class="fw-bold text-success kg-neto">-</span>
+              </div>
+              <div class="col-2 col-md-1 d-flex align-items-center justify-content-end">
+                <button type="button" class="btn btn-sm btn-outline-danger btn-rm-row" title="Eliminar fila" aria-label="Eliminar fila"><i class="bi bi-x"></i></button>
               </div>
             </div>
           </div>
@@ -106,14 +190,32 @@
             Siguiente <i class="bi bi-chevron-right"></i>
           </button>
         </div>
+
+        <!-- DESECHO LOCAL (form propio via atributo form=, sin form anidado) -->
+        <div class="d-flex flex-wrap align-items-end gap-2 pt-3 mt-2 border-top">
+          <div class="desecho-local-label">
+            <i class="bi bi-trash3 me-1"></i>Desecho local
+          </div>
+          <div style="flex:1 1 130px;min-width:110px;">
+            <input type="date" name="fecha" form="form_desecho" class="form-control form-control-sm" value="{{ desecho_local_form.fecha.value|default_if_none:'' }}">
+            {% if desecho_local_form.fecha.errors %}<div class="text-danger small">{{ desecho_local_form.fecha.errors }}</div>{% endif %}
+          </div>
+          <div style="flex:1 1 100px;min-width:90px;">
+            <input type="number" min="0" step="0.01" name="kg" form="form_desecho" class="form-control form-control-sm" placeholder="Kg" value="{{ desecho_local_form.kg.value|default_if_none:'' }}">
+            {% if desecho_local_form.kg.errors %}<div class="text-danger small">{{ desecho_local_form.kg.errors }}</div>{% endif %}
+          </div>
+          <button type="submit" form="form_desecho" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-check-lg me-1"></i>Guardar
+          </button>
+        </div>
       </div>
     </div>
   </div>
 
   <!-- COLUMNA FACTURA -->
-  <div class="col-lg-5">
+  <div class="col-12 col-xxl-4">
     <div class="card border-0 shadow-sm h-100" style="border-radius:14px;overflow:hidden;">
-      <div class="card-header py-3 border-0" style="background:linear-gradient(135deg,#37474F 0%,#212121 100%);">
+      <div class="card-header py-3 border-0">
         <span class="fw-semibold text-white"><i class="bi bi-receipt me-2"></i>Resumen por clasificacion</span>
       </div>
       <div class="card-body px-3 pt-3 pb-3 d-flex flex-column" style="font-size:0.85rem;">
@@ -128,12 +230,12 @@
 
           <div class="mt-3 pt-2 border-top d-flex justify-content-between align-items-center">
             <span class="fw-bold text-uppercase small">Total general</span>
-            <span class="fs-5 fw-bold" style="color:#0288D1;" id="recv_grand_total">-</span>
+            <span class="fs-5 fw-bold" style="color:var(--orange-primary);" id="recv_grand_total">-</span>
           </div>
         </div>
 
         <div class="mt-auto pt-3">
-          <button type="submit" class="btn w-100 py-2 fw-semibold text-white" style="background:linear-gradient(135deg,#0288D1 0%,#01579B 100%);border:none;border-radius:8px;">
+          <button type="submit" class="btn w-100 py-2 fw-semibold text-white" style="background:linear-gradient(135deg,var(--orange-primary) 0%,var(--orange-secondary) 100%);border:none;border-radius:8px;">
             <i class="bi bi-check-lg me-1"></i>Guardar entrada y pesadas
           </button>
         </div>
@@ -145,76 +247,12 @@
 </div>
 </form>
 
-<!-- SECCIONES RÁPIDAS: NÓMINA Y DESECHOS -->
-<div class="row g-4 mt-1">
+<!-- Form independiente para "Desecho local" — los campos visibles viven dentro de la card de Pesadas (atributo form=) -->
+<form id="form_desecho" method="post" action="{% url 'entrada_inventario_create' %}" autocomplete="off">
+  {% csrf_token %}
+  <input type="hidden" name="form_type" value="desecho">
+</form>
 
-  <!-- NÓMINA -->
-  <div class="col-md-6">
-    <div class="card border-0 shadow-sm" style="border-radius:14px;overflow:hidden;">
-      <div class="card-header py-3 d-flex align-items-center gap-2" style="background:linear-gradient(135deg,#FF6F00 0%,#E65100 100%);">
-        <i class="bi bi-people-fill text-white"></i>
-        <span class="fw-semibold text-white">Registrar Nómina</span>
-      </div>
-      <div class="card-body p-3">
-        <form method="post" action="{% url 'entrada_inventario_create' %}" autocomplete="off">
-          {% csrf_token %}
-          <input type="hidden" name="form_type" value="nomina">
-          <div class="row g-2">
-            <div class="col-6">
-              <label class="form-label form-control-sm text-uppercase fw-semibold mb-1" style="color:var(--text-sec);font-size:0.72rem;">Fecha</label>
-              {{ nomina_form.fecha }}
-              {% if nomina_form.fecha.errors %}<div class="text-danger small mt-1">{{ nomina_form.fecha.errors }}</div>{% endif %}
-            </div>
-            <div class="col-6">
-              <label class="form-label form-control-sm text-uppercase fw-semibold mb-1" style="color:var(--text-sec);font-size:0.72rem;">Monto</label>
-              {{ nomina_form.monto }}
-              {% if nomina_form.monto.errors %}<div class="text-danger small mt-1">{{ nomina_form.monto.errors }}</div>{% endif %}
-            </div>
-            <div class="col-12">
-              <label class="form-label form-control-sm text-uppercase fw-semibold mb-1" style="color:var(--text-sec);font-size:0.72rem;">Descripción (opcional)</label>
-              {{ nomina_form.descripcion }}
-            </div>
-          </div>
-          <button type="submit" class="btn w-100 mt-3 fw-semibold text-white" style="background:linear-gradient(135deg,#FF6F00 0%,#E65100 100%);border:none;border-radius:8px;">
-            <i class="bi bi-check-lg me-1"></i>Guardar Nómina
-          </button>
-        </form>
-      </div>
-    </div>
-  </div>
-
-  <!-- DESECHOS -->
-  <div class="col-md-6">
-    <div class="card border-0 shadow-sm" style="border-radius:14px;overflow:hidden;">
-      <div class="card-header py-3 d-flex align-items-center gap-2" style="background:linear-gradient(135deg,#5D4037 0%,#3E2723 100%);">
-        <i class="bi bi-trash3-fill text-white"></i>
-        <span class="fw-semibold text-white">Registrar Desecho Local</span>
-      </div>
-      <div class="card-body p-3">
-        <form method="post" action="{% url 'entrada_inventario_create' %}" autocomplete="off">
-          {% csrf_token %}
-          <input type="hidden" name="form_type" value="desecho">
-          <div class="row g-2">
-            <div class="col-6">
-              <label class="form-label form-control-sm text-uppercase fw-semibold mb-1" style="color:var(--text-sec);font-size:0.72rem;">Fecha</label>
-              {{ desecho_local_form.fecha }}
-              {% if desecho_local_form.fecha.errors %}<div class="text-danger small mt-1">{{ desecho_local_form.fecha.errors }}</div>{% endif %}
-            </div>
-            <div class="col-6">
-              <label class="form-label form-control-sm text-uppercase fw-semibold mb-1" style="color:var(--text-sec);font-size:0.72rem;">Kg Desechados</label>
-              {{ desecho_local_form.kg }}
-              {% if desecho_local_form.kg.errors %}<div class="text-danger small mt-1">{{ desecho_local_form.kg.errors }}</div>{% endif %}
-            </div>
-          </div>
-          <button type="submit" class="btn w-100 mt-3 fw-semibold text-white" style="background:linear-gradient(135deg,#5D4037 0%,#3E2723 100%);border:none;border-radius:8px;">
-            <i class="bi bi-check-lg me-1"></i>Guardar Desecho
-          </button>
-        </form>
-      </div>
-    </div>
-  </div>
-
-</div>
 {% endblock %}
 
 {% block extra_js %}
@@ -289,7 +327,7 @@
       div.id = 'recv_group_' + cid;
       div.className = 'mb-3 pb-2 border-bottom';
       div.innerHTML =
-        '<div class="fw-bold mb-1" style="color:var(--orange-primary);">'+g.label+'</div>' +
+        '<div class="fw-bold mb-1 recv-clasif-label" style="color:var(--orange-primary);">'+g.label+'</div>' +
         '<table class="table table-sm mb-2" style="font-size:0.8rem;">' +
           '<thead><tr style="background:var(--bg-base);"><th class="ps-0">#</th><th>Bruto</th><th class="text-danger">Tara</th><th class="text-success">Neto</th></tr></thead>' +
           '<tbody>'+rowsHtml+'</tbody>' +
@@ -301,7 +339,7 @@
           '<input type="text" name="precio_clasif_'+cid+'" class="form-control price-cop recv-precio-input" placeholder="0" inputmode="numeric" data-cid="'+cid+'" value="'+precioFmt+'">' +
         '</div>' +
         '<div id="recv_total_'+cid+'" class="d-flex justify-content-between fw-bold mt-1"'+(!subtotal?' style="display:none;"':'')+'>'+
-          (subtotal?'<span>Total</span><span style="color:#0288D1;">'+fmtCOP(subtotal)+'</span>':'')+
+          (subtotal?'<span>Total</span><span style="color:var(--orange-primary);">'+fmtCOP(subtotal)+'</span>':'')+
         '</div>';
       recvGroups.appendChild(div);
     });
@@ -311,39 +349,36 @@
   function buildRow(i) {
     const opts = CLASIF_OPTIONS.map(o => '<option value="'+o.pk+'">'+o.label+'</option>').join('');
     const div = document.createElement('div');
-    div.className = 'pesada-row pesada-page-row mb-2 p-2 rounded';
-    div.style.background = '#f8f9fa';
+    div.className = 'pesada-row pesada-page-row pesada-row-card mb-2 p-2 rounded';
     div.innerHTML =
-      '<div class="row g-2">' +
-        '<div class="col-12 col-md-6">' +
+      '<div class="row g-2 align-items-center">' +
+        '<div class="col-12 col-md-3">' +
           '<label class="small fw-semibold mb-1 d-md-none">Clasificación <span class="row-num" style="font-weight:400;color:#999;">'+(container.querySelectorAll('.pesada-row').length+1)+'</span></label>' +
-          '<select name="clasificacion_'+i+'" class="form-select input-clasif" required style="font-size:0.87rem;"><option value="">-- Seleccionar --</option>'+opts+'</select>' +
+          '<select name="clasificacion_'+i+'" class="form-select input-clasif" required><option value="">-- Seleccionar --</option>'+opts+'</select>' +
         '</div>' +
-        '<div class="col-6 col-md-3">' +
+        '<div class="col-6 col-md-2">' +
           '<label class="small fw-semibold mb-1 d-md-none">Kg Bruto</label>' +
-          '<input type="number" min="0" step="0.01" name="kg_bruto_'+i+'" class="form-control input-bruto" placeholder="Kg Bruto *" style="font-size:0.87rem;">' +
+          '<input type="number" min="0" step="0.01" name="kg_bruto_'+i+'" class="form-control input-bruto" placeholder="Kg Bruto *">' +
         '</div>' +
-        '<div class="col-3 col-md-2 d-flex align-items-center">' +
-          '<span class="fw-bold text-success kg-neto" style="font-size:1rem;">-</span>' +
-        '</div>' +
-        '<div class="col-3 col-md-1 d-flex align-items-center justify-content-end">' +
-          '<button type="button" class="btn btn-sm btn-outline-danger btn-rm-row"><i class="bi bi-x"></i></button>' +
-        '</div>' +
-      '</div>' +
-      '<div class="row g-2 mt-2">' +
-        '<div class="col-6 col-md-3">' +
+        '<div class="col-6 col-md-2">' +
           '<label class="small fw-semibold mb-1 d-md-none"><span style="background:#333;color:#fff;padding:1px 5px;border-radius:3px;font-size:0.7rem;">N</span> Negras</label>' +
-          '<div class="input-group input-group-sm">' +
-            '<span class="input-group-text d-none d-md-flex" style="background:#333;color:#fff;font-weight:700;font-size:0.75rem;">N</span>' +
-            '<input type="number" min="0" name="num_canastillas_negras_'+i+'" class="form-control input-neg" placeholder="Negras" style="font-size:0.87rem;">' +
+          '<div class="input-group">' +
+            '<span class="input-group-text d-none d-md-flex" style="background:#333;color:#fff;font-weight:700;">N</span>' +
+            '<input type="number" min="0" name="num_canastillas_negras_'+i+'" class="form-control input-neg" placeholder="Negras">' +
           '</div>' +
         '</div>' +
-        '<div class="col-6 col-md-3">' +
+        '<div class="col-6 col-md-2">' +
           '<label class="small fw-semibold mb-1 d-md-none"><span style="background:#1976D2;color:#fff;padding:1px 5px;border-radius:3px;font-size:0.7rem;">C</span> Colores</label>' +
-          '<div class="input-group input-group-sm">' +
-            '<span class="input-group-text d-none d-md-flex" style="background:#1976D2;color:#fff;font-weight:700;font-size:0.75rem;">C</span>' +
-            '<input type="number" min="0" name="num_canastillas_colores_'+i+'" class="form-control input-col" placeholder="Colores" style="font-size:0.87rem;">' +
+          '<div class="input-group">' +
+            '<span class="input-group-text d-none d-md-flex" style="background:#1976D2;color:#fff;font-weight:700;">C</span>' +
+            '<input type="number" min="0" name="num_canastillas_colores_'+i+'" class="form-control input-col" placeholder="Colores">' +
           '</div>' +
+        '</div>' +
+        '<div class="col-4 col-md-2 d-flex align-items-center">' +
+          '<span class="fw-bold text-success kg-neto">-</span>' +
+        '</div>' +
+        '<div class="col-2 col-md-1 d-flex align-items-center justify-content-end">' +
+          '<button type="button" class="btn btn-sm btn-outline-danger btn-rm-row" title="Eliminar fila" aria-label="Eliminar fila"><i class="bi bi-x"></i></button>' +
         '</div>' +
       '</div>';
     return div;
@@ -375,7 +410,7 @@
     const neto = parseFloat(netoEl.dataset.neto || '0');
     const precio = clasifPrecios[cid] || 0;
     if (precio > 0 && neto > 0) {
-      totalEl.innerHTML = '<span>Total</span><span style="color:#0288D1;">' + fmtCOP(neto * precio) + '</span>';
+      totalEl.innerHTML = '<span>Total</span><span style="color:var(--orange-primary);">' + fmtCOP(neto * precio) + '</span>';
       totalEl.style.display = 'flex';
     } else { totalEl.innerHTML = ''; totalEl.style.display = 'none'; }
     let grandTotal = 0;
@@ -474,37 +509,6 @@
     }
     doPagination();
     new MutationObserver(function(){doPagination()}).observe(container, {childList: true});
-  })();
-})();
-</script>
-
-    function doPagination() {
-      var rows = tbody.querySelectorAll('.pesada-page-row');
-      var totalRows = rows.length;
-      var pagDiv = document.getElementById('pesadas_pagination');
-      if (totalRows <= pageSize) { if (pagDiv) pagDiv.style.display = 'none'; return; }
-      totalPages = Math.ceil(totalRows / pageSize);
-      if (pagDiv) { pagDiv.style.display = 'flex'; }
-      document.getElementById('page_total_rows').textContent = totalRows;
-
-      function showPage(page) {
-        currentPage = Math.max(1, Math.min(page, totalPages));
-        rows.forEach(function(row, i) {
-          row.style.display = (i >= (currentPage-1)*pageSize && i < currentPage*pageSize) ? '' : 'none';
-        });
-        document.getElementById('page_current').textContent = currentPage;
-        document.getElementById('page_total').textContent = totalPages;
-        document.getElementById('btn_prev_page').disabled = currentPage === 1;
-        document.getElementById('btn_next_page').disabled = currentPage === totalPages;
-      }
-
-      document.getElementById('btn_prev_page').onclick = function(){ showPage(currentPage-1); };
-      document.getElementById('btn_next_page').onclick = function(){ showPage(currentPage+1); };
-      showPage(1);
-    }
-
-    doPagination();
-    new MutationObserver(function(){ doPagination(); }).observe(tbody, { childList: true });
   })();
 })();
 </script>

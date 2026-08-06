@@ -34,6 +34,7 @@ urlpatterns = [
     path('viajes/<int:pk>/eliminar/', views.viaje_delete, name='viaje_delete'),
     path('viajes/<int:pk>/pago/', views.viaje_pago_add, name='viaje_pago_add'),
     path('viajes/<int:pk>/pesada/', views.pesada_add, name='pesada_add'),
+    path('viajes/<int:pk>/desecho/<int:clasificacion_pk>/update/', views.desecho_clasificacion_update, name='desecho_clasificacion_update'),
     path('pesadas/<int:pk>/eliminar/', views.pesada_delete, name='pesada_delete'),
     path('pesadas/<int:pk>/editar/', views.pesada_edit, name='pesada_edit'),
     path('pesadas/<int:pk>/update-field/', views.pesada_update_field, name='pesada_update_field'),

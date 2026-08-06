@@ -708,12 +708,24 @@ def categoria_gasto_delete(request, pk):
 @login_required
 def viaje_list(request):
     viajes = Viaje.objects.select_related('proveedor', 'producto').all()
+
+    tipo_filtro = request.GET.get('tipo', '').strip()
+    if tipo_filtro in dict(Viaje.Tipo.choices):
+        viajes = viajes.filter(tipo=tipo_filtro)
+
+    solo_pendientes = request.GET.get('pendiente_clasificar') == '1'
+    viajes = list(viajes)
+    if solo_pendientes:
+        viajes = [v for v in viajes if v.pendiente_clasificar]
+
     num_viajes = len(viajes)
     total_kg = sum(v.total_kg_neto for v in viajes)
     total_costo = sum(v.total_valor for v in viajes)
     saldo_pendiente = sum(v.saldo_pendiente for v in viajes)
     return render(request, 'core/viajes/viaje_list.html', {
         'viajes': viajes,
+        'tipo_filtro': tipo_filtro,
+        'solo_pendientes': solo_pendientes,
         'num_viajes': num_viajes, 'total_kg': total_kg,
         'total_costo': total_costo, 'saldo_pendiente': saldo_pendiente
     })
@@ -734,7 +746,7 @@ def viaje_create(request):
 
 @login_required
 def viaje_detail(request, pk):
-    from decimal import Decimal, InvalidOperation
+    from decimal import Decimal
     viaje = get_object_or_404(Viaje, pk=pk)
     lotes = viaje.lotes.select_related('clasificacion').all()
     pesadas = viaje.pesadas.select_related('clasificacion__producto').all()
@@ -775,31 +787,6 @@ def viaje_detail(request, pk):
     pagos = viaje.pagos_proveedor.all()
     pago_form = PagoProveedorForm()
     pesada_form = PesadaViajeForm()
-
-    if request.method == 'POST' and request.POST.get('form_type') == 'desecho_viaje':
-        # Borrar desechos previos de este viaje y crear los nuevos
-        DesechoInventario.objects.filter(viaje=viaje).delete()
-        guardados = 0
-        for c in clasificaciones:
-            kg = (request.POST.get(f'kg_desecho_{c.id}', '') or '').strip()
-            if kg:
-                try:
-                    kg_val = Decimal(kg)
-                    if kg_val > 0:
-                        DesechoInventario.objects.create(
-                            fecha=viaje.fecha,
-                            clasificacion=c,
-                            viaje=viaje,
-                            kg=kg_val,
-                        )
-                        guardados += 1
-                except InvalidOperation:
-                    pass
-        if guardados:
-            messages.success(request, f'{guardados} desecho{"s" if guardados > 1 else ""} registrado{"s" if guardados > 1 else ""}.')
-        else:
-            messages.success(request, 'Desechos eliminados.')
-        return redirect('viaje_detail', pk=pk)
 
     total_kg_neto = sum(lote.kg_neto for lote in lotes)
 
@@ -947,13 +934,15 @@ def pesada_update_field(request, pk):
     field = request.POST.get('field', '')
     value = request.POST.get('value', '')
 
-    allowed = {'kg_bruto', 'num_canastillas_negras', 'num_canastillas_colores'}
+    allowed = {'kg_bruto', 'num_canastillas_negras', 'num_canastillas_colores', 'clasificacion'}
     if field not in allowed:
         return JsonResponse({'ok': False, 'error': 'Campo no permitido'}, status=400)
 
     try:
         if field == 'kg_bruto':
             pesada.kg_bruto = Decimal(value) if value else Decimal('0')
+        elif field == 'clasificacion':
+            pesada.clasificacion_id = int(value) if value else None
         else:
             pesada.__setattr__(field, int(value) if value else 0)
         pesada.save(update_fields=[field])
@@ -971,7 +960,31 @@ def pesada_update_field(request, pk):
         'total_valor': float(viaje.total_valor),
         'total_pagado': float(viaje.total_pagado),
         'saldo_pendiente': float(viaje.saldo_pendiente),
+        'clasificacion_id': pesada.clasificacion_id,
+        'clasificacion_label': str(pesada.clasificacion) if pesada.clasificacion_id else None,
     })
+
+
+@login_required
+def desecho_clasificacion_update(request, pk, clasificacion_pk):
+    """AJAX: crea/actualiza/elimina el DesechoInventario de un viaje para una clasificación."""
+    viaje = get_object_or_404(Viaje, pk=pk)
+    clasificacion = get_object_or_404(Clasificacion, pk=clasificacion_pk)
+    value = request.POST.get('value', '').strip()
+    try:
+        kg_val = Decimal(value) if value else Decimal('0')
+    except InvalidOperation:
+        return JsonResponse({'ok': False, 'error': 'Valor inválido'}, status=400)
+
+    if kg_val > 0:
+        DesechoInventario.objects.update_or_create(
+            viaje=viaje, clasificacion=clasificacion,
+            defaults={'fecha': viaje.fecha, 'kg': kg_val},
+        )
+    else:
+        DesechoInventario.objects.filter(viaje=viaje, clasificacion=clasificacion).delete()
+
+    return JsonResponse({'ok': True})
 
 
 @login_required

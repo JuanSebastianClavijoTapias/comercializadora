@@ -472,61 +472,6 @@
 </div>
 
 <div class="card border-0 shadow-sm mb-4" style="border-radius: 16px; overflow: hidden;">
-  <div class="card-header py-3 d-flex justify-content-between align-items-center" style="background: linear-gradient(135deg, #E65100 0%, #BF360C 100%);">
-    <h6 class="mb-0 fw-bold text-white"><i class="bi bi-truck me-2"></i>Compras a Proveedores (Viajes)</h6>
-    <div class="d-flex gap-2 align-items-center">
-      <span class="badge rounded-pill text-bg-light">{{ viajes_semana|length }} viaje{{ viajes_semana|length|pluralize:"s" }}</span>
-      <span class="badge rounded-pill" style="background:rgba(255,255,255,0.25);color:white;">${{ total_viajes_semana|cop }}</span>
-    </div>
-  </div>
-  <div class="card-body p-0">
-    {% if viajes_semana %}
-    <div class="table-responsive">
-      <table class="table table-hover align-middle mb-0" style="font-size:0.88rem;">
-        <thead class="bg-light">
-          <tr>
-            <th class="ps-3 py-3">Fecha</th>
-            <th>Proveedor</th>
-            <th>Producto</th>
-            <th class="text-end">Precio Acordado</th>
-            <th class="text-end">Pagado</th>
-            <th class="text-end pe-3">Saldo</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for viaje in viajes_semana %}
-          <tr>
-            <td class="ps-3 text-muted small">{{ viaje.fecha|date:"d/m/Y" }}</td>
-            <td class="fw-semibold">{{ viaje.proveedor }}</td>
-            <td>{{ viaje.producto }}</td>
-            <td class="text-end fw-semibold" style="color:#E65100;">${{ viaje.precio_total_acordado|cop }}</td>
-            <td class="text-end text-success">${{ viaje.total_pagado|cop }}</td>
-            <td class="text-end fw-bold pe-3 {% if viaje.saldo_pendiente > 0 %}text-danger{% else %}text-success{% endif %}">
-              {% if viaje.saldo_pendiente > 0 %}-${{ viaje.saldo_pendiente|cop }}{% else %}Pagado{% endif %}
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-        <tfoot class="table-light">
-          <tr>
-            <td colspan="3" class="ps-3 fw-bold">Total semana</td>
-            <td class="text-end fw-bold" style="color:#E65100;">${{ total_viajes_semana|cop }}</td>
-            <td></td>
-            <td class="pe-3"></td>
-          </tr>
-        </tfoot>
-      </table>
-    </div>
-    {% else %}
-    <div class="weekly-empty-state">
-      <i class="bi bi-truck fs-1 d-block mb-2"></i>
-      No hay viajes registrados en esta semana.
-    </div>
-    {% endif %}
-  </div>
-</div>
-
-<div class="card border-0 shadow-sm mb-4" style="border-radius: 16px; overflow: hidden;">
   <div class="card-header py-3 d-flex justify-content-between align-items-center" style="background: linear-gradient(135deg, #0288D1 0%, #01579B 100%);">
     <h6 class="mb-0 fw-bold text-white"><i class="bi bi-clipboard-check me-2"></i>Inventario Semanal (Conteo)</h6>
     <div class="d-flex gap-2 align-items-center">

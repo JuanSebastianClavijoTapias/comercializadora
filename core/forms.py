@@ -77,10 +77,11 @@ class ViajeForm(forms.ModelForm):
 
     class Meta:
         model = Viaje
-        fields = ['proveedor', 'fecha', 'observaciones']
+        fields = ['proveedor', 'fecha', 'tipo', 'observaciones']
         widgets = {
             'proveedor': forms.Select(attrs={'class': 'form-select'}),
             'fecha': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'tipo': forms.RadioSelect(attrs={'class': 'form-check-input'}),
             'observaciones': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Observaciones opcionales...'}),
         }
 

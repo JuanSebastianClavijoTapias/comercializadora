@@ -72,6 +72,11 @@ class Viaje(models.Model):
     PESO_CANASTILLA_NEGRA = Decimal('1.6')
     PESO_CANASTILLA_COLOR = Decimal('2.2')
 
+    class Tipo(models.TextChoices):
+        NORMAL = 'normal', 'Normal'
+        AL_CORTE = 'al_corte', 'Al corte'
+
+    tipo = models.CharField(max_length=10, choices=Tipo.choices, default=Tipo.NORMAL, verbose_name='Tipo de viaje')
     proveedor = models.ForeignKey(Proveedor, on_delete=models.CASCADE, related_name='viajes', verbose_name='Proveedor')
     producto = models.ForeignKey(Producto, on_delete=models.CASCADE, related_name='viajes', verbose_name='Producto')
     productos = models.ManyToManyField(Producto, related_name='viajes_m2m', verbose_name='Productos adicionales')
@@ -133,6 +138,9 @@ class Viaje(models.Model):
         return sum(p.monto for p in self.pagos_proveedor.all())
     @property
     def saldo_pendiente(self): return self.total_valor - self.total_pagado
+    @property
+    def pendiente_clasificar(self):
+        return self.tipo == self.Tipo.AL_CORTE and self.pesadas.filter(clasificacion__isnull=True).exists()
     class Meta:
         verbose_name = 'Viaje'; verbose_name_plural = 'Viajes'; ordering = ['-fecha', '-created_at']
 

@@ -9,12 +9,12 @@
     <h6 class="fw-bold mb-4" style="color: white; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.5px;">
       <i class="bi bi-funnel me-2"></i>Filtros de Búsqueda
     </h6>
-    <div class="row g-3">
-      <div class="col-md-3">
+    <form method="get" class="row g-3">
+      <div class="col-md-2">
         <label class="form-label fw-semibold small" style="color: var(--text-secondary);">Producto</label>
         <input type="text" class="form-control" placeholder="Buscar producto..." style="border-radius: 8px; border: 1px solid var(--border-light); padding: 0.75rem 1rem;">
       </div>
-      <div class="col-md-3">
+      <div class="col-md-2">
         <label class="form-label fw-semibold small" style="color: var(--text-secondary);">Proveedor</label>
         <input type="text" class="form-control" placeholder="Buscar proveedor..." style="border-radius: 8px; border: 1px solid var(--border-light); padding: 0.75rem 1rem;">
       </div>
@@ -26,12 +26,26 @@
         <label class="form-label fw-semibold small" style="color: var(--text-secondary);">Hasta</label>
         <input type="date" class="form-control" style="border-radius: 8px; border: 1px solid var(--border-light); padding: 0.75rem 1rem;">
       </div>
+      <div class="col-md-2">
+        <label class="form-label fw-semibold small" style="color: var(--text-secondary);">Tipo</label>
+        <select name="tipo" class="form-select" style="border-radius: 8px; border: 1px solid var(--border-light); padding: 0.75rem 1rem;">
+          <option value="">Todos</option>
+          <option value="normal" {% if tipo_filtro == 'normal' %}selected{% endif %}>Normal</option>
+          <option value="al_corte" {% if tipo_filtro == 'al_corte' %}selected{% endif %}>Al corte</option>
+        </select>
+      </div>
       <div class="col-md-2 d-flex align-items-end gap-2">
-        <button class="btn w-100" style="background: var(--orange-primary); color: white; border-radius: 8px; border: none; padding: 0.75rem 1rem; font-weight: 600; font-size: 0.9rem;">
+        <button type="submit" class="btn w-100" style="background: var(--orange-primary); color: white; border-radius: 8px; border: none; padding: 0.75rem 1rem; font-weight: 600; font-size: 0.9rem;">
           <i class="bi bi-search me-1"></i>Buscar
         </button>
       </div>
-    </div>
+      <div class="col-12">
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" name="pendiente_clasificar" value="1" id="chk_pendiente" {% if solo_pendientes %}checked{% endif %}>
+          <label class="form-check-label small fw-semibold" for="chk_pendiente" style="color: var(--text-secondary);">Solo pendientes de clasificar</label>
+        </div>
+      </div>
+    </form>
   </div>
 </div>
 
@@ -107,6 +121,7 @@
           <tr>
             <th class="ps-4 fw-bold small" style="color: var(--text-secondary);">FECHA</th>
             <th class="fw-bold small" style="color: var(--text-secondary);">PRODUCTO</th>
+            <th class="fw-bold small" style="color: var(--text-secondary);">TIPO</th>
             <th class="fw-bold small" style="color: var(--text-secondary);">PROVEEDOR</th>
             <th class="fw-bold small text-end pe-2" style="color: var(--text-secondary);">KG NETO</th>
             <th class="fw-bold small text-end pe-2" style="color: var(--text-secondary);">TOTAL</th>
@@ -123,6 +138,20 @@
             <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1">
               {{ v.producto }}
             </span>
+          </td>
+          <td>
+            {% if v.tipo == 'al_corte' %}
+              <span class="badge fw-bold px-2 py-1" style="background-color: rgba(255, 152, 0, 0.15); color: #e65100; border: 1px solid rgba(255, 152, 0, 0.3);">
+                Al corte
+                {% if v.pendiente_clasificar %}
+                  <i class="bi bi-exclamation-triangle-fill ms-1" title="Pendiente de clasificar"></i>
+                {% endif %}
+              </span>
+            {% else %}
+              <span class="badge fw-bold px-2 py-1" style="background-color: rgba(158, 158, 158, 0.15); color: #616161; border: 1px solid rgba(158, 158, 158, 0.3);">
+                Normal
+              </span>
+            {% endif %}
           </td>
           <td class="text-muted small">{{ v.proveedor }}</td>
           <td class="text-end pe-2 fw-semibold" style="color: var(--text-main);">{{ v.total_kg_neto|default:0|floatformat:1 }} kg</td>
@@ -150,7 +179,7 @@
         </tr>
         {% empty %}
         <tr>
-          <td colspan="8" class="text-center py-5">
+          <td colspan="9" class="text-center py-5">
             <div class="d-flex flex-column align-items-center justify-content-center" style="color: var(--text-secondary);">
               <i class="bi bi-inbox fs-1 mb-3" style="opacity: 0.4;"></i>
               <h6 class="fw-semibold mb-2">Sin viajes registrados</h6>

@@ -18,7 +18,7 @@
           {% csrf_token %}
           <div class="row g-3">
           {% for field in form %}
-            {% if field.field.widget.input_type == 'checkbox' %}
+            {% if field.field.widget.input_type == 'checkbox' or field.field.widget.input_type == 'radio' %}
             <div class="col-12">
               <label class="form-label form-control-sm text-uppercase fw-semibold mb-2" style="color: var(--text-sec); letter-spacing: 0.5px;">{{ field.label }}</label>
               {% if field.field.choices %}
