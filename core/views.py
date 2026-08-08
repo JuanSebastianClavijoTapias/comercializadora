@@ -7,6 +7,7 @@ from django.db.models.functions import Coalesce
 from django.utils import timezone
 from django.db import transaction
 from django.urls import reverse
+from django.utils.http import url_has_allowed_host_and_scheme
 from datetime import date, timedelta
 from decimal import Decimal, InvalidOperation
 from .models import *
@@ -282,6 +283,7 @@ def dashboard(request):
     total_credito_hoy = sum(v.total for v in ventas_credito_hoy)
     kg_credito_hoy = sum(v.total_kg for v in ventas_credito_hoy)
     num_ventas_credito = len(ventas_credito_hoy)
+    total_vendido_dinero = total_ventas_efectivo + total_credito_hoy
     
     total_gastos = sum(g.monto for g in gastos_hoy)
     balance_hoy = total_efectivo - total_gastos
@@ -470,6 +472,7 @@ def dashboard(request):
         'total_ventas_efectivo': total_ventas_efectivo,
         'total_abonos': total_abonos,
         'total_credito_hoy': total_credito_hoy,
+        'total_vendido_dinero': total_vendido_dinero,
         'kg_credito_hoy': kg_credito_hoy,
         'num_ventas_credito': num_ventas_credito,
         'saldo_credito_hoy': saldo_credito_hoy,
@@ -1741,6 +1744,14 @@ def inventario_weekly_summary(request):
     compras_semana_kg = sum(e.kg for e in compras_semana) or Decimal('0')
     total_compras_semana = sum(e.total for e in compras_semana) or Decimal('0')
 
+    # Historial completo de entradas (todas, sin filtrar por semana) —
+    # lo que se registra en entrada_inventario_create se ve aquí directo.
+    entradas_historial = EntradaInventario.objects.select_related(
+        'proveedor', 'clasificacion__producto'
+    ).prefetch_related('pesadas').order_by('-fecha', '-created_at')
+    entradas_historial_kg = sum(e.kg for e in entradas_historial) or Decimal('0')
+    entradas_historial_total = sum(e.total for e in entradas_historial) or Decimal('0')
+
     # Agrupación por proveedor
     from collections import defaultdict
     proveedores_data = defaultdict(lambda: {'kg': Decimal('0'), 'total': Decimal('0')})
@@ -1839,6 +1850,9 @@ def inventario_weekly_summary(request):
         'desechos_locales': desechos_locales,
         'total_desecho_local': total_desecho_local,
         'compras_semana': compras_semana,
+        'entradas_historial': entradas_historial,
+        'entradas_historial_kg': entradas_historial_kg,
+        'entradas_historial_total': entradas_historial_total,
         'resumen_proveedores': resumen_proveedores,
         'ingresos_semana': ingresos_semana,
         'weekly_history': get_weekly_history(),
@@ -1853,6 +1867,20 @@ def inventario_weekly_summary(request):
 @login_required
 def entrada_inventario_list(request):
     return inventario_weekly_summary(request)
+
+
+@login_required
+def entrada_inventario_historial(request):
+    entradas = EntradaInventario.objects.select_related(
+        'proveedor', 'clasificacion__producto'
+    ).prefetch_related('pesadas').order_by('-fecha', '-created_at')
+    total_kg = sum(e.kg for e in entradas) or Decimal('0')
+    total_valor = sum(e.total for e in entradas) or Decimal('0')
+    return render(request, 'core/inventario/entrada_inventario_list.html', {
+        'entradas': entradas,
+        'total_kg': total_kg,
+        'total_valor': total_valor,
+    })
 
 
 @login_required
@@ -1884,6 +1912,9 @@ def entrada_inventario_create(request):
             if desecho_local_form.is_valid():
                 desecho_local_form.save()
                 messages.success(request, 'Desecho registrado correctamente.')
+                next_url = request.POST.get('next', '').strip()
+                if next_url and url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}, require_https=request.is_secure()):
+                    return redirect(next_url)
                 return redirect('entrada_inventario_create')
             return render(request, 'core/inventario/entrada_inventario_nueva.html', {
                 'proveedores': proveedores, 'clasificaciones': clasificaciones,
@@ -1894,12 +1925,9 @@ def entrada_inventario_create(request):
         # --- Entrada de inventario (default) ---
         form_errors = []
         fecha = request.POST.get('fecha', '').strip()
-        proveedor_id = request.POST.get('proveedor', '').strip()
 
         if not fecha:
             form_errors.append('La fecha es requerida.')
-        if not proveedor_id:
-            form_errors.append('El proveedor es requerido.')
 
         # Parse pesada rows
         rows = []
@@ -1908,13 +1936,10 @@ def entrada_inventario_create(request):
             kg_val = request.POST.get(f'kg_bruto_{i}', '').strip()
             if kg_val:
                 cid = request.POST.get(f'clasificacion_{i}', '').strip()
-                precio_raw = request.POST.get(f'precio_por_kg_{i}', '0').strip().replace('.', '')
-                try:
-                    precio_val = Decimal(precio_raw) if precio_raw else Decimal('0')
-                except InvalidOperation:
-                    precio_val = Decimal('0')
+                pid = request.POST.get(f'proveedor_{i}', '').strip()
                 rows.append({
                     'clasificacion_id': cid,
+                    'proveedor_id': pid,
                     'num_canastillas_negras': int(request.POST.get(f'num_canastillas_negras_{i}', 0) or 0),
                     'num_canastillas_colores': int(request.POST.get(f'num_canastillas_colores_{i}', 0) or 0),
                     'kg_bruto': kg_val,
@@ -1927,16 +1952,20 @@ def entrada_inventario_create(request):
             if not r['clasificacion_id']:
                 form_errors.append('Todas las filas deben tener una clasificación seleccionada.')
                 break
+        for r in rows:
+            if not r['proveedor_id']:
+                form_errors.append('Todas las filas deben tener un proveedor seleccionado.')
+                break
 
         if not form_errors:
             from collections import defaultdict
             groups = defaultdict(list)
             for row in rows:
-                groups[row['clasificacion_id']].append(row)
+                groups[(row['clasificacion_id'], row['proveedor_id'])].append(row)
 
             # Read precio per classification from receipt inputs
             precios = {}
-            for cid in groups.keys():
+            for cid, _pid in groups.keys():
                 precio_raw = request.POST.get(f'precio_clasif_{cid}', '0').strip().replace('.', '')
                 try:
                     precio_val = Decimal(precio_raw) if precio_raw else Decimal('0')
@@ -1947,10 +1976,10 @@ def entrada_inventario_create(request):
             try:
                 with transaction.atomic():
                     last_pk = None
-                    for cid, group_rows in groups.items():
+                    for (cid, pid), group_rows in groups.items():
                         entrada = EntradaInventario(
                             fecha=fecha,
-                            proveedor_id=int(proveedor_id),
+                            proveedor_id=int(pid),
                             clasificacion_id=int(cid),
                             precio_por_kg=precios.get(cid, Decimal('0')),
                         )
@@ -1976,7 +2005,6 @@ def entrada_inventario_create(request):
             'clasificaciones': clasificaciones,
             'form_errors': form_errors,
             'fecha_default': request.POST.get('fecha', date.today().isoformat()),
-            'proveedor_selected': proveedor_id,
             'nomina_form': NominaForm(initial={'fecha': date.today()}),
             'desecho_local_form': DesechoLocalForm(),
         })

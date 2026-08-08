@@ -69,6 +69,30 @@
     </div>
   </div>
   <div class="col">
+    <div class="stat-card-white h-100" style="background: linear-gradient(135deg, #1976D2 0%, #0D47A1 100%);">
+      <div>
+        <div class="small fw-semibold" style="color: white;">Total Kg Vendido</div>
+        <div class="fs-4 fw-bold" style="color: white;">{{ vendido_kg|floatformat:0 }} kg</div>
+        <div class="small" style="color: rgba(255,255,255,0.9);">Efectivo + Crédito</div>
+      </div>
+      <div class="stat-icon-wrapper" style="background: rgba(255,255,255,0.25); color: white;">
+        <i class="bi bi-bag-check"></i>
+      </div>
+    </div>
+  </div>
+  <div class="col">
+    <div class="stat-card-white h-100" style="background: linear-gradient(135deg, #00ACC1 0%, #00838F 100%);">
+      <div>
+        <div class="small fw-semibold" style="color: white;">Total Ventas Hoy</div>
+        <div class="fs-4 fw-bold" style="color: white;">${{ total_vendido_dinero|default:0|cop }}</div>
+        <div class="small" style="color: rgba(255,255,255,0.9);">Efectivo + Crédito</div>
+      </div>
+      <div class="stat-icon-wrapper" style="background: rgba(255,255,255,0.25); color: white;">
+        <i class="bi bi-cash-stack"></i>
+      </div>
+    </div>
+  </div>
+  <div class="col">
     <div class="stat-card-white h-100" style="cursor: pointer; background: linear-gradient(135deg, #F57C00 0%, #E65100 100%);" data-bs-toggle="modal" data-bs-target="#modalPorCobrar">
       <div>
         <div class="small fw-semibold" style="color: white;">Total por Cobrar</div>

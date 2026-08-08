@@ -68,6 +68,7 @@ urlpatterns = [
     # Entradas de Inventario
     path('inventario/entradas/', views.entrada_inventario_list, name='entrada_inventario_list'),
     path('inventario/entradas/nueva/', views.entrada_inventario_create, name='entrada_inventario_create'),
+    path('inventario/entradas/historial/', views.entrada_inventario_historial, name='entrada_inventario_historial'),
     path('inventario/entradas/<int:pk>/', views.entrada_inventario_detail, name='entrada_inventario_detail'),
     path('inventario/entradas/<int:pk>/editar/', views.entrada_inventario_edit, name='entrada_inventario_edit'),
     path('inventario/entradas/<int:pk>/eliminar/', views.entrada_inventario_delete, name='entrada_inventario_delete'),
