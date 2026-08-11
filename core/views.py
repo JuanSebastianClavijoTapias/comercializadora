@@ -2059,6 +2059,7 @@ def entrada_inventario_detail(request, pk):
         'entrada': entrada,
         'pesadas': pesadas,
         'precio_form': precio_form,
+        'proveedores': Proveedor.objects.order_by('nombre'),
         'clasificaciones': Clasificacion.objects.filter(activo=True).select_related('producto').order_by('producto__nombre', 'nombre'),
         'kg_bruto_total': kg_bruto_total,
         'peso_total_canastillas': peso_total_canastillas,
@@ -2074,27 +2075,60 @@ def pesada_entrada_add(request, pk):
     entrada = get_object_or_404(EntradaInventario, pk=pk)
     if request.method == 'POST':
         if 'kg_bruto_0' in request.POST:
-            guardadas = 0
+            from collections import defaultdict
+            rows = []
             i = 0
             while f'kg_bruto_{i}' in request.POST:
                 kg_bruto_val = request.POST.get(f'kg_bruto_{i}', '').strip()
                 if kg_bruto_val:
-                    clasif_id = request.POST.get(f'clasificacion_{i}', '').strip()
-                    data = {
+                    clasif_id = request.POST.get(f'clasificacion_{i}', '').strip() or str(entrada.clasificacion_id)
+                    prov_id = request.POST.get(f'proveedor_{i}', '').strip() or str(entrada.proveedor_id)
+                    rows.append({
+                        'clasificacion_id': clasif_id,
+                        'proveedor_id': prov_id,
                         'num_canastillas_negras': request.POST.get(f'num_canastillas_negras_{i}', '') or 0,
                         'num_canastillas_colores': request.POST.get(f'num_canastillas_colores_{i}', '') or 0,
                         'kg_bruto': kg_bruto_val,
-                        'clasificacion': clasif_id or None,
-                    }
-                    form = PesadaEntradaForm(data)
-                    if form.is_valid():
-                        p = form.save(commit=False)
-                        p.entrada = entrada
-                        p.save()
-                        guardadas += 1
+                    })
                 i += 1
+
+            groups = defaultdict(list)
+            for row in rows:
+                groups[(row['clasificacion_id'], row['proveedor_id'])].append(row)
+
+            guardadas = 0
+            nuevas_entradas = 0
+            with transaction.atomic():
+                for (cid, pid), group_rows in groups.items():
+                    if cid == str(entrada.clasificacion_id) and pid == str(entrada.proveedor_id):
+                        target = entrada
+                    else:
+                        target = EntradaInventario.objects.create(
+                            fecha=entrada.fecha,
+                            proveedor_id=int(pid),
+                            clasificacion_id=int(cid),
+                            precio_por_kg=Decimal('0'),
+                        )
+                        nuevas_entradas += 1
+                    for row in group_rows:
+                        data = {
+                            'num_canastillas_negras': row['num_canastillas_negras'],
+                            'num_canastillas_colores': row['num_canastillas_colores'],
+                            'kg_bruto': row['kg_bruto'],
+                            'clasificacion': cid,
+                        }
+                        form = PesadaEntradaForm(data)
+                        if form.is_valid():
+                            p = form.save(commit=False)
+                            p.entrada = target
+                            p.save()
+                            guardadas += 1
+
             if guardadas:
-                messages.success(request, f'{guardadas} pesada{"s" if guardadas > 1 else ""} registrada{"s" if guardadas > 1 else ""}.')
+                msg = f'{guardadas} pesada{"s" if guardadas != 1 else ""} registrada{"s" if guardadas != 1 else ""}.'
+                if nuevas_entradas:
+                    msg += f' Se crearon {nuevas_entradas} entrada{"s" if nuevas_entradas != 1 else ""} nueva{"s" if nuevas_entradas != 1 else ""} para el/los proveedor(es) distinto(s).'
+                messages.success(request, msg)
             else:
                 messages.warning(request, 'No se ingresó ningún Kg Bruto válido.')
     return redirect('entrada_inventario_detail', pk=pk)

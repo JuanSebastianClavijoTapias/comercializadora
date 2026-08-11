@@ -73,11 +73,6 @@
   </a>
 
   <div class="weekly-toolbar d-flex flex-wrap gap-2">
-    {% if previous_week_has_data %}
-    <a href="?week={{ previous_week_start|date:'Y-m-d' }}" class="btn btn-outline-secondary btn-sm">
-      <i class="bi bi-chevron-left me-1"></i>Semana anterior
-    </a>
-    {% endif %}
     {% if next_week_start %}
     <a href="?week={{ next_week_start|date:'Y-m-d' }}" class="btn btn-outline-secondary btn-sm">
       Semana siguiente<i class="bi bi-chevron-right ms-1"></i>
@@ -379,9 +374,6 @@
                             data-bs-toggle="modal" data-bs-target="#modalWeek_{{ item.week_start|date:'Y_m_d' }}">
                       <i class="bi bi-eye"></i>
                     </button>
-                    <a href="?week={{ item.week_start|date:'Y-m-d' }}" class="btn btn-outline-secondary" title="Ir a esta semana">
-                      <i class="bi bi-box-arrow-in-right"></i>
-                    </a>
                     {% if item.record %}
                     <a href="{% url 'weekly_inventory_edit' item.record.pk %}" class="btn btn-outline-secondary" title="Editar inventario">
                       <i class="bi bi-pencil"></i>
@@ -1175,9 +1167,11 @@
 
       </div>
       <div class="modal-footer">
-        <a href="?week={{ item.week_start|date:'Y-m-d' }}" class="btn btn-primary btn-sm">
-          <i class="bi bi-box-arrow-in-right me-1"></i>Ir a esta semana
+        {% if item.record %}
+        <a href="{% url 'weekly_inventory_edit' item.record.pk %}" class="btn btn-primary btn-sm">
+          <i class="bi bi-pencil-square me-1"></i>Editar inventario
         </a>
+        {% endif %}
         <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cerrar</button>
       </div>
     </div>
