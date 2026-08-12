@@ -399,9 +399,22 @@ def dashboard(request):
         })
     
     # 3. VENDIDO: Suma de kg_vendido de todas las ventas de hoy (todos los productos)
-    # 3a. Ventas en efectivo del día
-    detalles_efectivo_todos = [d for v in ventas_efectivo_hoy for d in v.detalles.all()]
-    kg_vendido_efectivo = sum(d.kg_vendido for d in detalles_efectivo_todos)
+    # 3a. Ventas en efectivo del día.
+    #     Una venta en efectivo puede registrar los kg de dos formas: con líneas de
+    #     detalle (DetalleVentaEfectivo) o directamente en el campo kg_vendido del
+    #     encabezado (que es lo que crea el formulario de "Nueva Venta en Efectivo").
+    #     Se usan los detalles cuando existen y, si no, el kg del encabezado.
+    detalles_efectivo_todos = []
+    ventas_efectivo_sin_detalle = []
+    kg_vendido_efectivo = Decimal('0')
+    for venta_ef in ventas_efectivo_hoy.select_related('producto', 'cliente').prefetch_related('detalles__producto'):
+        detalles_venta = list(venta_ef.detalles.all())
+        if detalles_venta:
+            detalles_efectivo_todos.extend(detalles_venta)
+            kg_vendido_efectivo += sum(d.kg_vendido for d in detalles_venta)
+        else:
+            kg_vendido_efectivo += venta_ef.kg_vendido or Decimal('0')
+            ventas_efectivo_sin_detalle.append(venta_ef)
     
     # 3b. Ventas a crédito del día
     detalles_credito_hoy = DetalleVentaCredito.objects.filter(venta__fecha=hoy).select_related('clasificacion__producto', 'venta__cliente')
@@ -421,10 +434,19 @@ def dashboard(request):
             'kg_vendido': detalle.kg_vendido,
             'monto': detalle.total
         })
+    for venta_ef in ventas_efectivo_sin_detalle:
+        detalles_ventas.append({
+            'tipo': 'Efectivo',
+            'cliente': venta_ef.cliente.nombre if venta_ef.cliente else 'General',
+            'producto': venta_ef.producto.nombre if venta_ef.producto else 'N/A',
+            'kg_vendido': venta_ef.kg_vendido or Decimal('0'),
+            'monto': venta_ef.total
+        })
     for detalle in detalles_credito_hoy:
         detalles_ventas.append({
             'tipo': 'Crédito',
             'cliente': detalle.venta.cliente.nombre,
+            'producto': detalle.clasificacion.producto.nombre if detalle.clasificacion and detalle.clasificacion.producto else 'N/A',
             'clasificacion': detalle.clasificacion.nombre,
             'kg_vendido': detalle.kg_vendido,
             'monto': detalle.total
@@ -492,8 +514,13 @@ def dashboard(request):
         'inventario_inicial_kg': inventario_inicial_kg,
         'inventario_inicial_toneladas': inventario_inicial_toneladas,
         'compras_hoy_kg': compras_hoy_kg,
+        'compras_hoy_toneladas': compras_hoy_toneladas,
         'vendido_kg': total_kg_vendido,
+        'vendido_toneladas': vendido_toneladas,
+        'kg_vendido_efectivo': kg_vendido_efectivo,
+        'kg_vendido_credito': kg_vendido_credito,
         'desechos_kg': desechos_kg,
+        'desechos_toneladas': desechos_toneladas,
         # Detalles para modales
         'detalles_inventario_inicial': detalles_inventario_inicial,
         'detalles_compras': detalles_compras,
