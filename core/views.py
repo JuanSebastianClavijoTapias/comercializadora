@@ -268,10 +268,25 @@ def get_weekly_history():
 @login_required
 def dashboard(request):
     hoy = date.today()
+    fecha_param = request.GET.get('fecha')
+    if fecha_param:
+        try:
+            fecha_sel = date.fromisoformat(fecha_param)
+        except ValueError:
+            fecha_sel = hoy
+    else:
+        fecha_sel = hoy
+
     ventas_efectivo_hoy = VentaEfectivo.objects.filter(fecha=hoy)
     ventas_credito_hoy = VentaCredito.objects.filter(fecha=hoy).prefetch_related('detalles')
     gastos_hoy = Gasto.objects.filter(fecha=hoy)
     abonos_hoy = PagoVentaCredito.objects.filter(fecha=hoy)
+
+    # Querysets por fecha seleccionada (para la tabla de movimientos)
+    ventas_efectivo_sel = VentaEfectivo.objects.filter(fecha=fecha_sel).select_related('cliente', 'producto').prefetch_related('detalles')
+    ventas_credito_sel = VentaCredito.objects.filter(fecha=fecha_sel).select_related('cliente', 'producto')
+    gastos_sel = Gasto.objects.filter(fecha=fecha_sel).select_related('categoria')
+    abonos_sel = PagoVentaCredito.objects.filter(fecha=fecha_sel).select_related('venta__cliente')
     
     total_ventas_efectivo = sum(v.total for v in ventas_efectivo_hoy)
     total_abonos = sum(a.monto for a in abonos_hoy)
@@ -294,7 +309,6 @@ def dashboard(request):
     ) if v.saldo_pendiente > 0]
     total_por_cobrar = sum(v.saldo_pendiente for v in ventas_por_cobrar)
     
-    viajes_recientes = Viaje.objects.all().order_by('-id')[:5]
     ventas_pendientes_top = ventas_por_cobrar[:5]
     
     # 10 Últimas ventas del día (mezclando efectivo y crédito)
@@ -483,6 +497,67 @@ def dashboard(request):
             'observaciones': d.observaciones or '',
         })
     
+    # ---- TABLA UNIFICADA: Movimientos de la fecha seleccionada (editable) ----
+    movimientos_hoy = []
+
+    for ve in ventas_efectivo_sel:
+        productos_str = ', '.join([d.producto.nombre for d in ve.detalles.all()]) if ve.detalles.exists() else (ve.producto.nombre if ve.producto else 'General')
+        movimientos_hoy.append({
+            'id': ve.id,
+            'tipo': 'Venta Efectivo',
+            'tipo_class': 'success',
+            'detalle': productos_str,
+            'cliente': str(ve.cliente) if ve.cliente else 'General',
+            'monto': ve.total,
+            'fecha': ve.fecha,
+            'edit_url': f'/ventas/efectivo/{ve.id}/editar/',
+            'icon': 'bi-cash-coin',
+        })
+
+    for vc in ventas_credito_sel:
+        movimientos_hoy.append({
+            'id': vc.id,
+            'tipo': 'Venta Crédito',
+            'tipo_class': 'warning',
+            'detalle': vc.producto.nombre if vc.producto else 'Varios',
+            'cliente': str(vc.cliente) if vc.cliente else 'General',
+            'monto': vc.total,
+            'fecha': vc.fecha,
+            'edit_url': f'/ventas/credito/{vc.id}/',
+            'icon': 'bi-credit-card',
+        })
+
+    for ab in abonos_sel:
+        movimientos_hoy.append({
+            'id': ab.id,
+            'tipo': 'Abono Crédito',
+            'tipo_class': 'info',
+            'detalle': f'Abono a venta #{ab.venta_id}',
+            'cliente': str(ab.venta.cliente) if ab.venta.cliente else 'N/A',
+            'monto': ab.monto,
+            'fecha': ab.fecha,
+            'edit_url': f'/ventas/credito/{ab.venta_id}/',
+            'icon': 'bi-arrow-down-circle',
+        })
+
+    for g in gastos_sel:
+        movimientos_hoy.append({
+            'id': g.id,
+            'tipo': 'Gasto',
+            'tipo_class': 'danger',
+            'detalle': g.descripcion,
+            'cliente': g.categoria.nombre if g.categoria else 'N/A',
+            'monto': g.monto,
+            'fecha': g.fecha,
+            'edit_url': f'/gastos/{g.id}/editar/',
+            'icon': 'bi-receipt',
+        })
+
+    movimientos_hoy.sort(key=lambda x: (x['fecha'], x['id']), reverse=True)
+
+    fecha_anterior = fecha_sel - timedelta(days=1)
+    fecha_siguiente = fecha_sel + timedelta(days=1)
+
     pago_form = PagoVentaCreditoForm()
     
     # Obtener datos de inventario semanal
@@ -502,9 +577,13 @@ def dashboard(request):
         'balance_hoy': balance_hoy,
         'total_por_cobrar': total_por_cobrar,
         'ventas_por_cobrar': ventas_por_cobrar, 
-        'viajes_recientes': viajes_recientes,
         'ventas_pendientes': ventas_pendientes_top,
         'ultimas_ventas_hoy': ultimas_ventas_hoy_top,
+        'movimientos_hoy': movimientos_hoy,
+        'fecha_sel': fecha_sel,
+        'fecha_anterior': fecha_anterior.isoformat(),
+        'fecha_siguiente': fecha_siguiente.isoformat(),
+        'es_hoy': fecha_sel == hoy,
         'num_ventas_efectivo': ventas_efectivo_hoy.count(),
         'num_abonos': abonos_hoy.count(),
         'num_ventas_credito': ventas_credito_hoy.count(),
