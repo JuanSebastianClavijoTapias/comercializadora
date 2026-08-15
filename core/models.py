@@ -321,6 +321,33 @@ class PagoVentaCredito(models.Model):
     class Meta:
         verbose_name = 'Pago de Venta'; verbose_name_plural = 'Pagos de Ventas'; ordering = ['-fecha']
 
+
+class ResumenDiario(models.Model):
+    """Valores manuales/ajustados del resumen de un día (cierre editable).
+
+    Si un campo es NULL se muestra el valor calculado automáticamente;
+    si se llena, se usa ese valor manual en la tabla del dashboard.
+    """
+    fecha = models.DateField(unique=True, verbose_name='Fecha')
+    efectivo = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True, verbose_name='Efectivo')
+    abonos = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True, verbose_name='Cobro de crédito')
+    kg_credito = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True, verbose_name='Kg a crédito')
+    kg_total = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True, verbose_name='Kg total vendido')
+    ventas_total = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True, verbose_name='Total de ventas')
+    por_cobrar = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True, verbose_name='Total a cobrar')
+    gastos = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True, verbose_name='Gastos')
+    balance = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True, verbose_name='Balance')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='Actualizado')
+
+    class Meta:
+        verbose_name = 'Resumen diario'
+        verbose_name_plural = 'Resúmenes diarios'
+        ordering = ['-fecha']
+
+    def __str__(self):
+        return f'Resumen {self.fecha}'
+
+
 # ------------- SEÑALES PARA ACTUALIZAR STOCK -------------
 from django.db.models.signals import pre_save, post_save, post_delete
 from django.dispatch import receiver

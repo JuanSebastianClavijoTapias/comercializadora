@@ -309,37 +309,77 @@
               </tr>
             </thead>
             <tbody class="border-top-0">
-              <tr>
+              <tr class="resumen-fila" data-campo="efectivo" data-tipo="dinero" data-raw="{{ resumen_sel.efectivo }}">
                 <td class="ps-4"><i class="bi bi-cash-coin me-2 text-success"></i>Efectivo vendido</td>
-                <td class="text-end pe-4 fw-bold text-success" id="val-efectivo">${{ resumen_sel.efectivo|default:0|cop }}</td>
+                <td class="text-end pe-4">
+                  <span class="v-valor fw-bold text-success">${{ resumen_sel.efectivo|default:0|cop }}</span>
+                  <span class="v-manual text-warning ms-1" title="Valor editado manualmente" {% if not resumen_sel.manual.efectivo %}style="display:none"{% endif %}>✎</span>
+                  <input type="text" class="form-control form-control-sm v-input" inputmode="decimal" autocomplete="off" style="display:none; width:120px; text-align:right; margin-left:auto;">
+                  <button type="button" class="btn btn-link btn-sm text-muted p-0 ms-1 v-edit" title="Editar"><i class="bi bi-pencil"></i></button>
+                </td>
               </tr>
-              <tr>
+              <tr class="resumen-fila" data-campo="abonos" data-tipo="dinero" data-raw="{{ resumen_sel.abonos }}">
                 <td class="ps-4"><i class="bi bi-arrow-down-circle me-2 text-info"></i>Cobro de crédito</td>
-                <td class="text-end pe-4 fw-bold text-info" id="val-abonos">${{ resumen_sel.abonos|default:0|cop }}</td>
+                <td class="text-end pe-4">
+                  <span class="v-valor fw-bold text-info">${{ resumen_sel.abonos|default:0|cop }}</span>
+                  <span class="v-manual text-warning ms-1" title="Valor editado manualmente" {% if not resumen_sel.manual.abonos %}style="display:none"{% endif %}>✎</span>
+                  <input type="text" class="form-control form-control-sm v-input" inputmode="decimal" autocomplete="off" style="display:none; width:120px; text-align:right; margin-left:auto;">
+                  <button type="button" class="btn btn-link btn-sm text-muted p-0 ms-1 v-edit" title="Editar"><i class="bi bi-pencil"></i></button>
+                </td>
               </tr>
-              <tr>
+              <tr class="resumen-fila" data-campo="kg_credito" data-tipo="kg" data-raw="{{ resumen_sel.kg_credito }}">
                 <td class="ps-4"><i class="bi bi-box-seam me-2 text-secondary"></i>Kg vendido a crédito</td>
-                <td class="text-end pe-4 fw-bold" id="val-kg-credito">{{ resumen_sel.kg_credito|floatformat:0 }} kg</td>
+                <td class="text-end pe-4">
+                  <span class="v-valor fw-bold">{{ resumen_sel.kg_credito|floatformat:0 }} kg</span>
+                  <span class="v-manual text-warning ms-1" title="Valor editado manualmente" {% if not resumen_sel.manual.kg_credito %}style="display:none"{% endif %}>✎</span>
+                  <input type="text" class="form-control form-control-sm v-input" inputmode="decimal" autocomplete="off" style="display:none; width:120px; text-align:right; margin-left:auto;">
+                  <button type="button" class="btn btn-link btn-sm text-muted p-0 ms-1 v-edit" title="Editar"><i class="bi bi-pencil"></i></button>
+                </td>
               </tr>
-              <tr>
+              <tr class="resumen-fila" data-campo="kg_total" data-tipo="kg" data-raw="{{ resumen_sel.kg_total }}">
                 <td class="ps-4"><i class="bi bi-bag-check me-2 text-primary"></i>Total vendido (kg)</td>
-                <td class="text-end pe-4 fw-bold" id="val-kg-total">{{ resumen_sel.kg_total|floatformat:0 }} kg</td>
+                <td class="text-end pe-4">
+                  <span class="v-valor fw-bold">{{ resumen_sel.kg_total|floatformat:0 }} kg</span>
+                  <span class="v-manual text-warning ms-1" title="Valor editado manualmente" {% if not resumen_sel.manual.kg_total %}style="display:none"{% endif %}>✎</span>
+                  <input type="text" class="form-control form-control-sm v-input" inputmode="decimal" autocomplete="off" style="display:none; width:120px; text-align:right; margin-left:auto;">
+                  <button type="button" class="btn btn-link btn-sm text-muted p-0 ms-1 v-edit" title="Editar"><i class="bi bi-pencil"></i></button>
+                </td>
               </tr>
-              <tr>
+              <tr class="resumen-fila" data-campo="ventas_total" data-tipo="dinero" data-raw="{{ resumen_sel.ventas_total }}">
                 <td class="ps-4"><i class="bi bi-cash-stack me-2 text-primary"></i>Total de ventas</td>
-                <td class="text-end pe-4 fw-bold" id="val-ventas">${{ resumen_sel.ventas_total|default:0|cop }}</td>
+                <td class="text-end pe-4">
+                  <span class="v-valor fw-bold">${{ resumen_sel.ventas_total|default:0|cop }}</span>
+                  <span class="v-manual text-warning ms-1" title="Valor editado manualmente" {% if not resumen_sel.manual.ventas_total %}style="display:none"{% endif %}>✎</span>
+                  <input type="text" class="form-control form-control-sm v-input" inputmode="decimal" autocomplete="off" style="display:none; width:120px; text-align:right; margin-left:auto;">
+                  <button type="button" class="btn btn-link btn-sm text-muted p-0 ms-1 v-edit" title="Editar"><i class="bi bi-pencil"></i></button>
+                </td>
               </tr>
-              <tr>
+              <tr class="resumen-fila" data-campo="por_cobrar" data-tipo="dinero" data-raw="{{ resumen_sel.por_cobrar }}">
                 <td class="ps-4"><i class="bi bi-wallet2 me-2 text-warning"></i>Total a cobrar</td>
-                <td class="text-end pe-4 fw-bold text-warning" id="val-cobrar">${{ resumen_sel.por_cobrar|default:0|cop }}</td>
+                <td class="text-end pe-4">
+                  <span class="v-valor fw-bold text-warning">${{ resumen_sel.por_cobrar|default:0|cop }}</span>
+                  <span class="v-manual text-warning ms-1" title="Valor editado manualmente" {% if not resumen_sel.manual.por_cobrar %}style="display:none"{% endif %}>✎</span>
+                  <input type="text" class="form-control form-control-sm v-input" inputmode="decimal" autocomplete="off" style="display:none; width:120px; text-align:right; margin-left:auto;">
+                  <button type="button" class="btn btn-link btn-sm text-muted p-0 ms-1 v-edit" title="Editar"><i class="bi bi-pencil"></i></button>
+                </td>
               </tr>
-              <tr>
+              <tr class="resumen-fila" data-campo="gastos" data-tipo="dinero" data-raw="{{ resumen_sel.gastos }}">
                 <td class="ps-4"><i class="bi bi-receipt me-2 text-danger"></i>Gastos</td>
-                <td class="text-end pe-4 fw-bold text-danger" id="val-gastos">${{ resumen_sel.gastos|default:0|cop }}</td>
+                <td class="text-end pe-4">
+                  <span class="v-valor fw-bold text-danger">${{ resumen_sel.gastos|default:0|cop }}</span>
+                  <span class="v-manual text-warning ms-1" title="Valor editado manualmente" {% if not resumen_sel.manual.gastos %}style="display:none"{% endif %}>✎</span>
+                  <input type="text" class="form-control form-control-sm v-input" inputmode="decimal" autocomplete="off" style="display:none; width:120px; text-align:right; margin-left:auto;">
+                  <button type="button" class="btn btn-link btn-sm text-muted p-0 ms-1 v-edit" title="Editar"><i class="bi bi-pencil"></i></button>
+                </td>
               </tr>
-              <tr class="table-light">
+              <tr class="resumen-fila table-light" data-campo="balance" data-tipo="dinero" data-raw="{{ resumen_sel.balance }}">
                 <td class="ps-4 fw-bold"><i class="bi bi-bar-chart-line me-2"></i>Balance</td>
-                <td class="text-end pe-4 fw-bold {% if resumen_sel.balance < 0 %}text-danger{% else %}text-success{% endif %}" id="val-balance">${{ resumen_sel.balance|default:0|cop }}</td>
+                <td class="text-end pe-4">
+                  <span class="v-valor fw-bold {% if resumen_sel.balance < 0 %}text-danger{% else %}text-success{% endif %}">${{ resumen_sel.balance|default:0|cop }}</span>
+                  <span class="v-manual text-warning ms-1" title="Valor editado manualmente" {% if not resumen_sel.manual.balance %}style="display:none"{% endif %}>✎</span>
+                  <input type="text" class="form-control form-control-sm v-input" inputmode="decimal" autocomplete="off" style="display:none; width:120px; text-align:right; margin-left:auto;">
+                  <button type="button" class="btn btn-link btn-sm text-muted p-0 ms-1 v-edit" title="Editar"><i class="bi bi-pencil"></i></button>
+                </td>
               </tr>
             </tbody>
           </table>
@@ -347,6 +387,8 @@
       </div>
     </div>
   </div>
+  {% csrf_token %}
+  {{ resumen_sel.manual|json_script:"manual-data" }}
   <div class="col-12">
     <div class="card border-0 shadow-sm" style="border-radius: 12px; overflow: hidden;">
       <div class="card-header border-bottom-0 d-flex justify-content-between align-items-center py-3">
@@ -639,6 +681,8 @@
   var hoyIso = '{{ hoy|date:"Y-m-d" }}';
   var fechaActual = '{{ fecha_sel|date:"Y-m-d" }}';
   var urlResumen = '{% url "resumen_dia_json" %}';
+  var urlGuardar = '{% url "resumen_dia_guardar" %}';
+  var csrfToken = (document.querySelector('[name=csrfmiddlewaretoken]') || {}).value || '';
 
   function formatearCop(valor) {
     var n = Math.round(parseFloat(valor) || 0);
@@ -648,6 +692,12 @@
     var n = Math.round(parseFloat(valor) || 0);
     return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ' kg';
   }
+  function formatearValor(campo, valor) {
+    return (campo === 'kg_credito' || campo === 'kg_total') ? formatearKg(valor) : formatearCop(valor);
+  }
+  function rawLimpio(valor) {
+    return String(parseFloat(valor) || 0);
+  }
 
   function sumarDias(iso, delta) {
     var p = iso.split('-').map(Number);
@@ -656,25 +706,28 @@
     return dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0') + '-' + String(dt.getDate()).padStart(2, '0');
   }
 
+  function filasResumen() {
+    return document.querySelectorAll('.resumen-fila');
+  }
+
   function actualizarResumen(d) {
-    document.getElementById('val-efectivo').textContent = formatearCop(d.efectivo);
-    document.getElementById('val-abonos').textContent = formatearCop(d.abonos);
-    document.getElementById('val-kg-credito').textContent = formatearKg(d.kg_credito);
-    document.getElementById('val-kg-total').textContent = formatearKg(d.kg_total);
-    document.getElementById('val-ventas').textContent = formatearCop(d.ventas_total);
-    document.getElementById('val-cobrar').textContent = formatearCop(d.por_cobrar);
-    document.getElementById('val-gastos').textContent = formatearCop(d.gastos);
-
-    var balanceEl = document.getElementById('val-balance');
-    var balanceNum = parseFloat(d.balance) || 0;
-    balanceEl.textContent = formatearCop(d.balance);
-    balanceEl.className = 'text-end pe-4 fw-bold ' + (balanceNum < 0 ? 'text-danger' : 'text-success');
-
+    fechaActual = d.fecha;
+    filasResumen().forEach(function (tr) {
+      var campo = tr.dataset.campo;
+      var valor = d[campo];
+      var manual = d.manual && d.manual[campo];
+      tr.dataset.raw = valor;
+      var disp = tr.querySelector('.v-valor');
+      disp.textContent = formatearValor(campo, valor);
+      if (campo === 'balance') {
+        var num = parseFloat(valor) || 0;
+        disp.className = 'v-valor fw-bold ' + (num < 0 ? 'text-danger' : 'text-success');
+      }
+      var ind = tr.querySelector('.v-manual');
+      if (ind) ind.style.display = manual ? '' : 'none';
+    });
     var badge = document.getElementById('fecha-badge');
-    if (badge) {
-      var esHoy = d.fecha === hoyIso;
-      badge.textContent = d.fecha.split('-').reverse().join('/') + (esHoy ? ' (hoy)' : '');
-    }
+    if (badge) badge.textContent = d.fecha.split('-').reverse().join('/') + (d.fecha === hoyIso ? ' (hoy)' : '');
     var btnHoy = document.getElementById('btn-hoy');
     if (btnHoy) btnHoy.style.display = (d.fecha === hoyIso) ? 'none' : '';
     var btnSig = document.getElementById('btn-siguiente');
@@ -685,7 +738,6 @@
     fetch(urlResumen + '?fecha=' + fecha, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
       .then(function (r) { return r.json(); })
       .then(function (d) {
-        fechaActual = d.fecha;
         var sel = document.getElementById('fecha-selector');
         if (sel) sel.value = d.fecha;
         actualizarResumen(d);
@@ -697,7 +749,69 @@
     cargarFecha(sumarDias(fechaActual, delta));
   }
 
+  function empezarEdicion(tr) {
+    var input = tr.querySelector('.v-input');
+    var disp = tr.querySelector('.v-valor');
+    var btn = tr.querySelector('.v-edit');
+    var ind = tr.querySelector('.v-manual');
+    input.value = rawLimpio(tr.dataset.raw);
+    disp.style.display = 'none';
+    if (ind) ind.style.display = 'none';
+    btn.style.display = 'none';
+    input.style.display = 'inline-block';
+    input.focus();
+    input.select();
+  }
+
+  function terminarEdicion(tr, guardar) {
+    var input = tr.querySelector('.v-input');
+    var disp = tr.querySelector('.v-valor');
+    var btn = tr.querySelector('.v-edit');
+    input.style.display = 'none';
+    disp.style.display = '';
+    btn.style.display = '';
+    if (guardar) guardarCampo(tr, input.value);
+  }
+
+  function guardarCampo(tr, valor) {
+    var campo = tr.dataset.campo;
+    fetch(urlGuardar, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+      body: JSON.stringify({ campo: campo, fecha: fechaActual, valor: valor })
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (res) {
+        if (res.error) { alert(res.error); return; }
+        tr.dataset.raw = res.valor;
+        var disp = tr.querySelector('.v-valor');
+        disp.textContent = formatearValor(campo, res.valor);
+        if (campo === 'balance') {
+          var num = parseFloat(res.valor) || 0;
+          disp.className = 'v-valor fw-bold ' + (num < 0 ? 'text-danger' : 'text-success');
+        }
+        var ind = tr.querySelector('.v-manual');
+        if (ind) ind.style.display = res.manual ? '' : 'none';
+      })
+      .catch(function () {});
+  }
+
   document.addEventListener('DOMContentLoaded', function () {
+    filasResumen().forEach(function (tr) {
+      var disp = tr.querySelector('.v-valor');
+      var input = tr.querySelector('.v-input');
+      var btn = tr.querySelector('.v-edit');
+      if (btn) btn.addEventListener('click', function () { empezarEdicion(tr); });
+      if (disp) disp.addEventListener('click', function () { empezarEdicion(tr); });
+      if (input) {
+        input.addEventListener('blur', function () { terminarEdicion(tr, true); });
+        input.addEventListener('keydown', function (e) {
+          if (e.key === 'Enter') { e.preventDefault(); terminarEdicion(tr, true); }
+          else if (e.key === 'Escape') { terminarEdicion(tr, false); }
+        });
+      }
+    });
+
     var selector = document.getElementById('fecha-selector');
     if (selector) {
       selector.addEventListener('change', function () {

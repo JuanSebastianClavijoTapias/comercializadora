@@ -8,6 +8,7 @@ from django.utils import timezone
 from django.db import transaction
 from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
+import json
 from datetime import date, timedelta
 from decimal import Decimal, InvalidOperation
 from .models import *
@@ -264,8 +265,11 @@ def get_weekly_history():
 
     return history
 
+RESUMEN_CAMPOS = ['efectivo', 'abonos', 'kg_credito', 'kg_total', 'ventas_total', 'por_cobrar', 'gastos', 'balance']
+
+
 def _resumen_fecha(fecha):
-    """Métricas agregadas de un día para la tabla fija del dashboard."""
+    """Métricas agregadas de un día; el valor manual (ResumenDiario) pisa al calculado."""
     ventas_ef = VentaEfectivo.objects.filter(fecha=fecha).prefetch_related('detalles')
     ventas_cr = VentaCredito.objects.filter(fecha=fecha).prefetch_related('detalles')
     gastos = Gasto.objects.filter(fecha=fecha)
@@ -296,7 +300,7 @@ def _resumen_fecha(fecha):
 
     balance = (efectivo + abonos_total) - gastos_total
 
-    return {
+    calculado = {
         'efectivo': efectivo,
         'abonos': abonos_total,
         'kg_credito': kg_credito,
@@ -306,6 +310,20 @@ def _resumen_fecha(fecha):
         'gastos': gastos_total,
         'balance': balance,
     }
+
+    manual = ResumenDiario.objects.filter(fecha=fecha).first()
+    resultado = {}
+    flags = {}
+    for campo in RESUMEN_CAMPOS:
+        valor_manual = getattr(manual, campo) if manual else None
+        if valor_manual is not None:
+            resultado[campo] = valor_manual
+            flags[campo] = True
+        else:
+            resultado[campo] = calculado[campo]
+            flags[campo] = False
+    resultado['manual'] = flags
+    return resultado
 
 
 # ---- DASHBOARD ----
@@ -607,18 +625,44 @@ def resumen_dia_json(request):
     except ValueError:
         fecha = date.today()
     r = _resumen_fecha(fecha)
-    data = {
-        'fecha': fecha.isoformat(),
-        'efectivo': str(r['efectivo']),
-        'abonos': str(r['abonos']),
-        'kg_credito': str(r['kg_credito']),
-        'kg_total': str(r['kg_total']),
-        'ventas_total': str(r['ventas_total']),
-        'por_cobrar': str(r['por_cobrar']),
-        'gastos': str(r['gastos']),
-        'balance': str(r['balance']),
-    }
+    data = {'fecha': fecha.isoformat(), 'manual': r['manual']}
+    for campo in RESUMEN_CAMPOS:
+        data[campo] = str(r[campo])
     return JsonResponse(data)
+
+
+@login_required
+def resumen_dia_guardar(request):
+    """Guarda un valor manual del resumen diario (POST JSON)."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'método no permitido'}, status=405)
+    try:
+        body = json.loads(request.body)
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({'error': 'JSON inválido'}, status=400)
+
+    campo = body.get('campo')
+    if campo not in RESUMEN_CAMPOS:
+        return JsonResponse({'error': 'campo inválido'}, status=400)
+    fecha_str = body.get('fecha')
+    try:
+        fecha = date.fromisoformat(fecha_str) if fecha_str else date.today()
+    except ValueError:
+        return JsonResponse({'error': 'fecha inválida'}, status=400)
+
+    resumen, _ = ResumenDiario.objects.get_or_create(fecha=fecha)
+    valor = body.get('valor')
+    if valor is None or str(valor).strip() == '':
+        setattr(resumen, campo, None)
+    else:
+        try:
+            setattr(resumen, campo, Decimal(str(valor)))
+        except (InvalidOperation, ValueError):
+            return JsonResponse({'error': 'valor inválido'}, status=400)
+    resumen.save()
+
+    r = _resumen_fecha(fecha)
+    return JsonResponse({'ok': True, 'campo': campo, 'valor': str(r[campo]), 'manual': r['manual'][campo]})
 
 
 # ---- PROVEEDORES ----
