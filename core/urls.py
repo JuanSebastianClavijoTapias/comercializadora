@@ -4,6 +4,7 @@ from . import views
 
 urlpatterns = [
     path('', views.dashboard, name='dashboard'),
+    path('api/resumen/', views.resumen_dia_json, name='resumen_dia_json'),
     # Proveedores
     path('proveedores/', views.proveedor_list, name='proveedor_list'),
     path('proveedores/nuevo/', views.proveedor_create, name='proveedor_create'),

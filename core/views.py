@@ -264,6 +264,50 @@ def get_weekly_history():
 
     return history
 
+def _resumen_fecha(fecha):
+    """Métricas agregadas de un día para la tabla fija del dashboard."""
+    ventas_ef = VentaEfectivo.objects.filter(fecha=fecha).prefetch_related('detalles')
+    ventas_cr = VentaCredito.objects.filter(fecha=fecha).prefetch_related('detalles')
+    gastos = Gasto.objects.filter(fecha=fecha)
+    abonos = PagoVentaCredito.objects.filter(fecha=fecha)
+
+    efectivo = sum(v.total for v in ventas_ef)
+    abonos_total = sum(a.monto for a in abonos)
+    credito_money = sum(v.total for v in ventas_cr)
+    gastos_total = sum(g.monto for g in gastos)
+
+    kg_credito = sum(v.total_kg for v in ventas_cr)
+    kg_efectivo = Decimal('0')
+    for ve in ventas_ef:
+        detalles = list(ve.detalles.all())
+        if detalles:
+            kg_efectivo += sum(d.kg_vendido for d in detalles)
+        else:
+            kg_efectivo += ve.kg_vendido or Decimal('0')
+    kg_total = kg_efectivo + kg_credito
+
+    ventas_total = efectivo + credito_money
+
+    por_cobrar = sum(
+        v.saldo_pendiente for v in _ventas_credito_with_totals(
+            VentaCredito.objects.select_related('cliente').order_by('-fecha', '-id')
+        ) if v.saldo_pendiente > 0
+    )
+
+    balance = (efectivo + abonos_total) - gastos_total
+
+    return {
+        'efectivo': efectivo,
+        'abonos': abonos_total,
+        'kg_credito': kg_credito,
+        'kg_total': kg_total,
+        'ventas_total': ventas_total,
+        'por_cobrar': por_cobrar,
+        'gastos': gastos_total,
+        'balance': balance,
+    }
+
+
 # ---- DASHBOARD ----
 @login_required
 def dashboard(request):
@@ -282,11 +326,7 @@ def dashboard(request):
     gastos_hoy = Gasto.objects.filter(fecha=hoy)
     abonos_hoy = PagoVentaCredito.objects.filter(fecha=hoy)
 
-    # Querysets por fecha seleccionada (para la tabla de movimientos)
-    ventas_efectivo_sel = VentaEfectivo.objects.filter(fecha=fecha_sel).select_related('cliente', 'producto').prefetch_related('detalles')
-    ventas_credito_sel = VentaCredito.objects.filter(fecha=fecha_sel).select_related('cliente', 'producto')
-    gastos_sel = Gasto.objects.filter(fecha=fecha_sel).select_related('categoria')
-    abonos_sel = PagoVentaCredito.objects.filter(fecha=fecha_sel).select_related('venta__cliente')
+    resumen_sel = _resumen_fecha(fecha_sel)
     
     total_ventas_efectivo = sum(v.total for v in ventas_efectivo_hoy)
     total_abonos = sum(a.monto for a in abonos_hoy)
@@ -497,64 +537,6 @@ def dashboard(request):
             'observaciones': d.observaciones or '',
         })
     
-    # ---- TABLA UNIFICADA: Movimientos de la fecha seleccionada (editable) ----
-    movimientos_hoy = []
-
-    for ve in ventas_efectivo_sel:
-        productos_str = ', '.join([d.producto.nombre for d in ve.detalles.all()]) if ve.detalles.exists() else (ve.producto.nombre if ve.producto else 'General')
-        movimientos_hoy.append({
-            'id': ve.id,
-            'tipo': 'Venta Efectivo',
-            'tipo_class': 'success',
-            'detalle': productos_str,
-            'cliente': str(ve.cliente) if ve.cliente else 'General',
-            'monto': ve.total,
-            'fecha': ve.fecha,
-            'edit_url': f'/ventas/efectivo/{ve.id}/editar/',
-            'icon': 'bi-cash-coin',
-        })
-
-    for vc in ventas_credito_sel:
-        movimientos_hoy.append({
-            'id': vc.id,
-            'tipo': 'Venta Crédito',
-            'tipo_class': 'warning',
-            'detalle': vc.producto.nombre if vc.producto else 'Varios',
-            'cliente': str(vc.cliente) if vc.cliente else 'General',
-            'monto': vc.total,
-            'fecha': vc.fecha,
-            'edit_url': f'/ventas/credito/{vc.id}/',
-            'icon': 'bi-credit-card',
-        })
-
-    for ab in abonos_sel:
-        movimientos_hoy.append({
-            'id': ab.id,
-            'tipo': 'Abono Crédito',
-            'tipo_class': 'info',
-            'detalle': f'Abono a venta #{ab.venta_id}',
-            'cliente': str(ab.venta.cliente) if ab.venta.cliente else 'N/A',
-            'monto': ab.monto,
-            'fecha': ab.fecha,
-            'edit_url': f'/ventas/credito/{ab.venta_id}/',
-            'icon': 'bi-arrow-down-circle',
-        })
-
-    for g in gastos_sel:
-        movimientos_hoy.append({
-            'id': g.id,
-            'tipo': 'Gasto',
-            'tipo_class': 'danger',
-            'detalle': g.descripcion,
-            'cliente': g.categoria.nombre if g.categoria else 'N/A',
-            'monto': g.monto,
-            'fecha': g.fecha,
-            'edit_url': f'/gastos/{g.id}/editar/',
-            'icon': 'bi-receipt',
-        })
-
-    movimientos_hoy.sort(key=lambda x: (x['fecha'], x['id']), reverse=True)
-
     fecha_anterior = fecha_sel - timedelta(days=1)
     fecha_siguiente = fecha_sel + timedelta(days=1)
 
@@ -579,7 +561,7 @@ def dashboard(request):
         'ventas_por_cobrar': ventas_por_cobrar, 
         'ventas_pendientes': ventas_pendientes_top,
         'ultimas_ventas_hoy': ultimas_ventas_hoy_top,
-        'movimientos_hoy': movimientos_hoy,
+        'resumen_sel': resumen_sel,
         'fecha_sel': fecha_sel,
         'fecha_anterior': fecha_anterior.isoformat(),
         'fecha_siguiente': fecha_siguiente.isoformat(),
@@ -614,6 +596,30 @@ def dashboard(request):
         'week_sunday': weekly_inv['week_sunday'],
     }
     return render(request, 'core/dashboard.html', ctx)
+
+
+@login_required
+def resumen_dia_json(request):
+    """Devuelve el resumen de métricas de un día en JSON (para actualizar la tabla sin recargar)."""
+    fecha_param = request.GET.get('fecha')
+    try:
+        fecha = date.fromisoformat(fecha_param) if fecha_param else date.today()
+    except ValueError:
+        fecha = date.today()
+    r = _resumen_fecha(fecha)
+    data = {
+        'fecha': fecha.isoformat(),
+        'efectivo': str(r['efectivo']),
+        'abonos': str(r['abonos']),
+        'kg_credito': str(r['kg_credito']),
+        'kg_total': str(r['kg_total']),
+        'ventas_total': str(r['ventas_total']),
+        'por_cobrar': str(r['por_cobrar']),
+        'gastos': str(r['gastos']),
+        'balance': str(r['balance']),
+    }
+    return JsonResponse(data)
+
 
 # ---- PROVEEDORES ----
 @login_required

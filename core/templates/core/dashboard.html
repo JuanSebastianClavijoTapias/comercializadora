@@ -279,26 +279,23 @@
     <div class="card border-0 shadow-sm" style="border-radius: 12px; overflow: hidden;">
       <div class="card-header bg-orange py-3 border-bottom-0" style="background: var(--orange-primary); color: white;">
         <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-          <h6 class="mb-0 fw-bold"><i class="bi bi-list-check me-2"></i>Movimientos del día</h6>
-          <!-- Selector de fecha con navegación -->
+          <h6 class="mb-0 fw-bold"><i class="bi bi-list-check me-2"></i>Resumen del día</h6>
           <div class="d-flex align-items-center gap-2">
-            <a href="?fecha={{ fecha_anterior }}" class="btn btn-sm text-white" style="background: rgba(255,255,255,0.2); border: none;" title="Día anterior">
+            <button type="button" class="btn btn-sm text-white" style="background: rgba(255,255,255,0.2); border: none;" title="Día anterior" onclick="moverDia(-1)">
               <i class="bi bi-chevron-left"></i>
-            </a>
+            </button>
             <input type="date" id="fecha-selector" class="form-control form-control-sm" style="width: auto; color: #333;" value="{{ fecha_sel|date:'Y-m-d' }}" max="{{ hoy|date:'Y-m-d' }}">
-            <a href="?fecha={{ fecha_siguiente }}" class="btn btn-sm text-white {% if es_hoy %}disabled{% endif %}" style="background: rgba(255,255,255,0.2); border: none;" title="Día siguiente">
+            <button type="button" class="btn btn-sm text-white" id="btn-siguiente" style="background: rgba(255,255,255,0.2); border: none;" title="Día siguiente" onclick="moverDia(1)" {% if es_hoy %}disabled{% endif %}>
               <i class="bi bi-chevron-right"></i>
-            </a>
-            {% if not es_hoy %}
-            <a href="{% url 'dashboard' %}" class="btn btn-sm text-white" style="background: rgba(255,255,255,0.3); border: none;" title="Ir a hoy">
+            </button>
+            <button type="button" class="btn btn-sm text-white" id="btn-hoy" style="background: rgba(255,255,255,0.3); border: none; {% if es_hoy %}display:none;{% endif %}" title="Ir a hoy" onclick="cargarFecha(hoyIso)">
               <i class="bi bi-calendar-event me-1"></i>Hoy
-            </a>
-            {% endif %}
+            </button>
           </div>
         </div>
         <div class="mt-2">
-          <span class="badge rounded-pill" style="background: rgba(255,255,255,0.25); color: white;">
-            {{ movimientos_hoy|length }} registro{{ movimientos_hoy|length|pluralize:"s" }} · {{ fecha_sel|date:"d/m/Y" }}{% if es_hoy %} (hoy){% endif %}
+          <span class="badge rounded-pill" style="background: rgba(255,255,255,0.25); color: white;" id="fecha-badge">
+            {{ fecha_sel|date:"d/m/Y" }}{% if es_hoy %} (hoy){% endif %}
           </span>
         </div>
       </div>
@@ -307,39 +304,43 @@
           <table class="table table-hover align-middle mb-0">
             <thead class="bg-light">
               <tr>
-                <th class="ps-4">Tipo</th>
-                <th>Detalle</th>
-                <th>Cliente / Categoría</th>
-                <th class="text-end">Monto</th>
-                <th class="text-center pe-4" style="width: 80px;">Editar</th>
+                <th class="ps-4">Concepto</th>
+                <th class="text-end pe-4">Valor</th>
               </tr>
             </thead>
             <tbody class="border-top-0">
-              {% for m in movimientos_hoy %}
               <tr>
-                <td class="ps-4">
-                  <span class="badge bg-{{ m.tipo_class }} bg-opacity-10 text-{{ m.tipo_class }} border border-{{ m.tipo_class }} border-opacity-25">
-                    <i class="bi {{ m.icon }} me-1"></i>{{ m.tipo }}
-                  </span>
-                </td>
-                <td class="text-muted small">{{ m.detalle }}</td>
-                <td class="fw-semibold" style="color: var(--text-main);">{{ m.cliente }}</td>
-                <td class="text-end fw-bold {% if m.tipo == 'Gasto' %}text-danger{% elif m.tipo == 'Abono Crédito' %}text-info{% else %}text-success{% endif %}">
-                  ${{ m.monto|default:0|cop }}
-                </td>
-                <td class="text-center pe-4">
-                  <a href="{{ m.edit_url }}" class="btn btn-sm btn-outline-secondary" title="Editar" style="border-radius: 6px;">
-                    <i class="bi bi-pencil"></i>
-                  </a>
-                </td>
+                <td class="ps-4"><i class="bi bi-cash-coin me-2 text-success"></i>Efectivo vendido</td>
+                <td class="text-end pe-4 fw-bold text-success" id="val-efectivo">${{ resumen_sel.efectivo|default:0|cop }}</td>
               </tr>
-              {% empty %}
               <tr>
-                <td colspan="5" class="text-center py-5">
-                  <div class="text-muted"><i class="bi bi-inbox fs-2 d-block mb-3" style="opacity: 0.3;"></i>No hay movimientos para el {{ fecha_sel|date:"d/m/Y" }}.</div>
-                </td>
+                <td class="ps-4"><i class="bi bi-arrow-down-circle me-2 text-info"></i>Cobro de crédito</td>
+                <td class="text-end pe-4 fw-bold text-info" id="val-abonos">${{ resumen_sel.abonos|default:0|cop }}</td>
               </tr>
-              {% endfor %}
+              <tr>
+                <td class="ps-4"><i class="bi bi-box-seam me-2 text-secondary"></i>Kg vendido a crédito</td>
+                <td class="text-end pe-4 fw-bold" id="val-kg-credito">{{ resumen_sel.kg_credito|floatformat:0 }} kg</td>
+              </tr>
+              <tr>
+                <td class="ps-4"><i class="bi bi-bag-check me-2 text-primary"></i>Total vendido (kg)</td>
+                <td class="text-end pe-4 fw-bold" id="val-kg-total">{{ resumen_sel.kg_total|floatformat:0 }} kg</td>
+              </tr>
+              <tr>
+                <td class="ps-4"><i class="bi bi-cash-stack me-2 text-primary"></i>Total de ventas</td>
+                <td class="text-end pe-4 fw-bold" id="val-ventas">${{ resumen_sel.ventas_total|default:0|cop }}</td>
+              </tr>
+              <tr>
+                <td class="ps-4"><i class="bi bi-wallet2 me-2 text-warning"></i>Total a cobrar</td>
+                <td class="text-end pe-4 fw-bold text-warning" id="val-cobrar">${{ resumen_sel.por_cobrar|default:0|cop }}</td>
+              </tr>
+              <tr>
+                <td class="ps-4"><i class="bi bi-receipt me-2 text-danger"></i>Gastos</td>
+                <td class="text-end pe-4 fw-bold text-danger" id="val-gastos">${{ resumen_sel.gastos|default:0|cop }}</td>
+              </tr>
+              <tr class="table-light">
+                <td class="ps-4 fw-bold"><i class="bi bi-bar-chart-line me-2"></i>Balance</td>
+                <td class="text-end pe-4 fw-bold {% if resumen_sel.balance < 0 %}text-danger{% else %}text-success{% endif %}" id="val-balance">${{ resumen_sel.balance|default:0|cop }}</td>
+              </tr>
             </tbody>
           </table>
         </div>
@@ -635,13 +636,76 @@
 </script>
 
 <script>
-  document.addEventListener('DOMContentLoaded', function() {
+  var hoyIso = '{{ hoy|date:"Y-m-d" }}';
+  var fechaActual = '{{ fecha_sel|date:"Y-m-d" }}';
+  var urlResumen = '{% url "resumen_dia_json" %}';
+
+  function formatearCop(valor) {
+    var n = Math.round(parseFloat(valor) || 0);
+    return '$' + n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  }
+  function formatearKg(valor) {
+    var n = Math.round(parseFloat(valor) || 0);
+    return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ' kg';
+  }
+
+  function sumarDias(iso, delta) {
+    var p = iso.split('-').map(Number);
+    var dt = new Date(p[0], p[1] - 1, p[2]);
+    dt.setDate(dt.getDate() + delta);
+    return dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0') + '-' + String(dt.getDate()).padStart(2, '0');
+  }
+
+  function actualizarResumen(d) {
+    document.getElementById('val-efectivo').textContent = formatearCop(d.efectivo);
+    document.getElementById('val-abonos').textContent = formatearCop(d.abonos);
+    document.getElementById('val-kg-credito').textContent = formatearKg(d.kg_credito);
+    document.getElementById('val-kg-total').textContent = formatearKg(d.kg_total);
+    document.getElementById('val-ventas').textContent = formatearCop(d.ventas_total);
+    document.getElementById('val-cobrar').textContent = formatearCop(d.por_cobrar);
+    document.getElementById('val-gastos').textContent = formatearCop(d.gastos);
+
+    var balanceEl = document.getElementById('val-balance');
+    var balanceNum = parseFloat(d.balance) || 0;
+    balanceEl.textContent = formatearCop(d.balance);
+    balanceEl.className = 'text-end pe-4 fw-bold ' + (balanceNum < 0 ? 'text-danger' : 'text-success');
+
+    var badge = document.getElementById('fecha-badge');
+    if (badge) {
+      var esHoy = d.fecha === hoyIso;
+      badge.textContent = d.fecha.split('-').reverse().join('/') + (esHoy ? ' (hoy)' : '');
+    }
+    var btnHoy = document.getElementById('btn-hoy');
+    if (btnHoy) btnHoy.style.display = (d.fecha === hoyIso) ? 'none' : '';
+    var btnSig = document.getElementById('btn-siguiente');
+    if (btnSig) btnSig.disabled = (d.fecha === hoyIso);
+  }
+
+  function cargarFecha(fecha) {
+    fetch(urlResumen + '?fecha=' + fecha, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        fechaActual = d.fecha;
+        var sel = document.getElementById('fecha-selector');
+        if (sel) sel.value = d.fecha;
+        actualizarResumen(d);
+      })
+      .catch(function () {});
+  }
+
+  function moverDia(delta) {
+    cargarFecha(sumarDias(fechaActual, delta));
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
     var selector = document.getElementById('fecha-selector');
     if (selector) {
-      selector.addEventListener('change', function() {
-        window.location.href = '?fecha=' + selector.value;
+      selector.addEventListener('change', function () {
+        if (selector.value) cargarFecha(selector.value);
       });
     }
+    var btnSig = document.getElementById('btn-siguiente');
+    if (btnSig && fechaActual === hoyIso) btnSig.disabled = true;
   });
 </script>
 
