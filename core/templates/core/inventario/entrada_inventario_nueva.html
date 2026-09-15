@@ -450,22 +450,23 @@
     return '';
   }
 
-  btnAdd.addEventListener('click', function () {
-    const row = buildRow(rowIndex, lastSelectedProveedor());
+  function addRow(proveedorId, focusSelector) {
+    const row = buildRow(rowIndex, proveedorId);
     container.appendChild(row);
     rowIndex++;
     updateRemoveButtons();
     recalcAll();
-    row.querySelector('.input-bruto').focus();
+    row.querySelector(focusSelector).focus();
+  }
+
+  // "Agregar fila": hereda el último proveedor elegido para agilizar la carga.
+  btnAdd.addEventListener('click', function () {
+    addRow(lastSelectedProveedor(), '.input-bruto');
   });
 
+  // "Agregar fila con otro proveedor": arranca vacío para elegir uno distinto.
   btnAddDiff.addEventListener('click', function () {
-    const row = buildRow(rowIndex, '');
-    container.appendChild(row);
-    rowIndex++;
-    updateRemoveButtons();
-    recalcAll();
-    row.querySelector('.input-proveedor').focus();
+    addRow('', '.input-proveedor');
   });
 
   container.addEventListener('click', function (e) {
