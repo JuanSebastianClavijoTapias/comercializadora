@@ -3,6 +3,9 @@
 .venv
 env/
 venv/
+.agents
+.claude/
+skills-lock.json
 
 # Python
 __pycache__/

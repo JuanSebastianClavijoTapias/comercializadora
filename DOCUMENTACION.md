@@ -89,6 +89,14 @@ python manage.py runserver 0.0.0.0:9000
 4. Ejecutar `python manage.py collectstatic` (los estáticos se sirven via Whitenoise)
 5. Usar Gunicorn + Nginx como servidores de aplicación y proxy inverso
 
+> **IMPORTANTE — estáticos en producción:**
+> WhiteNoise (ya instalado y en `MIDDLEWARE`) es la ÚNICA fuente de verdad para `/static/`.
+> **NO agregar** un bloque `location /static/ { root ... }` en nginx: usa `root` (no `alias`) y
+> busca los archivos en `.../static/` pero `collectstatic` los deja en `.../staticfiles/`, por lo que
+> nginx responde 404 y toda la app queda sin estilos (el login aparenta bien porque usa CDN).
+> Los bloques `location /static/` y `/location media/` solo funcionan con `alias <ruta_real>/` (slash final).
+> Tras cada deploy: `collectstatic --noinput` + `systemctl restart gunicorn` (refresca el caché de WhiteNoise).
+
 ---
 
 ## 3. Estructura de Carpetas
