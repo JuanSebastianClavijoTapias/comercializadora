@@ -3,18 +3,23 @@ from .models import *
 
 
 class COPInputNormalizationMixin:
+    """Normaliza montos COP quitando el separador de miles antes de validar.
+
+    Usa ``add_prefix`` para resolver el nombre real del campo, de modo que
+    funciona igual en formularios con y sin prefijo (formsets).
+    """
     cop_fields = ()
 
     def __init__(self, *args, **kwargs):
-        data = kwargs.get('data')
-        if data is not None:
-            data = data.copy()
-            for field_name in self.cop_fields:
-                value = data.get(field_name)
-                if value not in (None, ''):
-                    data[field_name] = str(value).replace('.', '').strip()
-            kwargs['data'] = data
         super().__init__(*args, **kwargs)
+        if not self.is_bound:
+            return
+        self.data = self.data.copy()
+        for field_name in self.cop_fields:
+            key = self.add_prefix(field_name)
+            value = self.data.get(key)
+            if value not in (None, ''):
+                self.data[key] = str(value).replace('.', '').strip()
 
 class ProveedorForm(forms.ModelForm):
     class Meta:
@@ -140,6 +145,19 @@ class GastoForm(COPInputNormalizationMixin, forms.ModelForm):
             'monto': forms.TextInput(attrs={'class': 'form-control price-cop', 'inputmode': 'numeric', 'autocomplete': 'off'}),
             'fecha': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
         }
+
+class GastoRowForm(COPInputNormalizationMixin, forms.ModelForm):
+    cop_fields = ('monto',)
+
+    class Meta:
+        model = Gasto
+        fields = ['descripcion', 'monto']
+        widgets = {
+            'descripcion': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Descripción del gasto'}),
+            'monto': forms.TextInput(attrs={'class': 'form-control price-cop', 'inputmode': 'numeric', 'autocomplete': 'off', 'placeholder': 'Monto'}),
+        }
+
+GastoFormSet = forms.formset_factory(GastoRowForm, extra=5, can_delete=False)
 
 class NominaForm(COPInputNormalizationMixin, forms.ModelForm):
     cop_fields = ('monto',)

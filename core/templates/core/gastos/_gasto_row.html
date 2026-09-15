@@ -1,0 +1,14 @@
+<div class="gasto-row border rounded p-3 mb-3" style="border-color: var(--border-light) !important;">
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <span class="gasto-row-num small fw-semibold text-uppercase" style="color: var(--text-secondary); letter-spacing: 0.5px;">Gasto{% if num %} {{ num }}{% endif %}</span>
+    <button type="button" class="btn btn-sm btn-quitar-gasto" style="color: #d32f2f; background: transparent; border: none; padding: 0 4px;" title="Quitar fila"><i class="bi bi-x-lg"></i></button>
+  </div>
+  <div class="mb-2">
+    {{ f.descripcion }}
+    {% if f.descripcion.errors %}<div class="text-danger small mt-1">{{ f.descripcion.errors }}</div>{% endif %}
+  </div>
+  <div>
+    {{ f.monto }}
+    {% if f.monto.errors %}<div class="text-danger small mt-1">{{ f.monto.errors }}</div>{% endif %}
+  </div>
+</div>

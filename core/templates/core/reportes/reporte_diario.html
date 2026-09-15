@@ -29,6 +29,44 @@
   </div>
 </div>
 
+<!-- TOTAL VENDIDO -->
+<div class="card border-0 shadow-sm mb-4" style="border-radius: 12px; overflow: hidden;">
+  <div class="card-header border-bottom-0 bg-white py-3 d-flex align-items-center">
+    <div class="stat-icon-wrapper d-inline-flex me-3 shadow-sm" style="width: 32px; height: 32px; font-size: 1rem; background: rgba(255, 152, 0, 0.2); color: var(--orange-primary);">
+      <i class="bi bi-graph-up-arrow"></i>
+    </div>
+    <h6 class="mb-0 fw-bold" style="color: white;">Total Vendido</h6>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-sm align-middle mb-0">
+        <thead class="bg-light">
+          <tr>
+            <th class="ps-3 fw-bold small" style="color: var(--text-secondary);">CONCEPTO</th>
+            <th class="text-end fw-bold small" style="color: var(--text-secondary);">EFECTIVO</th>
+            <th class="text-end fw-bold small" style="color: var(--text-secondary);">CRÉDITO</th>
+            <th class="text-end pe-3 fw-bold small" style="color: var(--text-secondary);">TOTAL</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="ps-3 fw-semibold small">Kg vendidos</td>
+            <td class="text-end small">{{ total_kg_efectivo|default:0|floatformat:2 }} kg</td>
+            <td class="text-end small">{{ total_kg_credito|default:0|floatformat:2 }} kg</td>
+            <td class="text-end pe-3 fw-bold" style="color: var(--orange-primary);">{{ total_kg_vendido|default:0|floatformat:2 }} kg</td>
+          </tr>
+          <tr>
+            <td class="ps-3 fw-semibold small">Valor ventas</td>
+            <td class="text-end small text-success">${{ total_efectivo|default:0|cop }}</td>
+            <td class="text-end small" style="color: #3f51b5;">${{ total_credito|default:0|cop }}</td>
+            <td class="text-end pe-3 fw-bold" style="color: var(--orange-primary);">${{ total_ventas|default:0|cop }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
 <!-- TARJETAS DE RESUMEN -->
 <div class="row row-cols-1 row-cols-md-3 row-cols-xl-5 g-3 mb-4">
   <div class="col">

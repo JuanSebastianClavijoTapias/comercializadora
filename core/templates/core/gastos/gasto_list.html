@@ -9,8 +9,8 @@
     <div class="stat-card-white h-100">
       <div>
         <div class="small fw-semibold">Total Gastos Hoy</div>
-        <div class="fs-4 fw-bold">${{ total|default:0|cop }}</div>
-        <div class="small">{{ num_gastos|default:0 }} Registros</div>
+        <div class="fs-4 fw-bold">${{ resumen.total|default:0|cop }}</div>
+        <div class="small">{{ resumen.cantidad|default:0 }} Registros</div>
       </div>
       <div class="stat-icon-wrapper" style="background: rgba(211, 47, 47, 0.2); color: #d32f2f;">
         <i class="bi bi-receipt"></i>
@@ -21,7 +21,7 @@
     <div class="stat-card-white h-100">
       <div>
         <div class="small fw-semibold">Gasto Promedio</div>
-        <div class="fs-4 fw-bold">${{ gasto_promedio|default:0|cop }}</div>
+        <div class="fs-4 fw-bold">${{ resumen.promedio|default:0|cop }}</div>
         <div class="small">Por registro</div>
       </div>
       <div class="stat-icon-wrapper" style="background: rgba(255, 107, 53, 0.2); color: var(--orange-primary);">
@@ -33,7 +33,7 @@
     <div class="stat-card-white h-100">
       <div>
         <div class="small fw-semibold">Mayor Gasto</div>
-        <div class="fs-4 fw-bold">${{ gasto_maximo|default:0|cop }}</div>
+        <div class="fs-4 fw-bold">${{ resumen.maximo|default:0|cop }}</div>
         <div class="small">Categoría</div>
       </div>
       <div class="stat-icon-wrapper" style="background: rgba(63, 81, 181, 0.2); color: #3f51b5;">
@@ -51,28 +51,38 @@
         <div class="stat-icon-wrapper d-inline-flex me-3 shadow-sm" style="width: 36px; height: 36px; font-size: 1.1rem; background: var(--bg-base); color: #d32f2f;">
           <i class="bi bi-plus-circle"></i>
         </div>
-        <h6 class="mb-0 fw-bold" style="color: white;">Registrar Gasto</h6>
+        <h6 class="mb-0 fw-bold" style="color: white;">Registrar Gastos</h6>
       </div>
       <div class="card-body px-4 pb-4 pt-1">
-        <form method="post" action="">
+        <form method="post" action="" id="gastoFormSet">
           {% csrf_token %}
           <div class="mb-3">
             <label class="form-label fw-semibold small text-uppercase" style="color: var(--text-secondary); letter-spacing: 0.5px;">Fecha</label>
             <input type="date" name="fecha" value="{{ fecha }}" class="form-control" style="border-radius: 8px; border: 1px solid var(--border-light); padding: 0.75rem 1rem;">
           </div>
-          {% for field in form %}
-            {% if field.name != 'fecha' %}
-            <div class="mb-3">
-              <label class="form-label fw-semibold small text-uppercase" style="color: var(--text-secondary); letter-spacing: 0.5px;">{{ field.label }}</label>
-              {{ field }}
-              {% if field.errors %}<div class="text-danger small mt-1 p-2 bg-danger bg-opacity-10 rounded">{{ field.errors }}</div>{% endif %}
-            </div>
-            {% endif %}
-          {% endfor %}
-          <button type="submit" class="btn w-100 py-2 mt-3 fw-semibold text-white" style="background: linear-gradient(135deg, #d32f2f 0%, #b71c1c 100%); border: none; box-shadow: 0 4px 12px rgba(211, 47, 47, 0.2); border-radius: 8px;">
-            <i class="bi bi-plus-lg me-2"></i>Registrar Gasto
+
+          {{ formset.management_form }}
+          {% if formset.non_form_errors %}
+            <div class="text-danger small mt-1 mb-2 p-2 bg-danger bg-opacity-10 rounded">{{ formset.non_form_errors }}</div>
+          {% endif %}
+
+          <div id="gastoRows">
+            {% for f in formset %}
+              {% include 'core/gastos/_gasto_row.html' with f=f num=forloop.counter %}
+            {% endfor %}
+          </div>
+
+          <button type="button" id="addGastoRow" class="btn w-100 py-2 mb-2 fw-semibold" style="background: var(--bg-light); color: var(--orange-primary); border: 1px dashed var(--border-light); border-radius: 8px;">
+            <i class="bi bi-plus-lg me-2"></i>Agregar otra fila
+          </button>
+          <button type="submit" class="btn w-100 py-2 mt-1 fw-semibold text-white" style="background: linear-gradient(135deg, #d32f2f 0%, #b71c1c 100%); border: none; box-shadow: 0 4px 12px rgba(211, 47, 47, 0.2); border-radius: 8px;">
+            <i class="bi bi-check-lg me-2"></i>Registrar Gastos
           </button>
         </form>
+
+        <div id="emptyGastoForm" style="display: none;">
+          {% include 'core/gastos/_gasto_row.html' with f=formset.empty_form %}
+        </div>
       </div>
     </div>
   </div>
@@ -82,17 +92,19 @@
     <!-- FILTROS -->
     <div class="card border-0 shadow-sm mb-3" style="border-radius: 12px; background: var(--bg-light);">
       <div class="card-body p-3">
-        <div class="row g-2 align-items-end">
-          <div class="col-md-4">
-            <label class="form-label fw-semibold small" style="color: var(--text-secondary);">Fecha</label>
-            <input type="date" value="{{ fecha }}" class="form-control" style="border-radius: 8px; border: 1px solid var(--border-light); padding: 0.5rem 0.75rem; font-size: 0.9rem;">
+        <form method="get" action="{% url 'gasto_list' %}">
+          <div class="row g-2 align-items-end">
+            <div class="col-md-4">
+              <label class="form-label fw-semibold small" style="color: var(--text-secondary);">Fecha</label>
+              <input type="date" name="fecha" value="{{ fecha }}" class="form-control" style="border-radius: 8px; border: 1px solid var(--border-light); padding: 0.5rem 0.75rem; font-size: 0.9rem;">
+            </div>
+            <div class="col-md-2 d-flex gap-1">
+              <button type="submit" class="btn btn-sm w-100" style="background: var(--orange-primary); color: white; border-radius: 8px; border: none; padding: 0.5rem; font-weight: 600; font-size: 0.85rem;">
+                <i class="bi bi-search"></i>
+              </button>
+            </div>
           </div>
-          <div class="col-md-2 d-flex gap-1">
-            <button class="btn btn-sm w-100" style="background: var(--orange-primary); color: white; border-radius: 8px; border: none; padding: 0.5rem; font-weight: 600; font-size: 0.85rem;">
-              <i class="bi bi-search"></i>
-            </button>
-          </div>
-        </div>
+        </form>
       </div>
     </div>
 
@@ -118,7 +130,7 @@
               </tr>
             </thead>
             <tbody class="border-top-0">
-            {% for g in gastos %}
+            {% for g in resumen.gastos %}
             <tr>
               <td class="ps-4 small">{{ g.fecha|date:"d/m/Y" }}</td>
                <td class="text-muted small" style="max-width: 200px;">
@@ -151,11 +163,11 @@
             </tr>
             {% endfor %}
             </tbody>
-            {% if gastos %}
+            {% if resumen.gastos %}
             <tfoot>
               <tr class="table-light">
                 <td colspan="2" class="ps-4 fw-bold text-uppercase" style="font-size: 0.8rem; letter-spacing: 0.5px; color: var(--text-secondary);">Total Gastos</td>
-                <td class="fw-bold fs-5 text-end pe-2 text-danger">${{ total|default:0|cop }}</td>
+                <td class="fw-bold fs-5 text-end pe-2 text-danger">${{ resumen.total|default:0|cop }}</td>
                 <td></td>
               </tr>
             </tfoot>
@@ -243,6 +255,40 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+  // ===== FORMSET DE GASTOS (registro múltiple) =====
+  var gastoRows = document.getElementById('gastoRows');
+  var totalFormsInput = document.getElementById('id_gastos-TOTAL_FORMS');
+  var addGastoRowBtn = document.getElementById('addGastoRow');
+
+  function renumerarGastoRows() {
+    gastoRows.querySelectorAll('.gasto-row').forEach(function(row, i) {
+      var num = row.querySelector('.gasto-row-num');
+      if (num) num.textContent = 'Gasto ' + (i + 1);
+    });
+  }
+
+  if (addGastoRowBtn && gastoRows && totalFormsInput) {
+    addGastoRowBtn.addEventListener('click', function() {
+      var idx = parseInt(totalFormsInput.value, 10);
+      var html = document.getElementById('emptyGastoForm').innerHTML.replace(/__prefix__/g, idx);
+      gastoRows.insertAdjacentHTML('beforeend', html);
+      totalFormsInput.value = idx + 1;
+      renumerarGastoRows();
+    });
+
+    gastoRows.addEventListener('click', function(e) {
+      var btn = e.target.closest('.btn-quitar-gasto');
+      if (!btn) return;
+      var rows = gastoRows.querySelectorAll('.gasto-row');
+      if (rows.length <= 1) {
+        rows[0].querySelectorAll('input').forEach(function(inp) { inp.value = ''; });
+        return;
+      }
+      btn.closest('.gasto-row').remove();
+      renumerarGastoRows();
+    });
+  }
+
   var detailModal = new bootstrap.Modal(document.getElementById('gastoModal'));
   var editModal = new bootstrap.Modal(document.getElementById('gastoEditModal'));
   var deleteModal = new bootstrap.Modal(document.getElementById('gastoDeleteModal'));

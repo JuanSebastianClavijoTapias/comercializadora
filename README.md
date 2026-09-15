@@ -39,6 +39,19 @@ python manage.py runserver 0.0.0.0:9000
 - Admin: http://localhost:9000/admin/
 - Usuario demo (si cargaste initial_data.json): **admin** / **admin1234**
 
+> ⚠️ Las credenciales de `initial_data.json` son **solo para desarrollo**.
+> Nunca cargues ese fixture en producción: crea un superusuario propio con
+> `python manage.py createsuperuser` y cambia la contraseña.
+
+## Tests
+
+```bash
+python manage.py test core --settings=fruta_system.settings_test
+```
+
+`fruta_system.settings_test` usa SQLite en memoria, así que la suite corre sin
+tocar PostgreSQL.
+
 ---
 
 ## Despliegue en producción

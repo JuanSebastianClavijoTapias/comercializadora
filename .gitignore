@@ -15,6 +15,15 @@ __pycache__/
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
+*.sqlite3
+staticfiles/
+media/
+
+# Local scratch (no versionar)
+datos.json
+temp_js.txt
+core/replace.py
+core/patch*.ps1
 
 # Editor
 .vscode/

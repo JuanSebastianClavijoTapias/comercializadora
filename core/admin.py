@@ -36,7 +36,9 @@ class GastoAdmin(admin.ModelAdmin):
 
 @admin.register(WeeklyInventory)
 class WeeklyInventoryAdmin(admin.ModelAdmin):
-    list_display = ['week_start', 'initial_inventory_kg', 'total_inventory_kg_display', 'updated_at']
+    # total_inventory_kg_display queda solo en el detalle: en el changelist
+    # disparaba 2 queries por fila (N+1).
+    list_display = ['week_start', 'initial_inventory_kg', 'updated_at']
     readonly_fields = ['created_at', 'updated_at', 'total_inventory_kg_display']
     fields = ['week_start', 'initial_inventory_kg', 'total_inventory_kg_display', 'created_at', 'updated_at']
     list_filter = ['week_start']
