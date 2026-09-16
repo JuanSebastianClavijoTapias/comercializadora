@@ -134,67 +134,140 @@ def venta_credito_list(request):
 
 @login_required
 def venta_credito_create(request):
-    """Crea una venta a crédito vacía y redirige al detalle para agregar cliente y productos"""
-    venta = VentaCredito.objects.create(fecha=date.today())
-    messages.success(request, 'Nueva venta creada. Selecciona el cliente y agrega los productos vendidos.')
-    return redirect('venta_credito_detail', pk=venta.pk)
+    """Registra ventas a crédito por filas. Al guardar, agrupa por cliente y crea
+    una venta separada por cliente (nunca se mezclan)."""
+    clientes = Cliente.objects.filter(activo=True).order_by('nombre')
+    clasificaciones = Clasificacion.objects.select_related('producto').order_by('producto__nombre', 'orden')
+
+    if request.method == 'POST':
+        ventas_creadas, errores = _guardar_ventas_credito(request)
+        if errores:
+            return render(request, 'core/ventas/venta_credito_nueva.html', {
+                'clientes': clientes,
+                'clasificaciones': clasificaciones,
+                'form_errors': errores,
+                'fecha_default': request.POST.get('fecha', date.today().isoformat()),
+            })
+        plural = 's' if ventas_creadas != 1 else ''
+        messages.success(request, f'{ventas_creadas} venta{plural} registrada{plural}.')
+        return redirect('venta_credito_list')
+
+    return render(request, 'core/ventas/venta_credito_nueva.html', {
+        'clientes': clientes,
+        'clasificaciones': clasificaciones,
+        'fecha_default': date.today().isoformat(),
+    })
+
+
+def _guardar_ventas_credito(request):
+    """Agrupa las filas del formulario por cliente y crea/usa una venta por
+    cliente. Todo dentro de una transacción. Devuelve ``(n_ventas, errores)``."""
+    fecha = parse_fecha(request.POST.get('fecha'), date.today())
+
+    rows = []
+    i = 0
+    while f'kg_vendido_{i}' in request.POST:
+        cliente_id = (request.POST.get(f'cliente_{i}') or '').strip()
+        clasif_id = (request.POST.get(f'clasificacion_{i}') or '').strip()
+        kg_raw = (request.POST.get(f'kg_vendido_{i}') or '').strip()
+        precio_raw = (request.POST.get(f'precio_por_kg_{i}') or '').strip()
+        if cliente_id or clasif_id or kg_raw or precio_raw:
+            rows.append((cliente_id, clasif_id, kg_raw, precio_raw))
+        i += 1
+
+    if not rows:
+        return 0, ['Agrega al menos una fila con cliente, clasificación, kg y precio.']
+
+    errores = []
+    if any(not r[0] for r in rows):
+        errores.append('Todas las filas deben tener un cliente.')
+    if any(not r[1] for r in rows):
+        errores.append('Todas las filas deben tener una clasificación.')
+    if any(not r[2] for r in rows):
+        errores.append('Todas las filas deben tener kg.')
+    if any(not r[3] for r in rows):
+        errores.append('Todas las filas deben tener precio por kg.')
+    if errores:
+        return 0, errores
+
+    grupos = {}
+    for cliente_id, clasif_id, kg_raw, precio_raw in rows:
+        grupos.setdefault(cliente_id, []).append((clasif_id, kg_raw, precio_raw))
+
+    try:
+        with transaction.atomic():
+            for cliente_id, items in grupos.items():
+                cliente = Cliente.objects.get(pk=cliente_id)
+                venta, _creada = resolver_venta_credito(cliente, fecha)
+                for clasif_id, kg_raw, precio_raw in items:
+                    clasificacion = Clasificacion.objects.get(pk=clasif_id)
+                    DetalleVentaCredito.objects.create(
+                        venta=venta,
+                        clasificacion=clasificacion,
+                        kg_vendido=Decimal(kg_raw),
+                        precio_por_kg=Decimal(normalizar_precio_cop(precio_raw) or '0'),
+                    )
+                    if venta.producto_id is None:
+                        venta.producto = clasificacion.producto
+                        venta.save(update_fields=['producto'])
+    except (Cliente.DoesNotExist, Clasificacion.DoesNotExist, InvalidOperation, ValueError):
+        return 0, ['Hay datos inválidos en alguna fila (cliente, clasificación, kg o precio).']
+
+    return len(grupos), []
 
 
 @login_required
 def venta_credito_add_detalle_ajax(request, pk):
-    """Agrega un detalle de venta a crédito sin recargar la página (AJAX)
+    """Agrega un detalle a una venta a crédito existente (AJAX desde el detalle)."""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Método no permitido'}, status=405)
 
-    Si la venta aún no tiene cliente, se asigna el cliente y el producto
-    seleccionados en el detalle.
-    """
-    import json
     venta = get_object_or_404(VentaCredito, pk=pk)
-    
-    if request.method == 'POST':
-        detalle_form = DetalleVentaCreditoForm(request.POST)
-        if detalle_form.is_valid():
-            if venta.cliente is None and not detalle_form.cleaned_data.get('cliente'):
-                return JsonResponse({'success': False, 'errors': {'cliente': ['Selecciona el cliente de la venta.']}})
-            detalle = detalle_form.save(commit=False)
-            detalle.venta = venta
-            detalle.save()
+    detalle_form = DetalleVentaCreditoForm(request.POST)
+    if not detalle_form.is_valid():
+        return JsonResponse({'success': False, 'errors': detalle_form.errors})
 
-            if venta.cliente is None:
-                venta.cliente = detalle_form.cleaned_data['cliente']
-                venta.producto = detalle.clasificacion.producto
-                venta.save(update_fields=['cliente', 'producto'])
-            
-            # Refrescar la clasificación para obtener el stock actualizado
-            detalle.clasificacion.refresh_from_db()
-            venta.refresh_from_db()
-            
-            # Retornar JSON con la nueva fila para agregar a la tabla
-            response_data = {
-                'success': True,
-                'detalle': {
-                    'pk': detalle.pk,
-                    'clasificacion': f"{detalle.clasificacion.producto.nombre} - {detalle.clasificacion.nombre}",
-                    'kg_vendido': float(detalle.kg_vendido),
-                    'precio_por_kg': float(detalle.precio_por_kg),
-                    'total': float(detalle.total),
-                    'precio_por_kg_display': f"${detalle.precio_por_kg:.0f}",
-                    'total_display': f"${detalle.total:.0f}",
-                },
-                'resumen': {
-                    'total_venta': float(venta.total),
-                    'total_pagado': float(venta.total_pagado),
-                    'saldo_pendiente': float(venta.saldo_pendiente),
-                },
-                'cliente': {
-                    'id': venta.cliente_id,
-                    'nombre': str(venta.cliente),
-                } if venta.cliente else None,
-            }
-            return JsonResponse(response_data)
-        else:
-            return JsonResponse({'success': False, 'errors': detalle_form.errors})
-    
-    return JsonResponse({'success': False, 'error': 'Método no permitido'})
+    # En el detalle el select de cliente va deshabilitado (no se envía),
+    # así que se cae al cliente ya asignado a la venta.
+    cliente = detalle_form.cleaned_data.get('cliente') or venta.cliente
+    if cliente is None:
+        return JsonResponse({'success': False, 'errors': {'cliente': ['Selecciona el cliente de la venta.']}})
+    if venta.cliente_id and venta.cliente_id != cliente.pk:
+        return JsonResponse(
+            {'success': False, 'errors': {'cliente': ['Esta venta pertenece a otro cliente.']}}
+        )
+
+    detalle = detalle_form.save(commit=False)
+    detalle.venta = venta
+    detalle.save()
+
+    if venta.cliente_id is None:
+        venta.cliente = cliente
+        venta.producto = detalle.clasificacion.producto
+        venta.save(update_fields=['cliente', 'producto'])
+
+    detalle.clasificacion.refresh_from_db()
+    venta.refresh_from_db()
+
+    return JsonResponse({
+        'success': True,
+        'venta_id': venta.pk,
+        'detalle': {
+            'pk': detalle.pk,
+            'clasificacion': f"{detalle.clasificacion.producto.nombre} - {detalle.clasificacion.nombre}",
+            'kg_vendido': float(detalle.kg_vendido),
+            'precio_por_kg': float(detalle.precio_por_kg),
+            'total': float(detalle.total),
+            'precio_por_kg_display': f"${detalle.precio_por_kg:.0f}",
+            'total_display': f"${detalle.total:.0f}",
+        },
+        'cliente': {'id': venta.cliente_id, 'nombre': str(venta.cliente)} if venta.cliente else None,
+        'resumen': {
+            'total_venta': float(venta.total),
+            'total_pagado': float(venta.total_pagado),
+            'saldo_pendiente': float(venta.saldo_pendiente),
+        },
+    })
 
 
 @login_required

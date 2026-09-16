@@ -24,7 +24,11 @@ from .inventario import (
     week_has_data,
 )
 from .resumen import RESUMEN_CAMPOS, resumen_fecha, viajes_with_totals
-from .ventas import normalizar_precio_cop, ventas_credito_with_totals
+from .ventas import (
+    normalizar_precio_cop,
+    resolver_venta_credito,
+    ventas_credito_with_totals,
+)
 
 __all__ = [
     'ResumenGastos',
@@ -48,4 +52,5 @@ __all__ = [
     'viajes_with_totals',
     'normalizar_precio_cop',
     'ventas_credito_with_totals',
+    'resolver_venta_credito',
 ]

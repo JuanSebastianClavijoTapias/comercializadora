@@ -8,7 +8,26 @@ from django.db.models.functions import Coalesce
 
 from ..models import VentaCredito, DetalleVentaCredito, PagoVentaCredito
 
-__all__ = ['ventas_credito_with_totals', 'normalizar_precio_cop']
+__all__ = ['ventas_credito_with_totals', 'normalizar_precio_cop', 'resolver_venta_credito']
+
+
+def resolver_venta_credito(cliente, fecha):
+    """Devuelve la venta a crédito del cliente para esa fecha, o crea una nueva.
+
+    Regla de negocio: **cada cliente es una venta separada**. Los productos del
+    mismo cliente en el mismo día se suman a su venta; un cliente distinto usa
+    otra venta. Devuelve ``(venta, creada)``.
+    """
+    venta = (
+        VentaCredito.objects
+        .filter(cliente=cliente, fecha=fecha)
+        .order_by('-id')
+        .first()
+    )
+    if venta is not None:
+        return venta, False
+    return VentaCredito.objects.create(cliente=cliente, fecha=fecha), True
+
 
 
 def ventas_credito_with_totals(qs=None):

@@ -190,6 +190,66 @@ class StockSignalTests(BaseDataMixin, TestCase):
         return Viaje.objects.create(proveedor=proveedor, producto=self.producto, fecha=date(2026, 9, 14))
 
 
+class VentaCreditoMultiClienteTests(BaseDataMixin, TestCase):
+    def _fila(self, i, cliente, kg, precio='1.000'):
+        return {
+            f'cliente_{i}': cliente.pk,
+            f'clasificacion_{i}': self.clasificacion.pk,
+            f'kg_vendido_{i}': kg,
+            f'precio_por_kg_{i}': precio,
+        }
+
+    def test_guardar_separa_ventas_por_cliente(self):
+        from .models import Cliente, VentaCredito
+
+        otro = Cliente.objects.create(nombre='Cliente 2')
+        data = {'fecha': '2026-09-14'}
+        data.update(self._fila(0, self.cliente, '5'))
+        data.update(self._fila(1, self.cliente, '3'))
+        data.update(self._fila(2, otro, '7', '2.000'))
+
+        response = self.client.post(reverse('venta_credito_create'), data)
+
+        self.assertRedirects(response, reverse('venta_credito_list'))
+        self.assertEqual(VentaCredito.objects.count(), 2)  # una venta por cliente
+        v1 = VentaCredito.objects.get(cliente=self.cliente)
+        v2 = VentaCredito.objects.get(cliente=otro)
+        self.assertEqual(v1.detalles.count(), 2)  # el mismo cliente se agrupa
+        self.assertEqual(v2.detalles.count(), 1)
+        self.assertEqual(v1.total, Decimal('8000'))  # (5+3) * 1000
+        self.assertEqual(v2.total, Decimal('14000'))  # 7 * 2000
+
+    def test_reutiliza_la_venta_del_cliente(self):
+        from .models import VentaCredito
+
+        for _ in range(2):
+            data = {'fecha': '2026-09-14'}
+            data.update(self._fila(0, self.cliente, '4'))
+            self.client.post(reverse('venta_credito_create'), data)
+
+        self.assertEqual(VentaCredito.objects.count(), 1)
+        self.assertEqual(VentaCredito.objects.first().detalles.count(), 2)
+
+    def test_fila_incompleta_da_error(self):
+        from .models import VentaCredito
+
+        data = {'fecha': '2026-09-14', 'cliente_0': self.cliente.pk, 'clasificacion_0': '',
+                'kg_vendido_0': '5', 'precio_por_kg_0': '1000'}
+
+        response = self.client.post(reverse('venta_credito_create'), data)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'clasificación')
+        self.assertEqual(VentaCredito.objects.count(), 0)
+
+    def test_pantalla_muestra_formulario(self):
+        response = self.client.get(reverse('venta_credito_create'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Resumen de la Venta')
+        self.assertContains(response, 'Agregar fila con otro cliente')
+        self.assertContains(response, self.cliente.nombre)
+
+
 class ViajeTotalsTests(BaseDataMixin, TestCase):
     def test_anotaciones_equivalen_al_calculo_por_consultas(self):
         from .models import DesechoInventario, PagoProveedor, PesadaViaje, Proveedor, Viaje

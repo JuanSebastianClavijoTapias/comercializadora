@@ -140,7 +140,7 @@
             <div class="table-responsive">
               <table class="table table-hover align-middle mb-0">
                 <thead class="bg-light">
-                  <tr><th class="ps-3">Clasificación</th><th>Kg</th><th>Total</th><th class="text-end pe-3"></th></tr>
+                  <tr><th class="ps-3">Clasificación</th><th>Cliente</th><th>Kg</th><th>Total</th><th class="text-end pe-3"></th></tr>
                 </thead>
                 <tbody class="border-top-0">
                 {% for d in detalles %}
@@ -149,6 +149,7 @@
                     <div class="fw-semibold" style="color: var(--text-main);">{{ d.clasificacion }}</div>
                     <div class="small text-muted">${{ d.precio_por_kg }}/kg</div>
                   </td>
+                  <td class="fw-semibold" style="color: var(--orange-primary);">{{ venta.cliente|default:"-" }}</td>
                   <td>{{ d.kg_vendido }}</td>
                   <td class="fw-bold" style="color: var(--text-main);">${{ d.total|default:0|cop }}</td>
                   <td class="text-end pe-3">
@@ -158,7 +159,7 @@
                   </td>
                 </tr>
                 {% empty %}
-                <tr><td colspan="4" class="text-center text-muted py-4"><i class="bi bi-inbox fs-4 d-block mb-2 opacity-25"></i>Sin productos</td></tr>
+                <tr><td colspan="5" class="text-center text-muted py-4"><i class="bi bi-inbox fs-4 d-block mb-2 opacity-25"></i>Sin productos</td></tr>
                 {% endfor %}
                 </tbody>
               </table>
@@ -262,7 +263,8 @@
 
 <script>
   const VENTA_ID = {{ venta.pk }};
-  const VENTA_TIENE_CLIENTE = {% if venta.cliente %}true{% else %}false{% endif %};
+  let VENTA_TIENE_CLIENTE = {% if venta.cliente %}true{% else %}false{% endif %};
+  const VENTA_CLIENTE_NOMBRE = "{{ venta.cliente|default:'-'|escapejs }}";
   
   // Data de clasificaciones y su stock disponible
   const clasificacionesData = {
@@ -512,6 +514,7 @@
         <td class="ps-3">
           <span class="badge bg-light text-dark px-2 py-1">${detalle.clasificacion}</span>
         </td>
+        <td class="fw-semibold" style="color: var(--orange-primary);">${VENTA_CLIENTE_NOMBRE}</td>
         <td class="text-muted">${detalle.kg_vendido.toFixed(2)} kg</td>
         <td>
           <span class="fw-bold text-info">${detalle.total_display}</span>

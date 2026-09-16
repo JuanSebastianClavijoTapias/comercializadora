@@ -1,0 +1,271 @@
+{% extends 'core/base.html' %}
+{% block title %}Venta a Crédito{% endblock %}
+{% block page_title %}Venta a Crédito{% endblock %}
+{% block content %}
+
+<div class="mb-3 d-flex justify-content-between align-items-center">
+  <a href="{% url 'venta_credito_list' %}" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-arrow-left me-1"></i>Volver al listado
+  </a>
+</div>
+
+{% if form_errors %}
+<div class="alert alert-danger py-2" role="alert">
+  {% for e in form_errors %}<div><i class="bi bi-exclamation-triangle me-1"></i>{{ e }}</div>{% endfor %}
+</div>
+{% endif %}
+
+<form method="post" action="{% url 'venta_credito_create' %}" autocomplete="off" id="form_venta_credito">
+{% csrf_token %}
+<div class="row g-3">
+
+  <!-- FILAS DE VENTA -->
+  <div class="col-12 col-xxl-8">
+    <div class="card border-0 shadow-sm" style="border-radius:14px;overflow:hidden;">
+      <div class="card-header py-3 d-flex justify-content-between align-items-center">
+        <span class="fw-semibold text-white"><i class="bi bi-cart-plus me-2"></i>Productos vendidos</span>
+        <div class="d-flex gap-2 flex-wrap">
+          <button type="button" id="btn_add_row" class="btn btn-sm" style="background:rgba(255,255,255,0.2);color:white;border:1px solid rgba(255,255,255,0.3);">
+            <i class="bi bi-plus-lg me-1"></i>Agregar fila
+          </button>
+          <button type="button" id="btn_add_row_diff" class="btn btn-sm btn-outline-light" style="border:1px solid rgba(255,255,255,0.3);">
+            <i class="bi bi-person-plus me-1"></i>Agregar fila con otro cliente
+          </button>
+        </div>
+      </div>
+      <div class="card-body p-3">
+        <div class="mb-3">
+          <label class="form-label fw-semibold small text-uppercase mb-1" style="color:var(--text-sec);font-size:0.72rem;letter-spacing:0.4px;">Fecha <span class="text-danger">*</span></label>
+          <input type="date" name="fecha" class="form-control" value="{{ fecha_default }}" required style="max-width:200px;">
+        </div>
+
+        <div id="venta_rows">
+          <div class="venta-row border rounded p-2 mb-2" style="border-color:var(--border-light) !important;">
+            <div class="row g-2 align-items-end">
+              <div class="col-12 col-md-3">
+                <label class="small fw-semibold">Cliente <span class="row-num" style="font-weight:400;color:#999;">1</span></label>
+                <select name="cliente_0" class="form-select input-cliente" required>
+                  <option value="">-- Seleccionar --</option>
+                  {% for c in clientes %}<option value="{{ c.pk }}">{{ c.nombre }}</option>{% endfor %}
+                </select>
+              </div>
+              <div class="col-12 col-md-3">
+                <label class="small fw-semibold">Clasificación</label>
+                <select name="clasificacion_0" class="form-select input-clasif" required>
+                  <option value="">-- Seleccionar --</option>
+                  {% for c in clasificaciones %}<option value="{{ c.pk }}">{{ c.producto.nombre }} - {{ c.nombre }}</option>{% endfor %}
+                </select>
+              </div>
+              <div class="col-4 col-md-2">
+                <label class="small fw-semibold">Kg</label>
+                <input type="number" min="0" step="0.01" name="kg_vendido_0" class="form-control input-kg" placeholder="Kg" required>
+              </div>
+              <div class="col-4 col-md-2">
+                <label class="small fw-semibold">Precio/kg</label>
+                <input type="text" inputmode="numeric" autocomplete="off" name="precio_por_kg_0" class="form-control price-cop input-precio" placeholder="Precio" required>
+              </div>
+              <div class="col-2 col-md-1">
+                <label class="small fw-semibold">Total</label>
+                <div class="fw-bold text-success sub-total">$0</div>
+              </div>
+              <div class="col-2 col-md-1 text-end">
+                <button type="button" class="btn btn-sm btn-outline-danger btn-rm-row" title="Eliminar fila" aria-label="Eliminar fila"><i class="bi bi-x"></i></button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESUMEN DE LA VENTA -->
+  <div class="col-12 col-xxl-4">
+    <div class="card border-0 shadow-sm h-100" style="border-radius:14px;overflow:hidden;">
+      <div class="card-header py-3 border-0">
+        <span class="fw-semibold text-white"><i class="bi bi-receipt me-2"></i>Resumen de la Venta</span>
+      </div>
+      <div class="card-body px-3 pt-3 d-flex flex-column" style="font-size:0.9rem;">
+        <div id="resumen_clientes">
+          <div class="text-muted small text-center py-3">Agrega filas para ver el resumen por cliente</div>
+        </div>
+
+        <div class="mt-3 pt-2 border-top d-flex justify-content-between align-items-center">
+          <span class="fw-bold text-uppercase small">Total</span>
+          <span class="fs-5 fw-bold" style="color:var(--orange-primary);" id="resumen_total">$0</span>
+        </div>
+        <div class="d-flex justify-content-between align-items-center small text-muted">
+          <span>Kg vendidos</span>
+          <span id="resumen_kg">0,00</span>
+        </div>
+
+        <div class="mt-auto pt-3">
+          <button type="submit" class="btn w-100 py-2 fw-semibold text-white" style="background:linear-gradient(135deg,var(--orange-primary) 0%,var(--orange-secondary) 100%);border:none;border-radius:8px;">
+            <i class="bi bi-check-lg me-1"></i>Guardar ventas
+          </button>
+          <div class="small text-muted text-center mt-2">Se guarda una venta por cliente.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</form>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  const container = document.getElementById('venta_rows');
+  const btnAdd = document.getElementById('btn_add_row');
+  const btnAddDiff = document.getElementById('btn_add_row_diff');
+  let rowIndex = 1;
+
+  const firstCliente = document.querySelector('.input-cliente');
+  const firstClasif = document.querySelector('.input-clasif');
+  const CLIENTE_OPTIONS = Array.from(firstCliente.options)
+    .filter(o => o.value)
+    .map(o => ({ pk: o.value, label: o.text }));
+  const CLASIF_OPTIONS = Array.from(firstClasif.options)
+    .filter(o => o.value)
+    .map(o => ({ pk: o.value, label: o.text }));
+
+  function parseCOP(val) { return parseFloat(String(val || '').replace(/\./g, '').replace(',', '.')) || 0; }
+  function fmtCOP(n) { return '$' + Math.round(Number(n) || 0).toLocaleString('es-CO'); }
+  function fmtKg(n) { return Number(n || 0).toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+
+  function buildRow(i, clienteId) {
+    const clienteOpts = CLIENTE_OPTIONS.map(o =>
+      '<option value="' + o.pk + '"' + (o.pk === clienteId ? ' selected' : '') + '>' + o.label + '</option>'
+    ).join('');
+    const clasifOpts = CLASIF_OPTIONS.map(o => '<option value="' + o.pk + '">' + o.label + '</option>').join('');
+    const div = document.createElement('div');
+    div.className = 'venta-row border rounded p-2 mb-2';
+    div.style.borderColor = 'var(--border-light)';
+    div.innerHTML =
+      '<div class="row g-2 align-items-end">' +
+        '<div class="col-12 col-md-3">' +
+          '<label class="small fw-semibold">Cliente <span class="row-num" style="font-weight:400;color:#999;">' + (container.querySelectorAll('.venta-row').length + 1) + '</span></label>' +
+          '<select name="cliente_' + i + '" class="form-select input-cliente" required><option value="">-- Seleccionar --</option>' + clienteOpts + '</select>' +
+        '</div>' +
+        '<div class="col-12 col-md-3">' +
+          '<label class="small fw-semibold">Clasificación</label>' +
+          '<select name="clasificacion_' + i + '" class="form-select input-clasif" required><option value="">-- Seleccionar --</option>' + clasifOpts + '</select>' +
+        '</div>' +
+        '<div class="col-4 col-md-2">' +
+          '<label class="small fw-semibold">Kg</label>' +
+          '<input type="number" min="0" step="0.01" name="kg_vendido_' + i + '" class="form-control input-kg" placeholder="Kg" required>' +
+        '</div>' +
+        '<div class="col-4 col-md-2">' +
+          '<label class="small fw-semibold">Precio/kg</label>' +
+          '<input type="text" inputmode="numeric" autocomplete="off" name="precio_por_kg_' + i + '" class="form-control price-cop input-precio" placeholder="Precio" required>' +
+        '</div>' +
+        '<div class="col-2 col-md-1">' +
+          '<label class="small fw-semibold">Total</label>' +
+          '<div class="fw-bold text-success sub-total">$0</div>' +
+        '</div>' +
+        '<div class="col-2 col-md-1 text-end">' +
+          '<button type="button" class="btn btn-sm btn-outline-danger btn-rm-row" title="Eliminar fila"><i class="bi bi-x"></i></button>' +
+        '</div>' +
+      '</div>';
+    return div;
+  }
+
+  function lastSelectedCliente() {
+    const rows = container.querySelectorAll('.venta-row');
+    for (let r = rows.length - 1; r >= 0; r--) {
+      const v = rows[r].querySelector('.input-cliente').value;
+      if (v) return v;
+    }
+    return '';
+  }
+
+  function addRow(clienteId, focusSelector) {
+    const row = buildRow(rowIndex, clienteId);
+    container.appendChild(row);
+    rowIndex++;
+    updateRemoveButtons();
+    recalc();
+    const el = row.querySelector(focusSelector);
+    if (el) el.focus();
+  }
+
+  function renumberRows() {
+    container.querySelectorAll('.venta-row').forEach((row, i) => {
+      const num = row.querySelector('.row-num');
+      if (num) num.textContent = i + 1;
+      row.querySelectorAll('input, select').forEach(inp => {
+        const name = inp.getAttribute('name');
+        if (name) inp.setAttribute('name', name.replace(/_\d+$/, '_' + i));
+      });
+    });
+    rowIndex = container.querySelectorAll('.venta-row').length;
+  }
+
+  function updateRemoveButtons() {
+    const rows = container.querySelectorAll('.venta-row');
+    rows.forEach(row => {
+      const btn = row.querySelector('.btn-rm-row');
+      if (btn) btn.disabled = rows.length === 1;
+    });
+  }
+
+  function recalc() {
+    const groups = {};
+    let grand = 0;
+    let grandKg = 0;
+    container.querySelectorAll('.venta-row').forEach(row => {
+      const cliSel = row.querySelector('.input-cliente');
+      const kg = parseFloat(row.querySelector('.input-kg').value) || 0;
+      const precio = parseCOP(row.querySelector('.input-precio').value);
+      const sub = kg * precio;
+      row.querySelector('.sub-total').textContent = fmtCOP(sub);
+      if (!cliSel.value) return;
+      const name = cliSel.options[cliSel.selectedIndex].text;
+      if (!groups[cliSel.value]) groups[cliSel.value] = { name: name, kg: 0, total: 0 };
+      groups[cliSel.value].kg += kg;
+      groups[cliSel.value].total += sub;
+      grand += sub;
+      grandKg += kg;
+    });
+
+    const box = document.getElementById('resumen_clientes');
+    const entries = Object.values(groups);
+    if (!entries.length) {
+      box.innerHTML = '<div class="text-muted small text-center py-3">Agrega filas para ver el resumen por cliente</div>';
+    } else {
+      box.innerHTML = entries.map(g =>
+        '<div class="d-flex justify-content-between align-items-center mb-2">' +
+          '<div><div class="fw-semibold" style="color:var(--orange-primary);">' + g.name + '</div>' +
+          '<div class="small text-muted">' + fmtKg(g.kg) + ' kg</div></div>' +
+          '<div class="fw-bold">' + fmtCOP(g.total) + '</div>' +
+        '</div>'
+      ).join('');
+    }
+    document.getElementById('resumen_total').textContent = fmtCOP(grand);
+    document.getElementById('resumen_kg').textContent = fmtKg(grandKg);
+  }
+
+  btnAdd.addEventListener('click', () => addRow(lastSelectedCliente(), '.input-kg'));
+  btnAddDiff.addEventListener('click', () => addRow('', '.input-cliente'));
+
+  container.addEventListener('click', e => {
+    const btn = e.target.closest('.btn-rm-row');
+    if (!btn) return;
+    const rows = container.querySelectorAll('.venta-row');
+    if (rows.length > 1) {
+      btn.closest('.venta-row').remove();
+      renumberRows();
+      updateRemoveButtons();
+      recalc();
+    }
+  });
+
+  container.addEventListener('input', recalc);
+  container.addEventListener('change', recalc);
+
+  updateRemoveButtons();
+  recalc();
+}());
+</script>
+{% endblock %}
