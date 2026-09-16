@@ -1,6 +1,6 @@
 {% extends 'core/base.html' %}
-{% block title %}Venta Crédito - {{ venta.cliente }}{% endblock %}
-{% block page_title %}Venta a Crédito: {{ venta.cliente }}{% endblock %}
+{% block title %}Venta Crédito - {{ venta.cliente|default:"Nueva venta" }}{% endblock %}
+{% block page_title %}Venta a Crédito: {{ venta.cliente|default:"Nueva venta" }}{% endblock %}
 {% block content %}
 <div class="mb-4 d-flex justify-content-between align-items-center">
   <a href="{% url 'venta_credito_list' %}" class="btn btn-outline-secondary py-2 border-0 fw-semibold" style="color: var(--text-sec);">
@@ -21,7 +21,7 @@
           </div>
           <div>
             <h6 class="text-uppercase fw-bold mb-0" style="color: var(--text-sec); font-size: 0.75rem; letter-spacing: 0.5px;">Resumen de la Venta</h6>
-            <h5 class="fw-bold mb-0" style="color: white;">{{ venta.cliente }}</h5>
+            <h5 class="fw-bold mb-0" id="venta-cliente-nombre" style="color: white;">{{ venta.cliente|default:"Sin cliente" }}</h5>
           </div>
         </div>
 
@@ -71,8 +71,15 @@
         <div class="card-body px-4 pb-4 pt-3">
           <form id="detalle-form" class="row g-3 align-items-end">
             {% csrf_token %}
+            <!-- Cliente -->
+            <div class="col-md-3">
+              <label class="form-label form-control-sm text-uppercase fw-semibold mb-2" style="color: var(--text-sec); letter-spacing: 0.5px; font-size: 0.8rem;">
+                <i class="bi bi-person me-1"></i>{{ detalle_form.cliente.label }}
+              </label>
+              {{ detalle_form.cliente }}
+            </div>
             <!-- Clasificación -->
-            <div class="col-md-4 position-relative">
+            <div class="col-md-3 position-relative">
               <label class="form-label form-control-sm text-uppercase fw-semibold mb-2" style="color: var(--text-sec); letter-spacing: 0.5px; font-size: 0.8rem;">
                 <i class="bi bi-boxes me-1"></i>{{ detalle_form.clasificacion.label }}
               </label>
@@ -83,7 +90,7 @@
             </div>
             
             <!-- Kg Vendido con indicador de restante -->
-            <div class="col-md-3 position-relative">
+            <div class="col-md-2 position-relative">
               <label class="form-label form-control-sm text-uppercase fw-semibold mb-2" style="color: var(--text-sec); letter-spacing: 0.5px; font-size: 0.8rem;">
                 <i class="bi bi-weight me-1"></i>{{ detalle_form.kg_vendido.label }}
               </label>
@@ -94,7 +101,7 @@
             </div>
             
             <!-- Precio por Kg -->
-            <div class="col-md-3">
+            <div class="col-md-2">
               <label class="form-label form-control-sm text-uppercase fw-semibold mb-2" style="color: var(--text-sec); letter-spacing: 0.5px; font-size: 0.8rem;">
                 <i class="bi bi-cash-coin me-1"></i>{{ detalle_form.precio_por_kg.label }}
               </label>
@@ -255,6 +262,7 @@
 
 <script>
   const VENTA_ID = {{ venta.pk }};
+  const VENTA_TIENE_CLIENTE = {% if venta.cliente %}true{% else %}false{% endif %};
   
   // Data de clasificaciones y su stock disponible
   const clasificacionesData = {
@@ -270,6 +278,7 @@
   document.addEventListener('DOMContentLoaded', function() {
     const detalleForm = document.getElementById('detalle-form');
     const detalleSubmitBtn = document.getElementById('detalle-submit-btn');
+    const selectCliente = document.getElementById('id_cliente');
     const selectClasificacion = document.getElementById('id_clasificacion');
     const inputKg = document.getElementById('id_kg_vendido');
     const inputPrecio = document.getElementById('id_precio_por_kg');
@@ -326,6 +335,19 @@
       if (paymentsBalanceAmount) {
         paymentsBalanceAmount.textContent = formatCurrencyAmount(saldoPendiente);
         paymentsBalanceAmount.style.color = tieneSaldoPendiente ? '#d32f2f' : '#4CAF50';
+      }
+    }
+
+    function bloquearClienteSiAsignado() {
+      if (VENTA_TIENE_CLIENTE && selectCliente) {
+        selectCliente.disabled = true;
+      }
+    }
+
+    function actualizarClienteEnUI(nombreCliente) {
+      const nombreEl = document.getElementById('venta-cliente-nombre');
+      if (nombreEl && nombreCliente) {
+        nombreEl.textContent = nombreCliente;
       }
     }
 
@@ -414,6 +436,11 @@
           showMessage('Por favor completa todos los campos', 'warning');
           return;
         }
+        // El cliente es obligatorio mientras la venta no tenga uno asignado
+        if (selectCliente && !selectCliente.value && !selectCliente.disabled) {
+          showMessage('Por favor selecciona el cliente de la venta', 'warning');
+          return;
+        }
 
         // Deshabilitar botón mientras se envía
         detalleSubmitBtn.disabled = true;
@@ -429,9 +456,16 @@
         .then(response => response.json())
         .then(data => {
           if (data.success) {
+            const clienteSeleccionado = selectCliente ? selectCliente.value : '';
             // Agregar fila a la tabla
             addDetailRow(data.detalle);
             updateSaleSummary(data.resumen);
+            
+            // Si era una venta sin cliente, asignar y reflejar en la UI
+            if (!VENTA_TIENE_CLIENTE && data.cliente) {
+              VENTA_TIENE_CLIENTE = true;
+              actualizarClienteEnUI(data.cliente.nombre);
+            }
             
             // Limpiar formulario
             detalleForm.reset();
@@ -439,6 +473,12 @@
             inputKg.value = '';
             inputPrecio.value = '';
             previewContainer.style.display = 'none';
+
+            // Restaurar el cliente en el select tras el reset
+            if (selectCliente) {
+              selectCliente.value = clienteSeleccionado || (data.cliente ? data.cliente.id : '');
+              bloquearClienteSiAsignado();
+            }
             
             // Mostrar mensaje de éxito
             showMessage('✓ Producto agregado exitosamente', 'success');
@@ -511,6 +551,7 @@
       console.log(`Total de productos: ${count}`);
     }
 
+    bloquearClienteSiAsignado();
     updateProductCount();
   });
 </script>

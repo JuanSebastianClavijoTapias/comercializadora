@@ -129,7 +129,7 @@
         <tr>
           <td class="ps-4"><span class="small fw-semibold" style="color: var(--text-main);">{{ v.fecha|date:"d/m/Y" }}</span></td>
           <td><span class="small text-muted">{{ v.fecha_vencimiento|date:"d/m/Y"|default:"-" }}</span></td>
-          <td class="fw-semibold" style="color: var(--orange-primary);">{{ v.cliente }}</td>
+          <td class="fw-semibold" style="color: var(--orange-primary);">{{ v.cliente|default:"-" }}</td>
           <td class="text-muted small">{{ v.producto|default:"Varios" }}</td>
           <td class="text-end pe-2 fw-semibold" style="color: var(--text-main);">{{ v.total_kg|default:0|floatformat:2 }}</td>
           <td class="text-end pe-2 fw-bold" style="color: var(--text-main);">${{ v.total|default:0|cop }}</td>

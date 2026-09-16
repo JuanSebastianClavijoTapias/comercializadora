@@ -278,21 +278,19 @@ class DetalleVentaEfectivoForm(COPInputNormalizationMixin, forms.ModelForm):
             activo=True
         ).order_by('nombre')
 
-class VentaCreditoForm(forms.ModelForm):
-    class Meta:
-        model = VentaCredito
-        fields = ['fecha', 'cliente']
-        widgets = {
-            'cliente': forms.Select(attrs={'class': 'form-select'}),
-            'fecha': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-        }
-
 class DetalleVentaCreditoForm(COPInputNormalizationMixin, forms.ModelForm):
     cop_fields = ('precio_por_kg',)
 
+    cliente = forms.ModelChoiceField(
+        queryset=Cliente.objects.filter(activo=True).order_by('nombre'),
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        label='Cliente',
+        required=False,
+    )
+
     class Meta:
         model = DetalleVentaCredito
-        fields = ['clasificacion', 'kg_vendido', 'precio_por_kg']
+        fields = ['cliente', 'clasificacion', 'kg_vendido', 'precio_por_kg']
         widgets = {
             'clasificacion': forms.Select(attrs={'class': 'form-select'}),
             'kg_vendido': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),

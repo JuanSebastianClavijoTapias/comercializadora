@@ -134,34 +134,35 @@ def venta_credito_list(request):
 
 @login_required
 def venta_credito_create(request):
-    """Crea una nueva venta a crédito (sin detalles, se agregan después)"""
-    if request.method == 'POST':
-        form = VentaCreditoForm(request.POST)
-        if form.is_valid():
-            venta = form.save()
-            messages.success(request, 'Venta a crédito creada. Ahora agrega los productos vendidos.')
-            return redirect('venta_credito_detail', pk=venta.pk)
-    else:
-        form = VentaCreditoForm(initial={'fecha': date.today()})
-    return render(request, 'core/ventas/venta_credito_form.html', {
-        'form': form,
-        'titulo': 'Nueva Venta a Crédito',
-        'back_url': 'venta_credito_list'
-    })
+    """Crea una venta a crédito vacía y redirige al detalle para agregar cliente y productos"""
+    venta = VentaCredito.objects.create(fecha=date.today())
+    messages.success(request, 'Nueva venta creada. Selecciona el cliente y agrega los productos vendidos.')
+    return redirect('venta_credito_detail', pk=venta.pk)
 
 
 @login_required
 def venta_credito_add_detalle_ajax(request, pk):
-    """Agrega un detalle de venta a crédito sin recargar la página (AJAX)"""
+    """Agrega un detalle de venta a crédito sin recargar la página (AJAX)
+
+    Si la venta aún no tiene cliente, se asigna el cliente y el producto
+    seleccionados en el detalle.
+    """
     import json
     venta = get_object_or_404(VentaCredito, pk=pk)
     
     if request.method == 'POST':
         detalle_form = DetalleVentaCreditoForm(request.POST)
         if detalle_form.is_valid():
+            if venta.cliente is None and not detalle_form.cleaned_data.get('cliente'):
+                return JsonResponse({'success': False, 'errors': {'cliente': ['Selecciona el cliente de la venta.']}})
             detalle = detalle_form.save(commit=False)
             detalle.venta = venta
             detalle.save()
+
+            if venta.cliente is None:
+                venta.cliente = detalle_form.cleaned_data['cliente']
+                venta.producto = detalle.clasificacion.producto
+                venta.save(update_fields=['cliente', 'producto'])
             
             # Refrescar la clasificación para obtener el stock actualizado
             detalle.clasificacion.refresh_from_db()
@@ -184,6 +185,10 @@ def venta_credito_add_detalle_ajax(request, pk):
                     'total_pagado': float(venta.total_pagado),
                     'saldo_pendiente': float(venta.saldo_pendiente),
                 },
+                'cliente': {
+                    'id': venta.cliente_id,
+                    'nombre': str(venta.cliente),
+                } if venta.cliente else None,
             }
             return JsonResponse(response_data)
         else:
@@ -197,7 +202,7 @@ def venta_credito_detail(request, pk):
     venta = get_object_or_404(VentaCredito, pk=pk)
     detalles = venta.detalles.select_related('clasificacion').all()
     pagos = venta.pagos.all()
-    detalle_form = DetalleVentaCreditoForm()  # Empty form for display only
+    detalle_form = DetalleVentaCreditoForm(initial={'cliente': venta.cliente_id})  # Empty form for display only
     pago_form = PagoVentaCreditoForm()
     ctx = {
         'venta': venta, 'detalles': detalles, 'pagos': pagos,

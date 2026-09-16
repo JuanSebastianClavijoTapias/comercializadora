@@ -177,7 +177,6 @@ comercializadora/
 │       │
 │       └── ventas/               Ventas efectivo y crédito
 │           ├── venta_credito_detail.html
-│           ├── venta_credito_form.html
 │           ├── venta_credito_list.html
 │           ├── venta_efectivo_create.html
 │           ├── venta_efectivo_detail.html
@@ -435,8 +434,7 @@ urlpatterns = [
 | `PesadaEntradaForm` | PesadaEntrada | num_canastillas_negras, num_canastillas_colores, kg_bruto | — |
 | `VentaEfectivoForm` | VentaEfectivo | fecha, producto, kg_vendido (`price-cop`), total_dia (`price-cop`) | ✓ (total_dia, kg_vendido) |
 | `DetalleVentaEfectivoForm` | DetalleVentaEfectivo | producto, kg_vendido, precio_por_kg (`price-cop`) | ✓ (precio_por_kg) |
-| `VentaCreditoForm` | VentaCredito | fecha, cliente | — |
-| `DetalleVentaCreditoForm` | DetalleVentaCredito | clasificacion, kg_vendido, precio_por_kg (`price-cop`) | ✓ (precio_por_kg) |
+| `DetalleVentaCreditoForm` | DetalleVentaCredito | cliente, clasificacion, kg_vendido, precio_por_kg (`price-cop`) | ✓ (precio_por_kg) |
 | `PagoVentaCreditoForm` | PagoVentaCredito | monto, medio_pago, fecha, observaciones | ✓ (monto) |
 
 ### 5.4 `urls.py` — Rutas de la app (81 líneas)
@@ -526,8 +524,7 @@ Página independiente (no extiende base.html). Tarjeta centrada con logo, formul
 - **`venta_efectivo_create.html`** (76 líneas): Formulario con botón "Hoy" para fecha, campos producto, kg_vendido, total_dia.
 - **`venta_efectivo_detail.html`** (119 líneas): Card resumen + card "Registrar Pago" con cálculo de cambio en vivo (JS).
 - **`venta_credito_list.html`** (180 líneas): Panel de filtros, 3 tarjetas (Total, Cobrado, Por Cobrar), tabla con estado.
-- **`venta_credito_form.html`** (154 líneas): Formulario con Choices.js para cliente, switch de abono inicial.
-- **`venta_credito_detail.html`** (518 líneas): Card resumen + formulario AJAX para agregar productos con info de stock + tabla de productos + control de pagos con historial. JS extenso con `clasificacionesData`, fetch al endpoint `detalle-ajax`, actualización dinámica sin recarga.
+- **`venta_credito_detail.html`** (518 líneas): Card resumen + formulario AJAX para agregar productos con campo **cliente** + info de stock + tabla de productos + control de pagos con historial. `venta_credito_create` crea la venta vacía (fecha de hoy, sin cliente) y redirige aquí; el cliente se asigna al agregar el primer producto. JS extenso con `clasificacionesData`, fetch al endpoint `detalle-ajax`, actualización dinámica sin recarga.
 
 ### 6.7 `gastos/`
 

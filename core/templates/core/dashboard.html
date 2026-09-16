@@ -247,7 +247,7 @@
             <tbody class="border-top-0">
               {% for venta in ultimas_ventas_hoy %}
               <tr>
-                <td class="ps-4 fw-semibold" style="color: var(--text-main);">{{ venta.cliente }}</td>
+                <td class="ps-4 fw-semibold" style="color: var(--text-main);">{{ venta.cliente|default:"-" }}</td>
                 <td class="text-muted small"><i class="bi bi-box-seam me-1 opacity-50"></i>{{ venta.producto }}</td>
                 <td>
                   {% if venta.tipo == 'Efectivo' %}
@@ -945,7 +945,7 @@
                     <span class="badge bg-primary">Crédito</span>
                   {% endif %}
                 </td>
-                <td><strong>{{ venta.cliente }}</strong></td>
+                <td><strong>{{ venta.cliente|default:"-" }}</strong></td>
                 <td>{{ venta.producto }}</td>
                 <td class="text-end">{{ venta.kg_vendido|floatformat:2 }}</td>
                 <td class="text-end text-success fw-bold">${{ venta.monto|cop }}</td>

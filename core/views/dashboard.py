@@ -195,7 +195,7 @@ def dashboard(request):
     for detalle in detalles_credito_hoy:
         detalles_ventas.append({
             'tipo': 'Crédito',
-            'cliente': detalle.venta.cliente.nombre,
+            'cliente': detalle.venta.cliente.nombre if detalle.venta.cliente else 'General',
             'producto': detalle.clasificacion.producto.nombre if detalle.clasificacion and detalle.clasificacion.producto else 'N/A',
             'clasificacion': detalle.clasificacion.nombre,
             'kg_vendido': detalle.kg_vendido,

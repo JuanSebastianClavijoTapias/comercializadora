@@ -299,7 +299,7 @@ class DetalleVentaEfectivo(models.Model):
         verbose_name_plural = 'Detalles de Ventas Efectivo'
 
 class VentaCredito(models.Model):
-    cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, related_name='ventas', verbose_name='Cliente')
+    cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, related_name='ventas', verbose_name='Cliente', null=True, blank=True)
     producto = models.ForeignKey(Producto, on_delete=models.CASCADE, related_name='ventas_credito', verbose_name='Producto', null=True, blank=True)
     fecha = models.DateField(verbose_name='Fecha de venta')
     fecha_vencimiento = models.DateField(verbose_name='Fecha de vencimiento', null=True, blank=True)
@@ -325,7 +325,7 @@ class VentaCredito(models.Model):
         if cached is not None:
             return cached
         return sum(d.kg_vendido for d in self.detalles.all())
-    def __str__(self): return f"Venta crédito {self.cliente} - {self.fecha}"
+    def __str__(self): return f"Venta crédito {self.cliente or 'sin cliente'} - {self.fecha}"
     class Meta:
         verbose_name = 'Venta a Crédito'; verbose_name_plural = 'Ventas a Crédito'; ordering = ['-fecha']
 
