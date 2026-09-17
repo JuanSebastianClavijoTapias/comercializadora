@@ -9,36 +9,41 @@
     <h6 class="fw-bold mb-4" style="color: white; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.5px;">
       <i class="bi bi-funnel me-2"></i>Filtros de Búsqueda
     </h6>
-    <div class="row g-3">
+    <form method="get" id="formFiltrosCredito" class="row g-3 m-0">
       <div class="col-md-3">
         <label class="form-label fw-semibold small" style="color: var(--text-secondary);">Cliente</label>
-        <input type="text" class="form-control" id="filtroCliente" placeholder="Buscar cliente..." style="border-radius: 8px; border: 1px solid var(--border-light); padding: 0.75rem 1rem;">
+        <input type="text" class="form-control" id="filtroCliente" name="cliente" list="listaClientes" value="{{ cliente_q }}" placeholder="Buscar cliente..." style="border-radius: 8px; border: 1px solid var(--border-light); padding: 0.75rem 1rem;" onchange="this.form.submit()">
+        <datalist id="listaClientes">
+          {% for c in clientes %}
+          <option value="{{ c.nombre }}"></option>
+          {% endfor %}
+        </datalist>
       </div>
       <div class="col-md-2">
         <label class="form-label fw-semibold small" style="color: var(--text-secondary);">Desde</label>
-        <input type="date" class="form-control" id="filtroDesde" style="border-radius: 8px; border: 1px solid var(--border-light); padding: 0.75rem 1rem;">
+        <input type="date" class="form-control" id="filtroDesde" name="desde" value="{{ filtro_desde }}" style="border-radius: 8px; border: 1px solid var(--border-light); padding: 0.75rem 1rem;" onchange="this.form.submit()">
       </div>
       <div class="col-md-2">
         <label class="form-label fw-semibold small" style="color: var(--text-secondary);">Hasta</label>
-        <input type="date" class="form-control" id="filtroHasta" style="border-radius: 8px; border: 1px solid var(--border-light); padding: 0.75rem 1rem;">
+        <input type="date" class="form-control" id="filtroHasta" name="hasta" value="{{ filtro_hasta }}" style="border-radius: 8px; border: 1px solid var(--border-light); padding: 0.75rem 1rem;" onchange="this.form.submit()">
       </div>
       <div class="col-md-2">
         <label class="form-label fw-semibold small" style="color: var(--text-secondary);">Estado</label>
-        <select class="form-select" id="filtroEstado" style="border-radius: 8px; border: 1px solid var(--border-light); padding: 0.75rem 1rem;">
+        <select class="form-select" id="filtroEstado" name="estado" style="border-radius: 8px; border: 1px solid var(--border-light); padding: 0.75rem 1rem;" onchange="this.form.submit()">
           <option value="">Todos</option>
-          <option value="pagada">Pagada</option>
-          <option value="pendiente">Pendiente</option>
+          <option value="pagada" {% if filtro_estado == 'pagada' %}selected{% endif %}>Pagada</option>
+          <option value="pendiente" {% if filtro_estado == 'pendiente' %}selected{% endif %}>Pendiente</option>
         </select>
       </div>
       <div class="col-md-3 d-flex align-items-end gap-2">
-        <button class="btn w-100" style="background: var(--orange-primary); color: white; border-radius: 8px; border: none; padding: 0.75rem 1rem; font-weight: 600;">
+        <button type="submit" class="btn w-100" style="background: var(--orange-primary); color: white; border-radius: 8px; border: none; padding: 0.75rem 1rem; font-weight: 600;">
           <i class="bi bi-search me-1"></i>Buscar
         </button>
-        <button class="btn btn-outline-secondary w-100" style="border-radius: 8px;">
+        <a href="{% url 'venta_credito_list' %}" class="btn btn-outline-secondary w-100" title="Limpiar filtros" style="border-radius: 8px;">
           <i class="bi bi-arrow-clockwise"></i>
-        </button>
+        </a>
       </div>
-    </div>
+    </form>
   </div>
 </div>
 
@@ -196,7 +201,7 @@
       <ul class="pagination pagination-sm mb-0">
         {% if ventas.has_previous %}
         <li class="page-item">
-          <a class="page-link" href="?page={{ ventas.previous_page_number }}" style="border-radius: 6px; color: var(--orange-primary);" aria-label="Anterior">
+          <a class="page-link" href="?page={{ ventas.previous_page_number }}{% if filtro_url %}&{{ filtro_url }}{% endif %}" style="border-radius: 6px; color: var(--orange-primary);" aria-label="Anterior">
             <span aria-hidden="true">&laquo;</span>
           </a>
         </li>
@@ -211,14 +216,14 @@
           </li>
           {% elif n >= ventas.number|add:"-2" and n <= ventas.number|add:"2" %}
           <li class="page-item">
-            <a class="page-link" href="?page={{ n }}" style="border-radius: 6px; color: var(--orange-primary);">{{ n }}</a>
+            <a class="page-link" href="?page={{ n }}{% if filtro_url %}&{{ filtro_url }}{% endif %}" style="border-radius: 6px; color: var(--orange-primary);">{{ n }}</a>
           </li>
           {% endif %}
         {% endfor %}
 
         {% if ventas.has_next %}
         <li class="page-item">
-          <a class="page-link" href="?page={{ ventas.next_page_number }}" style="border-radius: 6px; color: var(--orange-primary);" aria-label="Siguiente">
+          <a class="page-link" href="?page={{ ventas.next_page_number }}{% if filtro_url %}&{{ filtro_url }}{% endif %}" style="border-radius: 6px; color: var(--orange-primary);" aria-label="Siguiente">
             <span aria-hidden="true">&raquo;</span>
           </a>
         </li>

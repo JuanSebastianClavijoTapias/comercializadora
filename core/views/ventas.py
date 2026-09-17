@@ -115,35 +115,61 @@ def venta_efectivo_delete(request, pk):
 def venta_credito_list(request):
     from django.core.paginator import Paginator
 
+    f_cliente = (request.GET.get('cliente') or '').strip()
+    f_desde = request.GET.get('desde') or ''
+    f_hasta = request.GET.get('hasta') or ''
+    f_estado = request.GET.get('estado') or ''
+
     # Queryset anotado con totales en SQL (evita N+1 en las propiedades del modelo)
     ventas_qs = ventas_credito_with_totals(
         VentaCredito.objects.select_related('cliente', 'producto').order_by('-fecha', '-id')
+    )
+
+    if f_cliente:
+        ventas_qs = ventas_qs.filter(cliente__nombre__icontains=f_cliente)
+    if f_desde:
+        try:
+            ventas_qs = ventas_qs.filter(fecha__gte=date.fromisoformat(f_desde))
+        except ValueError:
+            f_desde = ''
+    if f_hasta:
+        try:
+            ventas_qs = ventas_qs.filter(fecha__lte=date.fromisoformat(f_hasta))
+        except ValueError:
+            f_hasta = ''
+    if f_estado == 'pagada':
+        ventas_qs = ventas_qs.filter(_total_pagado__gte=F('_total'))
+    elif f_estado == 'pendiente':
+        ventas_qs = ventas_qs.filter(_total_pagado__lt=F('_total'))
+
+    # Totales del subconjunto filtrado (agregaciones SQL sobre las anotaciones)
+    totals = ventas_qs.aggregate(
+        total=Coalesce(Sum('_total', output_field=DecimalField()), Value(0, output_field=DecimalField())),
+        pagado=Coalesce(Sum('_total_pagado', output_field=DecimalField()), Value(0, output_field=DecimalField())),
+        kg=Coalesce(Sum('_total_kg', output_field=DecimalField()), Value(0, output_field=DecimalField())),
     )
 
     paginator = Paginator(ventas_qs, 10)
     ventas = paginator.get_page(request.GET.get('page'))
     num_ventas = paginator.count
 
-    # Totales globales con agregaciones de BD (2 queries), no en Python
-    totales_detalle = DetalleVentaCredito.objects.aggregate(
-        total=Coalesce(Sum(F('kg_vendido') * F('precio_por_kg'), output_field=DecimalField()), Value(0, output_field=DecimalField())),
-        kg=Coalesce(Sum('kg_vendido'), Value(0, output_field=DecimalField())),
-    )
-    total_pagado = PagoVentaCredito.objects.aggregate(
-        t=Coalesce(Sum('monto'), Value(0, output_field=DecimalField()))
-    )['t']
-
-    total_credito = totales_detalle['total']
-    total_pendiente = total_credito - total_pagado
-    total_kg_credito = totales_detalle['kg']
+    query_params = request.GET.copy()
+    query_params.pop('page', None)
+    filtro_url = query_params.urlencode()
 
     ctx = {
         'ventas': ventas,
         'num_ventas': num_ventas,
-        'total_credito': total_credito,
-        'total_pagado': total_pagado,
-        'total_pendiente': total_pendiente,
-        'total_kg_credito': total_kg_credito,
+        'total_credito': totals['total'],
+        'total_pagado': totals['pagado'],
+        'total_pendiente': totals['total'] - totals['pagado'],
+        'total_kg_credito': totals['kg'],
+        'cliente_q': f_cliente,
+        'filtro_desde': f_desde,
+        'filtro_hasta': f_hasta,
+        'filtro_estado': f_estado,
+        'filtro_url': filtro_url,
+        'clientes': Cliente.objects.filter(activo=True).order_by('nombre'),
     }
     return render(request, 'core/ventas/venta_credito_list.html', ctx)
 
