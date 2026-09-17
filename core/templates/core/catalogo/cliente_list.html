@@ -140,6 +140,50 @@
       </table>
     </div>
   </div>
+
+  <!-- PAGINACIÓN -->
+  <div class="card-body border-top py-3 d-flex flex-wrap justify-content-between align-items-center gap-2" style="background: var(--bg-light);">
+    <div class="small text-muted">
+      <i class="bi bi-collection me-1"></i>Mostrando {{ clientes.start_index|default:0 }}–{{ clientes.end_index|default:0 }} de {{ num_clientes }} clientes
+    </div>
+    {% if clientes.paginator.num_pages > 1 %}
+    <nav aria-label="Paginación de clientes">
+      <ul class="pagination pagination-sm mb-0">
+        {% if clientes.has_previous %}
+        <li class="page-item">
+          <a class="page-link" href="?page={{ clientes.previous_page_number }}&q={{ q }}" style="border-radius: 6px; color: var(--orange-primary);" aria-label="Anterior">
+            <span aria-hidden="true">&laquo;</span>
+          </a>
+        </li>
+        {% else %}
+        <li class="page-item disabled"><span class="page-link" style="border-radius: 6px;">&laquo;</span></li>
+        {% endif %}
+
+        {% for n in clientes.paginator.page_range %}
+          {% if n == clientes.number %}
+          <li class="page-item active">
+            <span class="page-link" style="background: var(--orange-primary); border-color: var(--orange-primary); border-radius: 6px;">{{ n }}</span>
+          </li>
+          {% elif n >= clientes.number|add:"-2" and n <= clientes.number|add:"2" %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ n }}&q={{ q }}" style="border-radius: 6px; color: var(--orange-primary);">{{ n }}</a>
+          </li>
+          {% endif %}
+        {% endfor %}
+
+        {% if clientes.has_next %}
+        <li class="page-item">
+          <a class="page-link" href="?page={{ clientes.next_page_number }}&q={{ q }}" style="border-radius: 6px; color: var(--orange-primary);" aria-label="Siguiente">
+            <span aria-hidden="true">&raquo;</span>
+          </a>
+        </li>
+        {% else %}
+        <li class="page-item disabled"><span class="page-link" style="border-radius: 6px;">&raquo;</span></li>
+        {% endif %}
+      </ul>
+    </nav>
+    {% endif %}
+  </div>
 </div>
 
 {% endblock %}

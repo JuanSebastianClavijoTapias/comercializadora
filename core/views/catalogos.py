@@ -49,11 +49,17 @@ def proveedor_delete(request, pk):
 
 @login_required
 def cliente_list(request):
+    from django.core.paginator import Paginator
+
     q = request.GET.get('q', '')
-    clientes = Cliente.objects.filter(nombre__icontains=q) if q else Cliente.objects.all()
-    num_clientes = clientes.count()
-    num_activos = clientes.filter(activo=True).count()
-    num_inactivos = clientes.filter(activo=False).count()
+    clientes_qs = Cliente.objects.filter(nombre__icontains=q) if q else Cliente.objects.all()
+
+    paginator = Paginator(clientes_qs, 10)
+    clientes = paginator.get_page(request.GET.get('page'))
+
+    num_clientes = paginator.count
+    num_activos = clientes_qs.filter(activo=True).count()
+    num_inactivos = clientes_qs.filter(activo=False).count()
     return render(request, 'core/catalogo/cliente_list.html', {
         'clientes': clientes, 'q': q,
         'num_clientes': num_clientes, 'num_activos': num_activos, 'num_inactivos': num_inactivos
