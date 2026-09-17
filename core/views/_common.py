@@ -6,6 +6,7 @@ from django.db.models import Sum, F, Value, DecimalField
 from django.db.models.functions import Coalesce
 from django.db import transaction
 from django.urls import reverse
+from django.core.paginator import Paginator
 from django.utils.http import url_has_allowed_host_and_scheme
 import json
 from datetime import date, timedelta

@@ -123,11 +123,14 @@ def inventario_weekly_summary(request):
 
     # Historial completo de entradas (todas, sin filtrar por semana) —
     # lo que se registra en entrada_inventario_create se ve aquí directo.
-    entradas_historial = EntradaInventario.objects.select_related(
+    entradas_historial_todos = EntradaInventario.objects.select_related(
         'proveedor', 'clasificacion__producto'
     ).prefetch_related('pesadas').order_by('-fecha', '-created_at')
-    entradas_historial_kg = sum(e.kg for e in entradas_historial) or Decimal('0')
-    entradas_historial_total = sum(e.total for e in entradas_historial) or Decimal('0')
+    entradas_historial_kg = sum(e.kg for e in entradas_historial_todos) or Decimal('0')
+    entradas_historial_total = sum(e.total for e in entradas_historial_todos) or Decimal('0')
+    paginator_entradas = Paginator(entradas_historial_todos, 10)
+    entradas_historial = paginator_entradas.get_page(request.GET.get('page_entradas'))
+    num_entradas_historial = paginator_entradas.count
 
     # Agrupación por proveedor
     from collections import defaultdict
@@ -181,6 +184,11 @@ def inventario_weekly_summary(request):
     current_week_start = get_week_monday(hoy)
     next_week_start = inicio_semana + timedelta(days=7) if inicio_semana < current_week_start else None
 
+    weekly_history_all = get_weekly_history()
+    paginator_semanas = Paginator(weekly_history_all, 10)
+    weekly_history = paginator_semanas.get_page(request.GET.get('page_semanas'))
+    num_semanas_historial = paginator_semanas.count
+
     ctx = {
         'hoy': hoy,
         'inicio_semana': inicio_semana,
@@ -230,9 +238,12 @@ def inventario_weekly_summary(request):
         'entradas_historial': entradas_historial,
         'entradas_historial_kg': entradas_historial_kg,
         'entradas_historial_total': entradas_historial_total,
+        'num_entradas_historial': num_entradas_historial,
         'resumen_proveedores': resumen_proveedores,
         'ingresos_semana': ingresos_semana,
-        'weekly_history': get_weekly_history(),
+        'weekly_history': weekly_history,
+        'weekly_history_all': weekly_history_all,
+        'num_semanas_historial': num_semanas_historial,
         'nomina_form': nomina_form,
         'stock_valorizado': stock_valorizado(),
     }
@@ -252,8 +263,11 @@ def entrada_inventario_historial(request):
     ).prefetch_related('pesadas').order_by('-fecha', '-created_at')
     total_kg = sum(e.kg for e in entradas) or Decimal('0')
     total_valor = sum(e.total for e in entradas) or Decimal('0')
+    paginator = Paginator(entradas, 10)
+    entradas = paginator.get_page(request.GET.get('page'))
     return render(request, 'core/inventario/entrada_inventario_list.html', {
         'entradas': entradas,
+        'num_entradas': paginator.count,
         'total_kg': total_kg,
         'total_valor': total_valor,
     })

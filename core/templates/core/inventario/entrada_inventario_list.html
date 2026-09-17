@@ -11,7 +11,7 @@
     <div class="stat-card-white h-100">
       <div>
         <div class="small fw-semibold">Total Entradas</div>
-        <div class="fs-4 fw-bold">{{ entradas|length }}</div>
+        <div class="fs-4 fw-bold">{{ num_entradas }}</div>
         <div class="small">Registros</div>
       </div>
       <div class="stat-icon-wrapper" style="background: rgba(2,136,209,0.15); color: #0288D1;">
@@ -55,10 +55,10 @@
 <div class="card border-0 shadow-sm" style="border-radius: 14px; overflow: hidden;">
   <div class="card-header py-3 bg-white border-bottom d-flex justify-content-between align-items-center">
     <h6 class="mb-0 fw-bold">Historial de Entradas</h6>
-    <span class="badge rounded-pill" style="background: rgba(2,136,209,0.12); color: #0288D1;">{{ entradas|length }} registros</span>
+    <span class="badge rounded-pill" style="background: rgba(2,136,209,0.12); color: #0288D1;">{{ num_entradas }} registros</span>
   </div>
   <div class="card-body p-0">
-    {% if entradas %}
+    {% if num_entradas %}
     <div class="table-responsive">
       <table class="table table-hover mb-0 align-middle" style="font-size: 0.88rem;">
         <thead style="background: var(--bg-base); color: var(--text-sec);">
@@ -122,6 +122,49 @@
     </div>
     {% endif %}
   </div>
+
+  {% if entradas.paginator.num_pages > 1 %}
+  <div class="card-body border-top py-3 d-flex flex-wrap justify-content-between align-items-center gap-2" style="background: var(--bg-light);">
+    <div class="small text-muted">
+      <i class="bi bi-collection me-1"></i>Mostrando {{ entradas.start_index|default:0 }}–{{ entradas.end_index|default:0 }} de {{ num_entradas }} entradas
+    </div>
+    <nav aria-label="Paginación de entradas">
+      <ul class="pagination pagination-sm mb-0">
+        {% if entradas.has_previous %}
+        <li class="page-item">
+          <a class="page-link" href="?page={{ entradas.previous_page_number }}" style="border-radius: 6px; color: var(--orange-primary);" aria-label="Anterior">
+            <span aria-hidden="true">&laquo;</span>
+          </a>
+        </li>
+        {% else %}
+        <li class="page-item disabled"><span class="page-link" style="border-radius: 6px;">&laquo;</span></li>
+        {% endif %}
+
+        {% for n in entradas.paginator.page_range %}
+          {% if n == entradas.number %}
+          <li class="page-item active">
+            <span class="page-link" style="background: var(--orange-primary); border-color: var(--orange-primary); border-radius: 6px;">{{ n }}</span>
+          </li>
+          {% elif n >= entradas.number|add:"-2" and n <= entradas.number|add:"2" %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ n }}" style="border-radius: 6px; color: var(--orange-primary);">{{ n }}</a>
+          </li>
+          {% endif %}
+        {% endfor %}
+
+        {% if entradas.has_next %}
+        <li class="page-item">
+          <a class="page-link" href="?page={{ entradas.next_page_number }}" style="border-radius: 6px; color: var(--orange-primary);" aria-label="Siguiente">
+            <span aria-hidden="true">&raquo;</span>
+          </a>
+        </li>
+        {% else %}
+        <li class="page-item disabled"><span class="page-link" style="border-radius: 6px;">&raquo;</span></li>
+        {% endif %}
+      </ul>
+    </nav>
+  </div>
+  {% endif %}
 </div>
 
 {% endblock %}

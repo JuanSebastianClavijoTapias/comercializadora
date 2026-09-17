@@ -335,7 +335,7 @@
     </div>
   </div>
   <div class="card-body p-0">
-    {% if entradas_historial %}
+    {% if num_entradas_historial %}
     <div class="table-responsive">
       <table class="table table-hover align-middle mb-0" style="font-size:0.88rem;">
         <thead class="bg-light">
@@ -383,6 +383,48 @@
         </tfoot>
       </table>
     </div>
+    {% if entradas_historial.paginator.num_pages > 1 %}
+    <div class="card-body border-top py-3 d-flex flex-wrap justify-content-between align-items-center gap-2" style="background: var(--bg-light);">
+      <div class="small text-muted">
+        <i class="bi bi-collection me-1"></i>Mostrando {{ entradas_historial.start_index|default:0 }}–{{ entradas_historial.end_index|default:0 }} de {{ num_entradas_historial }} entradas
+      </div>
+      <nav aria-label="Paginación de entradas">
+        <ul class="pagination pagination-sm mb-0">
+          {% if entradas_historial.has_previous %}
+          <li class="page-item">
+            <a class="page-link" href="?week={{ inicio_semana|date:'Y-m-d' }}&page_entradas={{ entradas_historial.previous_page_number }}" style="border-radius: 6px; color: var(--orange-primary);" aria-label="Anterior">
+              <span aria-hidden="true">&laquo;</span>
+            </a>
+          </li>
+          {% else %}
+          <li class="page-item disabled"><span class="page-link" style="border-radius: 6px;">&laquo;</span></li>
+          {% endif %}
+
+          {% for n in entradas_historial.paginator.page_range %}
+            {% if n == entradas_historial.number %}
+            <li class="page-item active">
+              <span class="page-link" style="background: var(--orange-primary); border-color: var(--orange-primary); border-radius: 6px;">{{ n }}</span>
+            </li>
+            {% elif n >= entradas_historial.number|add:"-2" and n <= entradas_historial.number|add:"2" %}
+            <li class="page-item">
+              <a class="page-link" href="?week={{ inicio_semana|date:'Y-m-d' }}&page_entradas={{ n }}" style="border-radius: 6px; color: var(--orange-primary);">{{ n }}</a>
+            </li>
+            {% endif %}
+          {% endfor %}
+
+          {% if entradas_historial.has_next %}
+          <li class="page-item">
+            <a class="page-link" href="?week={{ inicio_semana|date:'Y-m-d' }}&page_entradas={{ entradas_historial.next_page_number }}" style="border-radius: 6px; color: var(--orange-primary);" aria-label="Siguiente">
+              <span aria-hidden="true">&raquo;</span>
+            </a>
+          </li>
+          {% else %}
+          <li class="page-item disabled"><span class="page-link" style="border-radius: 6px;">&raquo;</span></li>
+          {% endif %}
+        </ul>
+      </nav>
+    </div>
+    {% endif %}
     {% else %}
     <div class="weekly-empty-state">
       <i class="bi bi-box-seam fs-1 d-block mb-2"></i>
@@ -397,7 +439,7 @@
     <div class="card border-0 shadow-sm h-100" style="border-radius: 16px; overflow: hidden;">
       <div class="card-header py-3 d-flex justify-content-between align-items-center" style="background: linear-gradient(135deg, #1E3A8A 0%, #2563EB 100%);">
         <h6 class="mb-0 fw-bold text-white"><i class="bi bi-clock-history me-2"></i>Historial de Semanas</h6>
-        <span class="badge rounded-pill text-bg-light">{{ weekly_history|length }} semanas</span>
+        <span class="badge rounded-pill text-bg-light">{{ num_semanas_historial }} semanas</span>
       </div>
       <div class="card-body p-0">
         <div class="table-responsive">
@@ -464,6 +506,48 @@
             </tbody>
           </table>
         </div>
+        {% if weekly_history.paginator.num_pages > 1 %}
+        <div class="card-body border-top py-3 d-flex flex-wrap justify-content-between align-items-center gap-2" style="background: var(--bg-light);">
+          <div class="small text-muted">
+            <i class="bi bi-collection me-1"></i>Mostrando {{ weekly_history.start_index|default:0 }}–{{ weekly_history.end_index|default:0 }} de {{ num_semanas_historial }} semanas
+          </div>
+          <nav aria-label="Paginación de semanas">
+            <ul class="pagination pagination-sm mb-0">
+              {% if weekly_history.has_previous %}
+              <li class="page-item">
+                <a class="page-link" href="?week={{ inicio_semana|date:'Y-m-d' }}&page_semanas={{ weekly_history.previous_page_number }}" style="border-radius: 6px; color: var(--orange-primary);" aria-label="Anterior">
+                  <span aria-hidden="true">&laquo;</span>
+                </a>
+              </li>
+              {% else %}
+              <li class="page-item disabled"><span class="page-link" style="border-radius: 6px;">&laquo;</span></li>
+              {% endif %}
+
+              {% for n in weekly_history.paginator.page_range %}
+                {% if n == weekly_history.number %}
+                <li class="page-item active">
+                  <span class="page-link" style="background: var(--orange-primary); border-color: var(--orange-primary); border-radius: 6px;">{{ n }}</span>
+                </li>
+                {% elif n >= weekly_history.number|add:"-2" and n <= weekly_history.number|add:"2" %}
+                <li class="page-item">
+                  <a class="page-link" href="?week={{ inicio_semana|date:'Y-m-d' }}&page_semanas={{ n }}" style="border-radius: 6px; color: var(--orange-primary);">{{ n }}</a>
+                </li>
+                {% endif %}
+              {% endfor %}
+
+              {% if weekly_history.has_next %}
+              <li class="page-item">
+                <a class="page-link" href="?week={{ inicio_semana|date:'Y-m-d' }}&page_semanas={{ weekly_history.next_page_number }}" style="border-radius: 6px; color: var(--orange-primary);" aria-label="Siguiente">
+                  <span aria-hidden="true">&raquo;</span>
+                </a>
+              </li>
+              {% else %}
+              <li class="page-item disabled"><span class="page-link" style="border-radius: 6px;">&raquo;</span></li>
+              {% endif %}
+            </ul>
+          </nav>
+        </div>
+        {% endif %}
       </div>
     </div>
   </div>
