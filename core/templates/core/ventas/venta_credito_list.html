@@ -185,6 +185,50 @@
       </table>
     </div>
   </div>
+
+  <!-- PAGINACIÓN -->
+  <div class="card-body border-top py-3 d-flex flex-wrap justify-content-between align-items-center gap-2" style="background: var(--bg-light);">
+    <div class="small text-muted">
+      <i class="bi bi-collection me-1"></i>Mostrando {{ ventas.start_index|default:0 }}–{{ ventas.end_index|default:0 }} de {{ num_ventas }} ventas
+    </div>
+    {% if ventas.paginator.num_pages > 1 %}
+    <nav aria-label="Paginación de ventas a crédito">
+      <ul class="pagination pagination-sm mb-0">
+        {% if ventas.has_previous %}
+        <li class="page-item">
+          <a class="page-link" href="?page={{ ventas.previous_page_number }}" style="border-radius: 6px; color: var(--orange-primary);" aria-label="Anterior">
+            <span aria-hidden="true">&laquo;</span>
+          </a>
+        </li>
+        {% else %}
+        <li class="page-item disabled"><span class="page-link" style="border-radius: 6px;">&laquo;</span></li>
+        {% endif %}
+
+        {% for n in ventas.paginator.page_range %}
+          {% if n == ventas.number %}
+          <li class="page-item active">
+            <span class="page-link" style="background: var(--orange-primary); border-color: var(--orange-primary); border-radius: 6px;">{{ n }}</span>
+          </li>
+          {% elif n >= ventas.number|add:"-2" and n <= ventas.number|add:"2" %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ n }}" style="border-radius: 6px; color: var(--orange-primary);">{{ n }}</a>
+          </li>
+          {% endif %}
+        {% endfor %}
+
+        {% if ventas.has_next %}
+        <li class="page-item">
+          <a class="page-link" href="?page={{ ventas.next_page_number }}" style="border-radius: 6px; color: var(--orange-primary);" aria-label="Siguiente">
+            <span aria-hidden="true">&raquo;</span>
+          </a>
+        </li>
+        {% else %}
+        <li class="page-item disabled"><span class="page-link" style="border-radius: 6px;">&raquo;</span></li>
+        {% endif %}
+      </ul>
+    </nav>
+    {% endif %}
+  </div>
 </div>
 
 {% endblock %}

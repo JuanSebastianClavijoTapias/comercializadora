@@ -113,14 +113,30 @@ def venta_efectivo_delete(request, pk):
 
 @login_required
 def venta_credito_list(request):
-    ventas = VentaCredito.objects.select_related('cliente', 'producto').all()
-    num_ventas = len(ventas)
-    total_credito = sum(v.total for v in ventas)
-    total_pagado = sum(v.total_pagado for v in ventas)
-    total_pendiente = sum(v.saldo_pendiente for v in ventas)
-    total_kg_credito = DetalleVentaCredito.objects.aggregate(
-        t=Coalesce(Sum('kg_vendido'), Value(0), output_field=DecimalField())
+    from django.core.paginator import Paginator
+
+    # Queryset anotado con totales en SQL (evita N+1 en las propiedades del modelo)
+    ventas_qs = ventas_credito_with_totals(
+        VentaCredito.objects.select_related('cliente', 'producto').order_by('-fecha', '-id')
+    )
+
+    paginator = Paginator(ventas_qs, 10)
+    ventas = paginator.get_page(request.GET.get('page'))
+    num_ventas = paginator.count
+
+    # Totales globales con agregaciones de BD (2 queries), no en Python
+    totales_detalle = DetalleVentaCredito.objects.aggregate(
+        total=Coalesce(Sum(F('kg_vendido') * F('precio_por_kg'), output_field=DecimalField()), Value(0, output_field=DecimalField())),
+        kg=Coalesce(Sum('kg_vendido'), Value(0, output_field=DecimalField())),
+    )
+    total_pagado = PagoVentaCredito.objects.aggregate(
+        t=Coalesce(Sum('monto'), Value(0, output_field=DecimalField()))
     )['t']
+
+    total_credito = totales_detalle['total']
+    total_pendiente = total_credito - total_pagado
+    total_kg_credito = totales_detalle['kg']
+
     ctx = {
         'ventas': ventas,
         'num_ventas': num_ventas,
