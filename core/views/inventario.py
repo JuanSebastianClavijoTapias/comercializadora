@@ -353,14 +353,17 @@ def entrada_inventario_create(request):
             for row in rows:
                 groups[(row['clasificacion_id'], row['proveedor_id'])].append(row)
 
-            # Read precio per classification from receipt inputs
+            # Read precio per (proveedor, clasificación) from receipt inputs.
+            # Fallback a precio_clasif_<cid> para no romper clientes antiguos.
             precios = {}
-            for cid, _pid in groups.keys():
-                precio_raw = request.POST.get(f'precio_clasif_{cid}', '0').strip().replace('.', '')
+            for cid, pid in groups.keys():
+                precio_raw = request.POST.get(f'precio_clasif_{cid}_{pid}', '').strip().replace('.', '')
+                if not precio_raw:
+                    precio_raw = request.POST.get(f'precio_clasif_{cid}', '0').strip().replace('.', '')
                 try:
                     precio_val = Decimal(precio_raw) if precio_raw else Decimal('0')
                     if precio_val > 0:
-                        precios[cid] = precio_val
+                        precios[(cid, pid)] = precio_val
                 except InvalidOperation:
                     pass
             try:
@@ -371,7 +374,7 @@ def entrada_inventario_create(request):
                             fecha=fecha,
                             proveedor_id=int(pid),
                             clasificacion_id=int(cid),
-                            precio_por_kg=precios.get(cid, Decimal('0')),
+                            precio_por_kg=precios.get((cid, pid), Decimal('0')),
                         )
                         entrada.full_clean()
                         entrada.save()
