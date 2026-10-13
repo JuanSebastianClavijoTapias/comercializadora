@@ -311,6 +311,7 @@
   const btnAddDiff = document.getElementById('btn_add_row_diff');
   const btnDup = document.getElementById('btn_dup_row');
   const preciosGrupo = {};
+  let pagShowLast = null;
 
   const CLASIF_OPTIONS = [];
   document.querySelector('.input-clasif').querySelectorAll('option').forEach(o => {
@@ -535,6 +536,8 @@
     rowIndex++;
     updateRemoveButtons();
     recalcAll();
+    // Muestra la página que contiene la fila recién agregada antes de enfocarla.
+    if (pagShowLast) pagShowLast();
     row.querySelector(focusSelector).focus();
   }
 
@@ -598,31 +601,37 @@
 
   // Paginación
   (function() {
-    var pageSize = 5, currentPage = 1, totalPages = 1;
-    function doPagination() {
-      var rows = container.querySelectorAll('.pesada-page-row');
-      var totalRows = rows.length;
-      var pagDiv = document.getElementById('pesadas_pagination');
-      if (totalRows <= pageSize) { if (pagDiv) pagDiv.style.display = 'none'; return; }
-      totalPages = Math.ceil(totalRows / pageSize);
-      if (pagDiv) pagDiv.style.display = 'flex';
-      document.getElementById('page_total_rows').textContent = totalRows;
-      function showPage(page) {
-        currentPage = Math.max(1, Math.min(page, totalPages));
-        rows.forEach(function(row, i) {
-          row.style.display = (i >= (currentPage-1)*pageSize && i < currentPage*pageSize) ? '' : 'none';
-        });
-        document.getElementById('page_current').textContent = currentPage;
-        document.getElementById('page_total').textContent = totalPages;
-        document.getElementById('btn_prev_page').disabled = currentPage === 1;
-        document.getElementById('btn_next_page').disabled = currentPage === totalPages;
-      }
-      document.getElementById('btn_prev_page').onclick = function(){showPage(currentPage-1)};
-      document.getElementById('btn_next_page').onclick = function(){showPage(currentPage+1)};
-      showPage(1);
+    var pageSize = 5, currentPage = 1;
+    var pagDiv = document.getElementById('pesadas_pagination');
+
+    function totalPages(rows) {
+      return Math.ceil(rows.length / pageSize) || 1;
     }
-    doPagination();
-    new MutationObserver(function(){doPagination()}).observe(container, {childList: true});
+
+    function showPage(page) {
+      var rows = container.querySelectorAll('.pesada-page-row');
+      var pages = totalPages(rows);
+      currentPage = Math.max(1, Math.min(page, pages));
+      rows.forEach(function(row, i) {
+        row.style.display = (i >= (currentPage-1)*pageSize && i < currentPage*pageSize) ? '' : 'none';
+      });
+      document.getElementById('page_current').textContent = currentPage;
+      document.getElementById('page_total').textContent = pages;
+      document.getElementById('page_total_rows').textContent = rows.length;
+      document.getElementById('btn_prev_page').disabled = currentPage === 1;
+      document.getElementById('btn_next_page').disabled = currentPage === pages;
+      if (pagDiv) pagDiv.style.display = rows.length > pageSize ? 'flex' : 'none';
+    }
+
+    document.getElementById('btn_prev_page').onclick = function(){ showPage(currentPage-1); };
+    document.getElementById('btn_next_page').onclick = function(){ showPage(currentPage+1); };
+
+    // Al agregar una fila se salta a la última página (donde queda la fila nueva).
+    pagShowLast = function(){ showPage(totalPages(container.querySelectorAll('.pesada-page-row'))); };
+
+    showPage(1);
+    // Al quitar filas la página actual se conserva (solo se reajusta si ya no existe).
+    new MutationObserver(function(){ showPage(currentPage); }).observe(container, {childList: true});
   })();
 })();
 </script>
