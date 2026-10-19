@@ -311,6 +311,111 @@ class GastoListViewTests(BaseDataMixin, TestCase):
         self.assertEqual(Gasto.objects.filter(fecha=date(2026, 9, 14)).count(), 2)
 
 
+class PesadaAddTests(BaseDataMixin, TestCase):
+    def _viaje(self):
+        from .models import Proveedor, Viaje
+        proveedor = Proveedor.objects.create(nombre='Prov')
+        return Viaje.objects.create(proveedor=proveedor, producto=self.producto, fecha=date(2026, 9, 14))
+
+    def _fila(self, i, kg):
+        return {
+            f'clasificacion_{i}': self.clasificacion.pk,
+            f'kg_bruto_{i}': kg,
+            f'num_canastillas_negras_{i}': '0',
+            f'num_canastillas_colores_{i}': '0',
+        }
+
+    def test_registra_filas_con_indices_no_contiguos(self):
+        from .models import PesadaViaje
+
+        viaje = self._viaje()
+        # Índices 0 y 2: la fila 1 se eliminó en el formulario. Antes del fix
+        # el backend cortaba en el hueco y descartaba la fila 2 en silencio.
+        data = {}
+        data.update(self._fila(0, '100'))
+        data.update(self._fila(2, '50'))
+
+        response = self.client.post(reverse('pesada_add', args=[viaje.pk]), data)
+
+        self.assertRedirects(response, reverse('viaje_detail', args=[viaje.pk]))
+        self.assertEqual(PesadaViaje.objects.filter(viaje=viaje).count(), 2)
+
+
+class EntradaInventarioConteoTests(BaseDataMixin, TestCase):
+    def _post(self, fecha, filas):
+        data = {'fecha': fecha}
+        for i, (prov, clas, kg, neg, col) in enumerate(filas):
+            data[f'proveedor_{i}'] = prov.pk
+            data[f'clasificacion_{i}'] = clas.pk
+            data[f'kg_bruto_{i}'] = kg
+            data[f'num_canastillas_negras_{i}'] = neg
+            data[f'num_canastillas_colores_{i}'] = col
+        return self.client.post(reverse('entrada_inventario_create'), data)
+
+    def _proveedor(self, nombre='Duvan'):
+        from .models import Proveedor
+        return Proveedor.objects.create(nombre=nombre)
+
+    def test_agrupa_por_proveedor_y_clasificacion(self):
+        from .models import EntradaInventario, PesadaEntrada
+
+        prov = self._proveedor()
+        resp = self._post('2026-10-05', [
+            (prov, self.clasificacion, '100', 0, 0),
+            (prov, self.clasificacion, '50', 0, 0),
+        ])
+
+        self.assertEqual(resp.status_code, 302)
+        self.assertEqual(EntradaInventario.objects.count(), 1)
+        self.assertEqual(PesadaEntrada.objects.count(), 2)
+
+    def test_stock_queda_igual_a_lo_contado(self):
+        prov = self._proveedor()
+        # 190 bruto - 9 canastillas negras * 1.6 = 190 - 14.4 = 175.60
+        self._post('2026-10-05', [(prov, self.clasificacion, '190', 9, 0)])
+
+        self.clasificacion.refresh_from_db()
+        self.assertEqual(self.clasificacion.stock_kg, Decimal('175.60'))
+
+    def test_stock_se_sobreescribe_con_el_conteo_mas_reciente(self):
+        prov = self._proveedor()
+        self._post('2026-10-05', [(prov, self.clasificacion, '190', 9, 0)])
+        self._post('2026-10-12', [(prov, self.clasificacion, '100', 0, 0)])
+
+        self.clasificacion.refresh_from_db()
+        self.assertEqual(self.clasificacion.stock_kg, Decimal('100.00'))
+
+    def test_clasificacion_no_contada_queda_igual(self):
+        from .models import Clasificacion
+
+        self.clasificacion.stock_kg = Decimal('50')
+        self.clasificacion.save()
+        otra = Clasificacion.objects.create(producto=self.producto, nombre='Segunda', orden=2)
+        prov = self._proveedor()
+
+        self._post('2026-10-05', [(prov, otra, '30', 0, 0)])
+
+        self.clasificacion.refresh_from_db()
+        otra.refresh_from_db()
+        self.assertEqual(self.clasificacion.stock_kg, Decimal('50'))  # no contada
+        self.assertEqual(otra.stock_kg, Decimal('30'))
+
+    def test_indices_con_huecos(self):
+        from .models import PesadaEntrada
+
+        prov = self._proveedor()
+        data = {'fecha': '2026-10-05'}
+        for i in (0, 2):  # la fila 1 fue eliminada
+            data[f'proveedor_{i}'] = prov.pk
+            data[f'clasificacion_{i}'] = self.clasificacion.pk
+            data[f'kg_bruto_{i}'] = '40'
+            data[f'num_canastillas_negras_{i}'] = 0
+            data[f'num_canastillas_colores_{i}'] = 0
+        self.client.post(reverse('entrada_inventario_create'), data)
+
+        self.assertEqual(PesadaEntrada.objects.count(), 2)
+
+
 class ReporteDiarioTests(BaseDataMixin, TestCase):
     def test_muestra_total_vendido(self):
         venta = VentaCredito.objects.create(cliente=self.cliente, fecha=date(2026, 9, 14))

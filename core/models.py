@@ -520,26 +520,33 @@ class PesadaEntrada(BasePesada):
         ordering = ['id']
 
 
-# Señales PesadaEntrada → Clasificacion.stock_kg
+# Señales EntradaInventario → Clasificacion.stock_kg
+#
+# El inventario es un conteo físico de toda la bodega: el stock de cada
+# clasificación **queda igual a lo contado** (no se suma). Por eso, ante
+# cualquier alta/baja/edición de pesadas o entradas, se recalcula el stock de
+# la clasificación a partir del conteo más reciente que la incluye.
 
-@receiver(pre_save, sender=PesadaEntrada)
-def captura_anterior_pesada_entrada(sender, instance, **kwargs):
-    if instance.pk:
-        orig = PesadaEntrada.objects.get(pk=instance.pk)
-        instance._old_kg_neto = orig.kg_neto
-    else:
-        instance._old_kg_neto = Decimal('0')
+def _recalcular_stock_entrada(clasificacion_id):
+    from .services.inventario import recalcular_stock_clasificacion
+    recalcular_stock_clasificacion(clasificacion_id)
 
 
 @receiver(post_save, sender=PesadaEntrada)
-def actualiza_stock_pesada_entrada_save(sender, instance, created, **kwargs):
-    diff = instance.kg_neto - getattr(instance, '_old_kg_neto', Decimal('0'))
-    ajustar_stock(instance.entrada.clasificacion_id, diff)
+def actualiza_stock_pesada_entrada_save(sender, instance, **kwargs):
+    _recalcular_stock_entrada(instance.entrada.clasificacion_id)
 
 
 @receiver(post_delete, sender=PesadaEntrada)
 def actualiza_stock_pesada_entrada_delete(sender, instance, **kwargs):
-    ajustar_stock(instance.entrada.clasificacion_id, -instance.kg_neto)
+    entrada = EntradaInventario.objects.filter(pk=instance.entrada_id).first()
+    if entrada:
+        _recalcular_stock_entrada(entrada.clasificacion_id)
+
+
+@receiver(post_delete, sender=EntradaInventario)
+def actualiza_stock_entrada_delete(sender, instance, **kwargs):
+    _recalcular_stock_entrada(instance.clasificacion_id)
 
 
 # ------------- DESECHOS DE INVENTARIO -------------

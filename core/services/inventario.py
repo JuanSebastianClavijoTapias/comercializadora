@@ -29,6 +29,7 @@ __all__ = [
     'get_weekly_history',
     'week_has_data',
     'stock_valorizado',
+    'recalcular_stock_clasificacion',
 ]
 
 NOMINA_CATEGORY_NAME = 'Nómina'
@@ -248,6 +249,35 @@ def week_has_data(lunes):
         VentaCredito.objects.filter(fecha__range=rango).exists() or
         Gasto.objects.filter(fecha__range=rango).exists() or
         WeeklyInventory.objects.filter(week_start=lunes).exists()
+    )
+
+
+def recalcular_stock_clasificacion(clasificacion_id):
+    """Fija el stock de una clasificación al total neto del conteo físico más
+    reciente que la incluye.
+
+    El inventario es un conteo de toda la bodega: el stock **queda** igual a lo
+    contado (se sobreescribe), no se suma. Si la clasificación no aparece en
+    ningún conteo, el stock no se toca.
+    """
+    if not clasificacion_id:
+        return
+    ultima_fecha = (
+        EntradaInventario.objects
+        .filter(clasificacion_id=clasificacion_id)
+        .order_by('-fecha', '-created_at')
+        .values_list('fecha', flat=True)
+        .first()
+    )
+    if ultima_fecha is None:
+        return
+    pesadas = PesadaEntrada.objects.filter(
+        entrada__clasificacion_id=clasificacion_id,
+        entrada__fecha=ultima_fecha,
+    )
+    total = sum((p.kg_neto for p in pesadas), Decimal('0'))
+    Clasificacion.objects.filter(pk=clasificacion_id).update(
+        stock_kg=max(total, Decimal('0'))
     )
 
 

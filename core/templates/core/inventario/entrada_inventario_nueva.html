@@ -1,125 +1,52 @@
 {% extends 'core/base.html' %}
+{% load static %}
 {% load cop_filters %}
-{% block title %}Nueva Entrada de Inventario{% endblock %}
-{% block page_title %}<i class="bi bi-box-seam me-2"></i>Nueva Entrada de Inventario{% endblock %}
+{% block title %}Conteo de Inventario{% endblock %}
+{% block page_title %}<i class="bi bi-box-seam me-2"></i>Conteo de Inventario Semanal{% endblock %}
 
 {% block extra_css %}
 <style>
-  /* Fila de pesadas: linea 1 (proveedor/clasif/kilos + toggle) y linea 2 condicional (negras/colores) */
-  .pesada-row-card {
-    background: var(--bg-light);
-    border: 1px solid var(--border-light);
-  }
-  .pesada-linea1,
-  .pesada-linea2 {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem 0.6rem;
-    align-items: flex-end;
-  }
-  .pesada-linea2 {
-    margin-top: 0.4rem;
-    padding-top: 0.4rem;
-    border-top: 1px dashed rgba(0,0,0,0.08);
-  }
-  .pesada-linea1 .fld,
-  .pesada-linea2 .fld {
-    flex: 1 1 auto;
-    min-width: 0;
-  }
-  .pesada-linea1 .pesada-prov { flex: 2 1 210px; }
-  .pesada-linea1 .pesada-clas { flex: 2 1 210px; }
-  .pesada-linea1 .pesada-kg   { flex: 1.1 1 110px; }
-  .pesada-linea1 .pesada-toggle { flex: 0 1 150px; }
-  .pesada-linea1 .pesada-rm  { flex: 0 0 auto; display: flex; align-items: center; }
-  .pesada-linea2 .pesada-neg,
-  .pesada-linea2 .pesada-col { flex: 1 1 160px; }
-  .pesada-linea2 .pesada-neto { flex: 1 1 120px; }
-
-  /* Toggle Negras/Colores: checkbox con altura alineada a los controles */
-  .pesada-toggle-box {
-    height: 42px;
-    display: flex;
-    align-items: center;
-  }
-  .pesada-toggle-box .form-switch {
-    margin: 0;
-    padding-left: 2.4rem;
-  }
-
-  /* Controles un poco más altos que los forms genericos */
-  .pesada-row-card .form-control,
-  .pesada-row-card .form-select,
-  .pesada-row-card .input-group-text {
-    font-size: 0.9rem;
-    height: 42px;
-  }
-  .pesada-row-card .input-group-text {
-    display: flex;
-    align-items: center;
-    padding: 0 0.5rem;
-  }
-  .pesada-row-card .input-group {
-    flex-wrap: nowrap;
-  }
-  .pesada-row-card .input-group .form-control {
-    min-width: 0;
-  }
-  .pesada-row-card .kg-neto {
-    font-size: 0.9rem;
-  }
-  .pesada-row-card label.small {
+  .row-lbl {
+    display: block;
     color: var(--text-sec);
     font-size: 0.68rem;
     text-transform: uppercase;
     letter-spacing: 0.3px;
     margin-bottom: 0.15rem;
-  }
-  .kg-neto-box {
-    height: 42px;
-  }
-  .btn-rm-row {
-    min-width: 42px;
-    min-height: 42px;
-  }
-
-  /* Resumen por clasificacion: que nada quede recortado */
-  #recv_groups {
-    overflow-x: auto;
-  }
-  #recv_groups .table th,
-  #recv_groups .table td {
-    padding: 0.45rem 0.5rem;
-    font-size: 0.8rem;
-  }
-  #recv_groups .recv-clasif-label {
-    overflow-wrap: anywhere;
-  }
-  #recv_groups .recv-precio-input {
-    padding: 0.4rem 0.6rem;
-    font-size: 0.85rem;
-  }
-
-  .desecho-local-label {
-    font-size: 0.72rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.4px;
-    color: var(--text-sec);
     white-space: nowrap;
   }
-
+  .tag-neg,
+  .tag-col {
+    display: inline-block;
+    min-width: 16px;
+    text-align: center;
+    color: #fff;
+    font-weight: 700;
+    border-radius: 3px;
+    padding: 0 4px;
+    font-size: 0.66rem;
+  }
+  .tag-neg { background: #333; }
+  .tag-col { background: #1976D2; }
+  .kg-neto {
+    height: 31px;
+    display: flex;
+    align-items: center;
+    font-size: 0.9rem;
+    color: var(--text-main);
+  }
+  .calidad-block { background: var(--bg-light); }
+  .proveedor-block .card-header { background: linear-gradient(135deg, var(--orange-primary) 0%, var(--orange-secondary) 100%); }
   @media (prefers-reduced-motion: reduce) {
     .card, .card * { transition: none !important; }
-    .card:hover { transform: none !important; }
   }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="mb-3">
+<div class="mb-3 d-flex align-items-center gap-2 flex-wrap">
   <a href="{% url 'entrada_inventario_list' %}" class="btn btn-outline-secondary btn-sm">
-    <i class="bi bi-arrow-left me-1"></i>Volver al listado
+    <i class="bi bi-arrow-left me-1"></i>Volver
   </a>
 </div>
 
@@ -129,510 +56,50 @@
 </div>
 {% endif %}
 
-<form method="post" action="{% url 'entrada_inventario_create' %}" autocomplete="off" id="form_nueva_entrada">
-{% csrf_token %}
-
-<!-- FECHA -->
-<div class="d-flex gap-3 align-items-end mb-3 flex-wrap">
-  <div>
-    <label class="form-label fw-semibold small text-uppercase mb-1" style="color:var(--text-sec);font-size:0.72rem;letter-spacing:0.4px;">Fecha <span class="text-danger">*</span></label>
-    <input type="date" name="fecha" class="form-control" value="{{ fecha_default }}" required style="min-width:160px;">
-  </div>
-</div>
-
-<div class="row g-3">
-
-  <!-- COLUMNA PESADAS -->
-  <div class="col-12 col-xxl-8">
-    <div class="card border-0 shadow-sm" style="border-radius:14px;overflow:hidden;">
-      <div class="card-header py-3 d-flex justify-content-between align-items-center">
-        <span class="fw-semibold text-white"><i class="bi bi-speedometer2 me-2"></i>Pesadas</span>
-        <div class="d-flex gap-2 flex-wrap">
-          <button type="button" id="btn_add_row" class="btn btn-sm" style="background:rgba(255,255,255,0.2);color:white;border:1px solid rgba(255,255,255,0.3);">
-            <i class="bi bi-plus-lg me-1"></i>Agregar fila
-          </button>
-          <button type="button" id="btn_add_row_diff" class="btn btn-sm btn-outline-light" style="border:1px solid rgba(255,255,255,0.3);">
-            <i class="bi bi-person-plus me-1"></i>Agregar fila con otro proveedor
-          </button>
-          <button type="button" id="btn_dup_row" class="btn btn-sm btn-outline-light" style="border:1px solid rgba(255,255,255,0.3);">
-            <i class="bi bi-files me-1"></i>Duplicar fila (proveedor y clasificación)
-          </button>
-        </div>
-      </div>
-      <div class="card-body p-3">
-        <div id="pesadas_rows" class="mb-2">
-          <div class="pesada-row pesada-page-row pesada-row-card mb-1 p-2 rounded">
-            <div class="pesada-linea1">
-              <div class="fld pesada-prov">
-                <label class="small fw-semibold">Proveedor <span class="row-num" style="font-weight:400;color:#999;">1</span></label>
-                <select name="proveedor_0" class="form-select input-proveedor" required>
-                  <option value="">-- Seleccionar --</option>
-                  {% for p in proveedores %}<option value="{{ p.pk }}">{{ p.nombre }}</option>{% endfor %}
-                </select>
-              </div>
-              <div class="fld pesada-clas">
-                <label class="small fw-semibold">Clasificación</label>
-                <select name="clasificacion_0" class="form-select input-clasif" required>
-                  <option value="">-- Seleccionar --</option>
-                  {% for c in clasificaciones %}<option value="{{ c.pk }}">{{ c.producto.nombre }} - {{ c.nombre }}</option>{% endfor %}
-                </select>
-              </div>
-              <div class="fld pesada-kg">
-                <label class="small fw-semibold">Kg Bruto</label>
-                <input type="number" min="0" step="0.01" name="kg_bruto_0" class="form-control input-bruto" placeholder="Kg Bruto *">
-              </div>
-              <div class="fld pesada-toggle">
-                <label class="small fw-semibold">Negras/Colores</label>
-                <div class="pesada-toggle-box">
-                  <div class="form-check form-switch">
-                    <input class="form-check-input input-toggle-nc" type="checkbox" role="switch">
-                  </div>
-                </div>
-              </div>
-              <div class="pesada-rm">
-                <button type="button" class="btn btn-sm btn-outline-danger btn-rm-row" title="Eliminar fila" aria-label="Eliminar fila"><i class="bi bi-x"></i></button>
-              </div>
-            </div>
-            <div class="pesada-linea2" style="display:none;">
-              <div class="fld pesada-neg">
-                <label class="small fw-semibold">Negras</label>
-                <div class="input-group">
-                  <span class="input-group-text d-none d-md-flex" style="background:#333;color:#fff;font-weight:700;">N</span>
-                  <input type="number" min="0" name="num_canastillas_negras_0" class="form-control input-neg" placeholder="Negras">
-                </div>
-              </div>
-              <div class="fld pesada-col">
-                <label class="small fw-semibold">Colores</label>
-                <div class="input-group">
-                  <span class="input-group-text d-none d-md-flex" style="background:#1976D2;color:#fff;font-weight:700;">C</span>
-                  <input type="number" min="0" name="num_canastillas_colores_0" class="form-control input-col" placeholder="Colores">
-                </div>
-              </div>
-              <div class="fld pesada-neto">
-                <label class="small fw-semibold">Kg Neto</label>
-                <div class="d-flex align-items-center kg-neto-box"><span class="fw-bold text-success kg-neto">-</span></div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <span class="text-muted small">
-            Total bruto: <strong id="total_bruto" style="color:var(--orange-primary);">-</strong>
-            &nbsp;|&nbsp;
-            Total neto: <strong id="total_neto" class="text-success">-</strong>
-          </span>
-        </div>
-        <div id="pesadas_pagination" class="d-flex justify-content-between align-items-center pt-2 border-top" style="display:none;font-size:0.85rem;">
-          <button type="button" class="btn btn-sm btn-outline-secondary" id="btn_prev_page">
-            <i class="bi bi-chevron-left"></i> Anterior
-          </button>
-          <span class="text-muted small">
-            Página <span id="page_current">1</span> de <span id="page_total">1</span>
-            &nbsp;(<span id="page_total_rows">0</span> pesadas)
-          </span>
-          <button type="button" class="btn btn-sm btn-outline-secondary" id="btn_next_page">
-            Siguiente <i class="bi bi-chevron-right"></i>
-          </button>
-        </div>
-
-        <!-- DESECHO LOCAL (form propio via atributo form=, sin form anidado) -->
-        <div class="d-flex flex-wrap align-items-end gap-2 pt-3 mt-2 border-top">
-          <div class="desecho-local-label">
-            <i class="bi bi-trash3 me-1"></i>Desecho local
-          </div>
-          <div style="flex:1 1 130px;min-width:110px;">
-            <input type="date" name="fecha" form="form_desecho" class="form-control form-control-sm" value="{{ desecho_local_form.fecha.value|default_if_none:'' }}">
-            {% if desecho_local_form.fecha.errors %}<div class="text-danger small">{{ desecho_local_form.fecha.errors }}</div>{% endif %}
-          </div>
-          <div style="flex:1 1 100px;min-width:90px;">
-            <input type="number" min="0" step="0.01" name="kg" form="form_desecho" class="form-control form-control-sm" placeholder="Kg" value="{{ desecho_local_form.kg.value|default_if_none:'' }}">
-            {% if desecho_local_form.kg.errors %}<div class="text-danger small">{{ desecho_local_form.kg.errors }}</div>{% endif %}
-          </div>
-          <button type="submit" form="form_desecho" class="btn btn-sm btn-outline-secondary">
-            <i class="bi bi-check-lg me-1"></i>Guardar
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- COLUMNA FACTURA -->
-  <div class="col-12 col-xxl-4">
-    <div class="card border-0 shadow-sm h-100" style="border-radius:14px;overflow:hidden;">
-      <div class="card-header py-3 border-0">
-        <span class="fw-semibold text-white"><i class="bi bi-receipt me-2"></i>Resumen por clasificacion</span>
-      </div>
-      <div class="card-body px-3 pt-3 pb-3 d-flex flex-column" style="font-size:0.85rem;">
-
-        <div id="recv_empty" class="text-center text-muted py-4">
-          <i class="bi bi-inbox fs-2 d-block mb-2" style="opacity:0.3;"></i>
-          <span class="small">Agrega pesadas para ver el resumen</span>
-        </div>
-
-        <div id="recv_content" style="display:none;">
-          <div id="recv_groups"></div>
-
-          <div class="mt-3 pt-2 border-top d-flex justify-content-between align-items-center">
-            <span class="fw-bold text-uppercase small">Total general</span>
-            <span class="fs-5 fw-bold" style="color:var(--orange-primary);" id="recv_grand_total">-</span>
-          </div>
-        </div>
-
-        <div class="mt-auto pt-3">
-          <button type="submit" class="btn w-100 py-2 fw-semibold text-white" style="background:linear-gradient(135deg,var(--orange-primary) 0%,var(--orange-secondary) 100%);border:none;border-radius:8px;">
-            <i class="bi bi-check-lg me-1"></i>Guardar entrada y pesadas
-          </button>
-        </div>
-
-      </div>
-    </div>
-  </div>
-
-</div>
-</form>
-
-<!-- Form independiente para "Desecho local" — los campos visibles viven dentro de la card de Pesadas (atributo form=) -->
-<form id="form_desecho" method="post" action="{% url 'entrada_inventario_create' %}" autocomplete="off">
+<form method="post" action="{% url 'entrada_inventario_create' %}" autocomplete="off" id="form_conteo">
   {% csrf_token %}
-  <input type="hidden" name="form_type" value="desecho">
+
+  <div class="d-flex flex-wrap gap-3 align-items-end mb-3">
+    <div>
+      <label class="row-lbl">Fecha del conteo <span class="text-danger">*</span></label>
+      <input type="date" name="fecha" class="form-control" value="{{ fecha_default }}" required style="min-width:170px;">
+    </div>
+    <button type="button" id="btn_add_proveedor" class="btn btn-primary">
+      <i class="bi bi-shop me-1"></i>Agregar proveedor
+    </button>
+  </div>
+
+  <div class="row g-3">
+    <!-- CAPTURA -->
+    <div class="col-12 col-xxl-8">
+      <div id="proveedores_container"></div>
+    </div>
+
+    <!-- RESUMEN -->
+    <div class="col-12 col-xxl-4">
+      <div class="card border-0 shadow-sm sticky-top" style="border-radius:14px; overflow:hidden; top:1rem;">
+        <div class="card-header py-3">
+          <span class="fw-semibold text-white"><i class="bi bi-calculator me-2"></i>Cuánto queda</span>
+        </div>
+        <div class="card-body">
+          <div id="resumen_conteo"></div>
+          <div class="d-grid mt-3">
+            <button type="submit" class="btn py-2 fw-semibold text-white"
+                    style="background:linear-gradient(135deg,var(--orange-primary) 0%,var(--orange-secondary) 100%);border:none;border-radius:8px;">
+              <i class="bi bi-check-lg me-1"></i>Guardar conteo
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </form>
 
+{{ proveedores_data|json_script:"proveedores-data" }}
+{{ productos_data|json_script:"productos-data" }}
+{{ clasificaciones_data|json_script:"clasificaciones-data" }}
 {% endblock %}
 
 {% block extra_js %}
-<script>
-(function () {
-  const PESO_NEGRA = 1.6;
-  const PESO_COLOR = 2.2;
-
-  let rowIndex = 1;
-  const container = document.getElementById('pesadas_rows');
-  const btnAdd = document.getElementById('btn_add_row');
-  const btnAddDiff = document.getElementById('btn_add_row_diff');
-  const btnDup = document.getElementById('btn_dup_row');
-  const preciosGrupo = {};
-  let pagShowLast = null;
-
-  const CLASIF_OPTIONS = [];
-  document.querySelector('.input-clasif').querySelectorAll('option').forEach(o => {
-    if (o.value) CLASIF_OPTIONS.push({ pk: o.value, label: o.text });
-  });
-
-  const PROVEEDOR_OPTIONS = [];
-  document.querySelector('.input-proveedor').querySelectorAll('option').forEach(o => {
-    if (o.value) PROVEEDOR_OPTIONS.push({ pk: o.value, label: o.text });
-  });
-
-  function parseCOP(val) { return parseFloat((val||'').replace(/\./g,'').replace(',','.'))||0; }
-  function fmtCOP(n) { return '$' + Math.round(n).toLocaleString('es-CO'); }
-
-  function calcRow(row) {
-    const neg = parseFloat(row.querySelector('.input-neg').value) || 0;
-    const col = parseFloat(row.querySelector('.input-col').value) || 0;
-    const bruto = parseFloat(row.querySelector('.input-bruto').value) || 0;
-    const pesoCan = neg * PESO_NEGRA + col * PESO_COLOR;
-    const neto = Math.max(bruto - pesoCan, 0);
-    const el = row.querySelector('.kg-neto');
-    if (el) el.textContent = bruto > 0 ? neto.toFixed(2) + ' kg' : '-';
-    return { bruto, pesoCan, neto };
-  }
-
-  function recalcAll() {
-    let sumBruto = 0, sumNeto = 0, grandTotal = 0, hasData = false;
-    const groups = {};
-    container.querySelectorAll('.pesada-row').forEach(row => {
-      const { bruto, pesoCan, neto } = calcRow(row);
-      const sel = row.querySelector('.input-clasif');
-      const cid = sel.value;
-      const clabel = cid ? sel.options[sel.selectedIndex].text : null;
-      const provSel = row.querySelector('.input-proveedor');
-      const pid = provSel.value;
-      const plabel = pid ? provSel.options[provSel.selectedIndex].text : null;
-      if (bruto > 0) {
-        sumBruto += bruto; sumNeto += neto; hasData = true;
-        if (cid && pid) {
-          const gid = pid + '_' + cid;
-          if (!groups[gid]) groups[gid] = { cid, pid, clabel, plabel, rows: [], neto: 0 };
-          groups[gid].rows.push({ bruto, pesoCan, neto });
-          groups[gid].neto += neto;
-        }
-      }
-    });
-    document.getElementById('total_bruto').textContent = hasData ? sumBruto.toFixed(2) + ' kg' : '-';
-    document.getElementById('total_neto').textContent = hasData ? sumNeto.toFixed(2) + ' kg' : '-';
-
-    const recvGroups = document.getElementById('recv_groups');
-    const recvEmpty = document.getElementById('recv_empty');
-    const recvContent = document.getElementById('recv_content');
-    if (!hasData) { recvEmpty.style.display = ''; recvContent.style.display = 'none'; return; }
-    recvEmpty.style.display = 'none'; recvContent.style.display = '';
-    recvGroups.innerHTML = '';
-
-    Object.entries(groups).forEach(([gid, g]) => {
-      const precio = preciosGrupo[gid] || 0;
-      const subtotal = precio > 0 ? g.neto * precio : null;
-      if (subtotal) grandTotal += subtotal;
-      let rowsHtml = g.rows.map((r,i) =>
-        '<tr><td class="text-muted ps-0">'+(i+1)+'</td>' +
-        '<td>'+r.bruto.toFixed(2)+'</td>' +
-        '<td class="text-danger">-'+r.pesoCan.toFixed(2)+'</td>' +
-        '<td class="text-success fw-semibold">'+r.neto.toFixed(2)+' kg</td></tr>'
-      ).join('');
-      const precioFmt = precio > 0 ? Math.round(precio).toLocaleString('es-CO') : '';
-      const div = document.createElement('div');
-      div.id = 'recv_group_' + gid;
-      div.className = 'mb-3 pb-2 border-bottom';
-      div.innerHTML =
-        '<div class="fw-bold mb-1 recv-clasif-label" style="color:var(--orange-primary);"><i class="bi bi-person me-1"></i>'+g.plabel+'</div>' +
-        '<div class="small text-muted mb-1 recv-clasif-label">'+g.clabel+'</div>' +
-        '<table class="table table-sm mb-2" style="font-size:0.8rem;">' +
-          '<thead><tr style="background:var(--bg-base);"><th class="ps-0">#</th><th>Bruto</th><th class="text-danger">Tara</th><th class="text-success">Neto</th></tr></thead>' +
-          '<tbody>'+rowsHtml+'</tbody>' +
-          '<tfoot><tr><td colspan="3" class="fw-bold ps-0 text-muted small">Total neto</td>' +
-            '<td id="recv_neto_'+gid+'" data-neto="'+g.neto+'" class="fw-bold text-success">'+g.neto.toFixed(2)+' kg</td></tr></tfoot>' +
-        '</table>' +
-        '<div class="d-flex align-items-center gap-2">' +
-          '<label class="small text-muted mb-0" style="white-space:nowrap;">Precio/kg</label>' +
-          '<input type="text" name="precio_clasif_'+g.cid+'_'+g.pid+'" class="form-control price-cop recv-precio-input" placeholder="0" inputmode="numeric" data-gid="'+gid+'" value="'+precioFmt+'">' +
-        '</div>' +
-        '<div id="recv_total_'+gid+'" class="d-flex justify-content-between fw-bold mt-1"'+(!subtotal?' style="display:none;"':'')+'>'+
-          (subtotal?'<span>Total</span><span style="color:var(--orange-primary);">'+fmtCOP(subtotal)+'</span>':'')+
-        '</div>';
-      recvGroups.appendChild(div);
-    });
-    document.getElementById('recv_grand_total').textContent = grandTotal > 0 ? fmtCOP(grandTotal) : '-';
-  }
-
-  function buildRow(i, proveedorId, clasificacionId) {
-    const clasifOpts = CLASIF_OPTIONS.map(o => '<option value="'+o.pk+'"'+((o.pk == clasificacionId) ? ' selected' : '')+'>'+o.label+'</option>').join('');
-    const provOpts = PROVEEDOR_OPTIONS.map(o => '<option value="'+o.pk+'"'+((o.pk == proveedorId) ? ' selected' : '')+'>'+o.label+'</option>').join('');
-    const div = document.createElement('div');
-    div.className = 'pesada-row pesada-page-row pesada-row-card mb-1 p-2 rounded';
-    div.innerHTML =
-      '<div class="pesada-linea1">' +
-        '<div class="fld pesada-prov">' +
-          '<label class="small fw-semibold">Proveedor <span class="row-num" style="font-weight:400;color:#999;">'+(container.querySelectorAll('.pesada-row').length+1)+'</span></label>' +
-          '<select name="proveedor_'+i+'" class="form-select input-proveedor" required><option value="">-- Seleccionar --</option>'+provOpts+'</select>' +
-        '</div>' +
-        '<div class="fld pesada-clas">' +
-          '<label class="small fw-semibold">Clasificación</label>' +
-          '<select name="clasificacion_'+i+'" class="form-select input-clasif" required><option value="">-- Seleccionar --</option>'+clasifOpts+'</select>' +
-        '</div>' +
-        '<div class="fld pesada-kg">' +
-          '<label class="small fw-semibold">Kg Bruto</label>' +
-          '<input type="number" min="0" step="0.01" name="kg_bruto_'+i+'" class="form-control input-bruto" placeholder="Kg Bruto *">' +
-        '</div>' +
-        '<div class="fld pesada-toggle">' +
-          '<label class="small fw-semibold">Negras/Colores</label>' +
-          '<div class="pesada-toggle-box">' +
-            '<div class="form-check form-switch">' +
-              '<input class="form-check-input input-toggle-nc" type="checkbox" role="switch">' +
-            '</div>' +
-          '</div>' +
-        '</div>' +
-        '<div class="pesada-rm">' +
-          '<button type="button" class="btn btn-sm btn-outline-danger btn-rm-row" title="Eliminar fila" aria-label="Eliminar fila"><i class="bi bi-x"></i></button>' +
-        '</div>' +
-      '</div>' +
-      '<div class="pesada-linea2" style="display:none;">' +
-        '<div class="fld pesada-neg">' +
-          '<label class="small fw-semibold">Negras</label>' +
-          '<div class="input-group">' +
-            '<span class="input-group-text d-none d-md-flex" style="background:#333;color:#fff;font-weight:700;">N</span>' +
-            '<input type="number" min="0" name="num_canastillas_negras_'+i+'" class="form-control input-neg" placeholder="Negras">' +
-          '</div>' +
-        '</div>' +
-        '<div class="fld pesada-col">' +
-          '<label class="small fw-semibold">Colores</label>' +
-          '<div class="input-group">' +
-            '<span class="input-group-text d-none d-md-flex" style="background:#1976D2;color:#fff;font-weight:700;">C</span>' +
-            '<input type="number" min="0" name="num_canastillas_colores_'+i+'" class="form-control input-col" placeholder="Colores">' +
-          '</div>' +
-        '</div>' +
-        '<div class="fld pesada-neto">' +
-          '<label class="small fw-semibold">Kg Neto</label>' +
-          '<div class="d-flex align-items-center kg-neto-box"><span class="fw-bold text-success kg-neto">-</span></div>' +
-        '</div>' +
-      '</div>';
-    return div;
-  }
-
-  function renumberRows() {
-    container.querySelectorAll('.pesada-row').forEach((row, i) => {
-      const num = row.querySelector('.row-num');
-      if (num) num.textContent = i + 1;
-      row.querySelectorAll('input, select').forEach(inp => {
-        const name = inp.getAttribute('name');
-        if (name) inp.setAttribute('name', name.replace(/_\d+$/, '_' + i));
-      });
-    });
-    rowIndex = container.querySelectorAll('.pesada-row').length;
-  }
-
-  function updateRemoveButtons() {
-    container.querySelectorAll('.pesada-row').forEach(row => {
-      const btn = row.querySelector('.btn-rm-row');
-      if (btn) btn.disabled = container.querySelectorAll('.pesada-row').length === 1;
-    });
-  }
-
-  function updateSubtotal(gid) {
-    const netoEl = document.getElementById('recv_neto_' + gid);
-    const totalEl = document.getElementById('recv_total_' + gid);
-    if (!netoEl || !totalEl) return;
-    const neto = parseFloat(netoEl.dataset.neto || '0');
-    const precio = preciosGrupo[gid] || 0;
-    if (precio > 0 && neto > 0) {
-      totalEl.innerHTML = '<span>Total</span><span style="color:var(--orange-primary);">' + fmtCOP(neto * precio) + '</span>';
-      totalEl.style.display = 'flex';
-    } else { totalEl.innerHTML = ''; totalEl.style.display = 'none'; }
-    let grandTotal = 0;
-    document.querySelectorAll('#recv_groups .recv-precio-input').forEach(inp => {
-      const g = inp.dataset.gid, p = preciosGrupo[g] || 0;
-      const n = parseFloat((document.getElementById('recv_neto_' + g) || {}).dataset.neto || '0');
-      if (p > 0 && n > 0) grandTotal += n * p;
-    });
-    document.getElementById('recv_grand_total').textContent = grandTotal > 0 ? fmtCOP(grandTotal) : '-';
-  }
-
-  document.getElementById('recv_content').addEventListener('input', function(e) {
-    if (e.target.classList.contains('recv-precio-input')) {
-      const gid = e.target.dataset.gid;
-      preciosGrupo[gid] = parseInt(e.target.value.replace(/\D/g, ''), 10) || 0;
-      updateSubtotal(gid);
-    }
-  });
-
-  container.addEventListener('change', function(e) {
-    if (e.target.classList.contains('input-clasif')) recalcAll();
-    if (e.target.classList.contains('input-toggle-nc')) {
-      const row = e.target.closest('.pesada-row');
-      const line2 = row.querySelector('.pesada-linea2');
-      if (line2) {
-        line2.style.display = e.target.checked ? '' : 'none';
-        if (!e.target.checked) {
-          const neg = row.querySelector('.input-neg');
-          const col = row.querySelector('.input-col');
-          if (neg) neg.value = '';
-          if (col) col.value = '';
-        }
-      }
-      recalcAll();
-    }
-  });
-
-  function lastSelectedProveedor() {
-    const rows = container.querySelectorAll('.pesada-row');
-    for (let r = rows.length - 1; r >= 0; r--) {
-      const v = rows[r].querySelector('.input-proveedor').value;
-      if (v) return v;
-    }
-    return '';
-  }
-
-  function addRow(proveedorId, clasificacionId, focusSelector) {
-    const row = buildRow(rowIndex, proveedorId, clasificacionId);
-    container.appendChild(row);
-    rowIndex++;
-    updateRemoveButtons();
-    recalcAll();
-    // Muestra la página que contiene la fila recién agregada antes de enfocarla.
-    if (pagShowLast) pagShowLast();
-    row.querySelector(focusSelector).focus();
-  }
-
-  // "Agregar fila": hereda el último proveedor elegido para agilizar la carga.
-  btnAdd.addEventListener('click', function () {
-    addRow(lastSelectedProveedor(), '', '.input-bruto');
-  });
-
-  // "Agregar fila con otro proveedor": arranca vacío para elegir uno distinto.
-  btnAddDiff.addEventListener('click', function () {
-    addRow('', '', '.input-proveedor');
-  });
-
-  // "Duplicar fila": copia proveedor y clasificación de la última fila (pesos vacíos).
-  btnDup.addEventListener('click', function () {
-    const rows = container.querySelectorAll('.pesada-row');
-    const last = rows[rows.length - 1];
-    const prov = last ? last.querySelector('.input-proveedor').value : '';
-    const clasif = last ? last.querySelector('.input-clasif').value : '';
-    addRow(prov, clasif, '.input-bruto');
-  });
-
-  container.addEventListener('click', function (e) {
-    const btn = e.target.closest('.btn-rm-row');
-    if (btn) {
-      const rows = container.querySelectorAll('.pesada-row');
-      if (rows.length > 1) {
-        btn.closest('.pesada-row').remove();
-        renumberRows();
-        updateRemoveButtons();
-        recalcAll();
-      }
-    }
-  });
-
-  container.addEventListener('input', function (e) {
-    if (e.target.closest('.pesada-row')) recalcAll();
-  });
-
-  container.addEventListener('focusin', function(e) {
-    if (e.target.classList.contains('input-neg') || e.target.classList.contains('input-col')) {
-      if (e.target.value === '0') e.target.value = '';
-      e.target.select();
-    }
-  });
-  container.addEventListener('focusout', function(e) {
-    if (e.target.classList.contains('input-neg') || e.target.classList.contains('input-col')) {
-      if (e.target.value === '' || e.target.value === '-') e.target.value = '';
-    }
-  });
-
-  document.addEventListener('input', function(e) {
-    if (e.target.classList.contains('price-cop')) {
-      const raw = e.target.value.replace(/\D/g, '');
-      if (raw) e.target.value = parseInt(raw, 10).toLocaleString('es-CO');
-    }
-  });
-
-  updateRemoveButtons();
-  recalcAll();
-
-  // Paginación
-  (function() {
-    var pageSize = 5, currentPage = 1;
-    var pagDiv = document.getElementById('pesadas_pagination');
-
-    function totalPages(rows) {
-      return Math.ceil(rows.length / pageSize) || 1;
-    }
-
-    function showPage(page) {
-      var rows = container.querySelectorAll('.pesada-page-row');
-      var pages = totalPages(rows);
-      currentPage = Math.max(1, Math.min(page, pages));
-      rows.forEach(function(row, i) {
-        row.style.display = (i >= (currentPage-1)*pageSize && i < currentPage*pageSize) ? '' : 'none';
-      });
-      document.getElementById('page_current').textContent = currentPage;
-      document.getElementById('page_total').textContent = pages;
-      document.getElementById('page_total_rows').textContent = rows.length;
-      document.getElementById('btn_prev_page').disabled = currentPage === 1;
-      document.getElementById('btn_next_page').disabled = currentPage === pages;
-      if (pagDiv) pagDiv.style.display = rows.length > pageSize ? 'flex' : 'none';
-    }
-
-    document.getElementById('btn_prev_page').onclick = function(){ showPage(currentPage-1); };
-    document.getElementById('btn_next_page').onclick = function(){ showPage(currentPage+1); };
-
-    // Al agregar una fila se salta a la última página (donde queda la fila nueva).
-    pagShowLast = function(){ showPage(totalPages(container.querySelectorAll('.pesada-page-row'))); };
-
-    showPage(1);
-    // Al quitar filas la página actual se conserva (solo se reajusta si ya no existe).
-    new MutationObserver(function(){ showPage(currentPage); }).observe(container, {childList: true});
-  })();
-})();
-</script>
+<script src="{% static 'core/js/inventario_conteo.js' %}" defer></script>
 {% endblock %}

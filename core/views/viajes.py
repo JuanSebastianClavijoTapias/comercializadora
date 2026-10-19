@@ -161,11 +161,11 @@ def pesada_add(request, pk):
     """Agrega una o varias pesadas (remesas de canastillas) al viaje."""
     viaje = get_object_or_404(Viaje, pk=pk)
     if request.method == 'POST':
-        # Detectar si vienen filas múltiples (campo kg_bruto_0 existe) o formulario simple
-        if 'kg_bruto_0' in request.POST:
+        indices = row_indices(request.POST, 'kg_bruto')
+        # Formulario simple (una sola pesada) o filas múltiples
+        if indices:
             guardadas = 0
-            i = 0
-            while f'kg_bruto_{i}' in request.POST:
+            for i in indices:
                 kg_bruto_val = request.POST.get(f'kg_bruto_{i}', '').strip()
                 if kg_bruto_val:
                     clasif_id = request.POST.get(f'clasificacion_{i}', '').strip()
@@ -181,7 +181,6 @@ def pesada_add(request, pk):
                         pesada.viaje = viaje
                         pesada.save()
                         guardadas += 1
-                i += 1
             if guardadas:
                 messages.success(request, f'{guardadas} pesada{"s" if guardadas > 1 else ""} registrada{"s" if guardadas > 1 else ""} correctamente.')
             else:

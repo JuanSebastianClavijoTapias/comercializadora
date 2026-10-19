@@ -20,6 +20,7 @@ from .inventario import (
     get_week_summary_url,
     get_weekly_history,
     parse_week_start,
+    recalcular_stock_clasificacion,
     stock_valorizado,
     week_has_data,
 )
@@ -45,6 +46,7 @@ __all__ = [
     'get_week_summary_url',
     'get_weekly_history',
     'parse_week_start',
+    'recalcular_stock_clasificacion',
     'stock_valorizado',
     'week_has_data',
     'RESUMEN_CAMPOS',
