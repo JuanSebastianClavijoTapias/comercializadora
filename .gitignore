@@ -30,3 +30,5 @@ core/patch*.ps1
 
 # Editor
 .vscode/
+# Strix (pentest) run artifacts
+strix_runs/

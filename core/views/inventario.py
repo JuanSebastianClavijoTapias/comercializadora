@@ -273,10 +273,40 @@ def entrada_inventario_historial(request):
     })
 
 
+def _nueva_entrada_context():
+    """Contexto base del formulario de conteo de inventario.
+
+    Incluye los datos serializados (productos, clasificaciones y proveedores)
+    que el formulario agrupado consume desde JS.
+    """
+    clasificaciones = (
+        Clasificacion.objects.filter(activo=True)
+        .select_related('producto').order_by('producto__nombre', 'orden', 'nombre')
+    )
+    return {
+        'proveedores': Proveedor.objects.order_by('nombre'),
+        'clasificaciones': clasificaciones,
+        'fecha_default': date.today().isoformat(),
+        'nomina_form': NominaForm(initial={'fecha': date.today()}),
+        'desecho_local_form': DesechoLocalForm(),
+        'proveedores_data': [
+            {'id': p.id, 'nombre': p.nombre}
+            for p in Proveedor.objects.order_by('nombre')
+        ],
+        'productos_data': [
+            {'id': p.id, 'nombre': p.nombre}
+            for p in Producto.objects.filter(activo=True).order_by('nombre')
+        ],
+        'clasificaciones_data': [
+            {'id': c.id, 'calidad': c.nombre, 'producto_id': c.producto_id, 'producto': c.producto.nombre}
+            for c in clasificaciones
+        ],
+    }
+
+
 @login_required
 def entrada_inventario_create(request):
-    proveedores = Proveedor.objects.order_by('nombre')
-    clasificaciones = Clasificacion.objects.select_related('producto').order_by('producto__nombre', 'nombre')
+    base_ctx = _nueva_entrada_context()
 
     if request.method == 'POST':
         form_type = request.POST.get('form_type', 'entrada')
@@ -291,9 +321,7 @@ def entrada_inventario_create(request):
                 messages.success(request, 'Nómina registrada correctamente.')
                 return redirect('entrada_inventario_create')
             return render(request, 'core/inventario/entrada_inventario_nueva.html', {
-                'proveedores': proveedores, 'clasificaciones': clasificaciones,
-                'fecha_default': date.today().isoformat(),
-                'nomina_form': nomina_form, 'desecho_local_form': desecho_local_form,
+                **base_ctx, 'nomina_form': nomina_form, 'desecho_local_form': desecho_local_form,
             })
 
         if form_type == 'desecho':
@@ -307,9 +335,7 @@ def entrada_inventario_create(request):
                     return redirect(next_url)
                 return redirect('entrada_inventario_create')
             return render(request, 'core/inventario/entrada_inventario_nueva.html', {
-                'proveedores': proveedores, 'clasificaciones': clasificaciones,
-                'fecha_default': date.today().isoformat(),
-                'nomina_form': nomina_form, 'desecho_local_form': desecho_local_form,
+                **base_ctx, 'nomina_form': nomina_form, 'desecho_local_form': desecho_local_form,
             })
 
         # --- Entrada de inventario (default) ---
@@ -319,10 +345,9 @@ def entrada_inventario_create(request):
         if not fecha:
             form_errors.append('La fecha es requerida.')
 
-        # Parse pesada rows
+        # Parse pesada rows (índices pueden tener huecos al eliminar filas)
         rows = []
-        i = 0
-        while f'kg_bruto_{i}' in request.POST:
+        for i in row_indices(request.POST, 'kg_bruto'):
             kg_val = request.POST.get(f'kg_bruto_{i}', '').strip()
             if kg_val:
                 cid = request.POST.get(f'clasificacion_{i}', '').strip()
@@ -334,7 +359,6 @@ def entrada_inventario_create(request):
                     'num_canastillas_colores': int(request.POST.get(f'num_canastillas_colores_{i}', 0) or 0),
                     'kg_bruto': kg_val,
                 })
-            i += 1
 
         if not rows:
             form_errors.append('Debes registrar al menos una pesada con Kg Bruto.')
@@ -391,21 +415,12 @@ def entrada_inventario_create(request):
                 form_errors.append(f'Error al guardar: {e}')
 
         return render(request, 'core/inventario/entrada_inventario_nueva.html', {
-            'proveedores': proveedores,
-            'clasificaciones': clasificaciones,
+            **base_ctx,
             'form_errors': form_errors,
-            'fecha_default': request.POST.get('fecha', date.today().isoformat()),
-            'nomina_form': NominaForm(initial={'fecha': date.today()}),
-            'desecho_local_form': DesechoLocalForm(),
+            'fecha_default': request.POST.get('fecha', base_ctx['fecha_default']),
         })
 
-    return render(request, 'core/inventario/entrada_inventario_nueva.html', {
-        'proveedores': proveedores,
-        'clasificaciones': clasificaciones,
-        'fecha_default': date.today().isoformat(),
-        'nomina_form': NominaForm(initial={'fecha': date.today()}),
-        'desecho_local_form': DesechoLocalForm(),
-    })
+    return render(request, 'core/inventario/entrada_inventario_nueva.html', base_ctx)
 
 
 @login_required
@@ -464,11 +479,11 @@ def entrada_inventario_detail(request, pk):
 def pesada_entrada_add(request, pk):
     entrada = get_object_or_404(EntradaInventario, pk=pk)
     if request.method == 'POST':
-        if 'kg_bruto_0' in request.POST:
+        indices = row_indices(request.POST, 'kg_bruto')
+        if indices:
             from collections import defaultdict
             rows = []
-            i = 0
-            while f'kg_bruto_{i}' in request.POST:
+            for i in indices:
                 kg_bruto_val = request.POST.get(f'kg_bruto_{i}', '').strip()
                 if kg_bruto_val:
                     clasif_id = request.POST.get(f'clasificacion_{i}', '').strip() or str(entrada.clasificacion_id)
@@ -480,7 +495,6 @@ def pesada_entrada_add(request, pk):
                         'num_canastillas_colores': request.POST.get(f'num_canastillas_colores_{i}', '') or 0,
                         'kg_bruto': kg_bruto_val,
                     })
-                i += 1
 
             groups = defaultdict(list)
             for row in rows:

@@ -1,6 +1,16 @@
 {% extends 'core/base.html' %}
+{% load static %}
 {% block title %}Detalle Viaje{% endblock %}
 {% block page_title %}<i class="bi bi-truck me-2"></i>Detalle del Viaje{% endblock %}
+{% block extra_css %}
+<style>
+  /* Separador entre pesadas para distinguir una fila de la siguiente */
+  #pesadas_container .pesada-row + .pesada-row {
+    border-top: 1px solid #9e9e9e;
+    padding-top: 0.75rem;
+  }
+</style>
+{% endblock %}
 {% block content %}
 <div class="mb-3 d-flex align-items-center gap-2">
   <a href="{% url 'viaje_list' %}" class="btn btn-outline-secondary btn-sm">
@@ -177,9 +187,15 @@
             <p class="fw-semibold mb-0 small text-muted text-uppercase">
               <i class="bi bi-plus-circle me-1" style="color:var(--orange-primary);"></i>Agregar pesadas
             </p>
-            <button type="button" id="btn_add_row" class="btn btn-outline-secondary btn-sm">
-              <i class="bi bi-plus-lg me-1"></i>Agregar fila
-            </button>
+            <div class="d-flex gap-2">
+              <button type="button" id="btn_add_row" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-plus-lg me-1"></i>Agregar fila
+              </button>
+              <button type="button" id="btn_dup_row" class="btn btn-outline-primary btn-sm"
+                      title="Agrega una fila con el mismo producto, sin los pesos">
+                <i class="bi bi-copy me-1"></i>Duplicar fila
+              </button>
+            </div>
           </div>
           <form method="post" action="{% url 'pesada_add' viaje.pk %}" id="form_pesadas_multi">
             {% csrf_token %}
@@ -247,80 +263,7 @@
           </form>
         </div>
 
-        <script>
-        (function() {
-          let rowIndex = 1;
-          const container = document.getElementById('pesadas_container');
-          const btnAdd = document.getElementById('btn_add_row');
-
-          function ordinal(n) {
-            if (n === 1) return '1ra';
-            if (n === 2) return '2da';
-            if (n === 3) return '3ra';
-            if (n === 4) return '4ta';
-            if (n === 5) return '5ta';
-            if (n === 6) return '6ta';
-            if (n === 7) return '7ma';
-            if (n === 8) return '8va';
-            if (n === 9) return '9na';
-            return n + 'ma';
-          }
-
-          function renumberLabels() {
-            const rows = container.querySelectorAll('.pesada-row');
-            rows.forEach(function(row, idx) {
-              const ord = ordinal(idx + 1);
-              row.querySelectorAll('.num-label, .num-label-badge').forEach(function(el) {
-                el.textContent = ord;
-              });
-            });
-          }
-
-          btnAdd.addEventListener('click', function() {
-            const firstRow = container.querySelector('.pesada-row');
-            const newRow = firstRow.cloneNode(true);
-
-            newRow.querySelectorAll('input, select').forEach(function(el) {
-              const name = el.getAttribute('name');
-              if (name) {
-                el.setAttribute('name', name.replace(/_\d+$/, '_' + rowIndex));
-              }
-              if (el.tagName === 'INPUT') {
-                el.value = '';
-              } else if (el.tagName === 'SELECT') {
-                el.selectedIndex = 0;
-              }
-            });
-
-            container.appendChild(newRow);
-            rowIndex++;
-            renumberLabels();
-            updateRemoveButtons();
-          });
-
-          container.addEventListener('click', function(e) {
-            const btn = e.target.closest('.btn-rm-row');
-            if (btn) {
-              const rows = container.querySelectorAll('.pesada-row');
-              if (rows.length > 1) {
-                btn.closest('.pesada-row').remove();
-                rowIndex--;
-                renumberLabels();
-                updateRemoveButtons();
-              }
-            }
-          });
-
-          function updateRemoveButtons() {
-            const rows = container.querySelectorAll('.pesada-row');
-            rows.forEach(function(row) {
-              row.querySelector('.btn-rm-row').disabled = rows.length === 1;
-            });
-          }
-
-          updateRemoveButtons();
-        })();
-        </script>
+        <script src="{% static 'core/js/viaje_pesadas.js' %}" defer></script>
 
         <script>
         // Paginación de la tabla de pesadas
