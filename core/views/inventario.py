@@ -273,20 +273,67 @@ def entrada_inventario_historial(request):
     })
 
 
-def _nueva_entrada_context():
+def _nueva_entrada_context(week_start=None):
     """Contexto base del formulario de conteo de inventario.
 
-    Incluye los datos serializados (productos, clasificaciones y proveedores)
-    que el formulario agrupado consume desde JS.
+    Si ``week_start`` viene, carga el conteo guardado de esa semana para
+    editarlo: incluye ``initial_rows`` (pesadas ya registradas) y la fecha
+    del conteo original. También incluye las clasificaciones/productos
+    referenciados aunque estén inactivos, para no perder filas al editar.
     """
-    clasificaciones = (
-        Clasificacion.objects.filter(activo=True)
-        .select_related('producto').order_by('producto__nombre', 'orden', 'nombre')
+    week_end = week_start + timedelta(days=6) if week_start else None
+
+    if week_start:
+        referenciadas = EntradaInventario.objects.filter(
+            fecha__range=[week_start, week_end]
+        ).values_list('clasificacion_id', flat=True)
+        clasificaciones = (
+            Clasificacion.objects.filter(Q(activo=True) | Q(id__in=referenciadas))
+            .select_related('producto').order_by('producto__nombre', 'orden', 'nombre')
+        )
+    else:
+        clasificaciones = (
+            Clasificacion.objects.filter(activo=True)
+            .select_related('producto').order_by('producto__nombre', 'orden', 'nombre')
+        )
+
+    productos_ids = set(clasificaciones.values_list('producto_id', flat=True))
+    productos = (
+        Producto.objects.filter(Q(activo=True) | Q(id__in=productos_ids))
+        .order_by('nombre')
     )
+
+    initial_rows = []
+    fecha_default = week_start.isoformat() if week_start else date.today().isoformat()
+    if week_start:
+        entradas = (
+            EntradaInventario.objects.filter(fecha__range=[week_start, week_end])
+            .select_related('proveedor', 'clasificacion')
+            .prefetch_related('pesadas')
+            .order_by('proveedor__nombre', 'clasificacion__producto__nombre', 'clasificacion__orden')
+        )
+        fechas = []
+        for e in entradas:
+            fechas.append(e.fecha)
+            for p in e.pesadas.all():
+                precio = p.precio_por_kg if p.precio_por_kg is not None else e.precio_por_kg
+                initial_rows.append({
+                    'proveedor_id': e.proveedor_id,
+                    'clasificacion_id': e.clasificacion_id,
+                    'kg_bruto': str(p.kg_bruto),
+                    'num_canastillas_negras': p.num_canastillas_negras,
+                    'num_canastillas_colores': p.num_canastillas_colores,
+                    'precio_por_kg': str(precio) if precio else '',
+                })
+        if fechas:
+            fecha_default = max(fechas).isoformat()
+
     return {
         'proveedores': Proveedor.objects.order_by('nombre'),
         'clasificaciones': clasificaciones,
-        'fecha_default': date.today().isoformat(),
+        'fecha_default': fecha_default,
+        'edit_week': week_start.isoformat() if week_start else '',
+        'initial_rows': initial_rows,
         'nomina_form': NominaForm(initial={'fecha': date.today()}),
         'desecho_local_form': DesechoLocalForm(),
         'proveedores_data': [
@@ -295,7 +342,7 @@ def _nueva_entrada_context():
         ],
         'productos_data': [
             {'id': p.id, 'nombre': p.nombre}
-            for p in Producto.objects.filter(activo=True).order_by('nombre')
+            for p in productos
         ],
         'clasificaciones_data': [
             {'id': c.id, 'calidad': c.nombre, 'producto_id': c.producto_id, 'producto': c.producto.nombre}
@@ -304,9 +351,78 @@ def _nueva_entrada_context():
     }
 
 
+def _guardar_conteo_inventario(rows, fecha, week_start=None, post=None):
+    """Crea (o reemplaza, si ``week_start`` viene) el conteo de inventario.
+
+    En modo edición se borran las entradas de esa semana y se recrean desde el
+    formulario, conservando el precio por (proveedor, clasificación) que ya
+    existiera. El stock se recalcula solo por las señales de PesadaEntrada.
+    """
+    from collections import defaultdict
+
+    groups = defaultdict(list)
+    for row in rows:
+        groups[(row['clasificacion_id'], row['proveedor_id'])].append(row)
+
+    precios = {}
+    if week_start:
+        week_end = week_start + timedelta(days=6)
+        for e in EntradaInventario.objects.filter(fecha__range=[week_start, week_end]):
+            precios[(str(e.proveedor_id), str(e.clasificacion_id))] = e.precio_por_kg
+
+    # Precio por clasificación enviado por clientes antiguos (precio_clasif_*).
+    if post is not None:
+        for (cid, pid) in groups.keys():
+            raw = (post.get(f'precio_clasif_{cid}_{pid}', '') or '').strip().replace('.', '')
+            if not raw:
+                raw = (post.get(f'precio_clasif_{cid}', '') or '').strip().replace('.', '')
+            if not raw:
+                continue
+            try:
+                precio_val = Decimal(raw)
+            except InvalidOperation:
+                continue
+            if precio_val.is_finite() and precio_val >= 0:
+                precios[(str(pid), str(cid))] = precio_val
+
+    with transaction.atomic():
+        if week_start:
+            week_end = week_start + timedelta(days=6)
+            EntradaInventario.objects.filter(fecha__range=[week_start, week_end]).delete()
+
+        last_pk = None
+        for (cid, pid), group_rows in groups.items():
+            entrada = EntradaInventario(
+                fecha=fecha,
+                proveedor_id=int(pid),
+                clasificacion_id=int(cid),
+                precio_por_kg=precios.get((str(pid), str(cid)), Decimal('0')),
+            )
+            entrada.full_clean()
+            entrada.save()
+            for row in group_rows:
+                PesadaEntrada.objects.create(
+                    entrada=entrada,
+                    num_canastillas_negras=row['num_canastillas_negras'],
+                    num_canastillas_colores=row['num_canastillas_colores'],
+                    kg_bruto=Decimal(row['kg_bruto']),
+                    precio_por_kg=row.get('precio_por_kg'),
+                )
+            last_pk = entrada.pk
+    return last_pk, len(groups)
+
+
 @login_required
 def entrada_inventario_create(request):
-    base_ctx = _nueva_entrada_context()
+    week_raw = (request.POST.get('week') or request.GET.get('week') or '').strip()
+    week_start = None
+    if week_raw:
+        try:
+            week_start = get_week_monday(date.fromisoformat(week_raw))
+        except ValueError:
+            week_start = None
+
+    base_ctx = _nueva_entrada_context(week_start)
 
     if request.method == 'POST':
         form_type = request.POST.get('form_type', 'entrada')
@@ -394,47 +510,13 @@ def entrada_inventario_create(request):
                 break
 
         if not form_errors:
-            from collections import defaultdict
-            groups = defaultdict(list)
-            for row in rows:
-                groups[(row['clasificacion_id'], row['proveedor_id'])].append(row)
-
-            # Read precio per (proveedor, clasificación) from receipt inputs.
-            # Fallback a precio_clasif_<cid> para no romper clientes antiguos.
-            precios = {}
-            for cid, pid in groups.keys():
-                precio_raw = request.POST.get(f'precio_clasif_{cid}_{pid}', '').strip().replace('.', '')
-                if not precio_raw:
-                    precio_raw = request.POST.get(f'precio_clasif_{cid}', '0').strip().replace('.', '')
-                try:
-                    precio_val = Decimal(precio_raw) if precio_raw else Decimal('0')
-                    if precio_val > 0:
-                        precios[(cid, pid)] = precio_val
-                except InvalidOperation:
-                    pass
             try:
-                with transaction.atomic():
-                    last_pk = None
-                    for (cid, pid), group_rows in groups.items():
-                        entrada = EntradaInventario(
-                            fecha=fecha,
-                            proveedor_id=int(pid),
-                            clasificacion_id=int(cid),
-                            precio_por_kg=precios.get((cid, pid), Decimal('0')),
-                        )
-                        entrada.full_clean()
-                        entrada.save()
-                        for row in group_rows:
-                            PesadaEntrada.objects.create(
-                                entrada=entrada,
-                                num_canastillas_negras=row['num_canastillas_negras'],
-                                num_canastillas_colores=row['num_canastillas_colores'],
-                                kg_bruto=Decimal(row['kg_bruto']),
-                                precio_por_kg=row['precio_por_kg'],
-                            )
-                        last_pk = entrada.pk
+                last_pk, num_groups = _guardar_conteo_inventario(rows, fecha, week_start, request.POST)
+                if week_start:
+                    messages.success(request, 'Conteo de la semana actualizado correctamente.')
+                    return redirect(f"{reverse('entrada_inventario_list')}?week={week_start.isoformat()}")
                 messages.success(request, 'Entrada registrada correctamente.')
-                if last_pk and len(groups) == 1:
+                if last_pk and num_groups == 1:
                     return redirect('entrada_inventario_detail', pk=last_pk)
                 return redirect('entrada_inventario_list')
             except Exception as e:

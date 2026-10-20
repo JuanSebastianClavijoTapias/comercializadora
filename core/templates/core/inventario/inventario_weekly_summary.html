@@ -89,7 +89,7 @@
     </a>
     {% endif %}
     <a href="{% url 'entrada_inventario_create' %}" class="btn btn-sm text-white" style="background:linear-gradient(135deg,#0288D1 0%,#01579B 100%);border:none;">
-      <i class="bi bi-plus-lg me-1"></i>Nueva Entrada
+      <i class="bi bi-plus-lg me-1"></i>Nuevo Conteo
     </a>
   </div>
 </div>
@@ -328,7 +328,7 @@
 
 <div class="card border-0 shadow-sm mb-4" style="border-radius: 16px; overflow: hidden;">
   <div class="card-header py-3 d-flex justify-content-between align-items-center" style="background: linear-gradient(135deg, #0288D1 0%, #01579B 100%);">
-    <h6 class="mb-0 fw-bold text-white"><i class="bi bi-clipboard-check me-2"></i>Historial de Entradas</h6>
+    <h6 class="mb-0 fw-bold text-white"><i class="bi bi-clipboard-check me-2"></i>Conteos de Inventario</h6>
     <div class="d-flex gap-2 align-items-center">
       <span class="badge rounded-pill text-bg-light">{{ entradas_historial_kg|floatformat:0 }} kg</span>
       <span class="badge rounded-pill" style="background:rgba(255,255,255,0.25);color:white;">${{ entradas_historial_total|cop }}</span>
@@ -478,10 +478,10 @@
                 </td>
                 <td class="text-end pe-4">
                   <div class="btn-group btn-group-sm" role="group">
-                    <button type="button" class="btn btn-outline-primary" title="Ver resumen"
-                            data-bs-toggle="modal" data-bs-target="#modalWeek_{{ item.week_start|date:'Y_m_d' }}">
+                    <a href="{% url 'entrada_inventario_create' %}?week={{ item.week_start|date:'Y-m-d' }}"
+                       class="btn btn-outline-primary" title="Ver / editar el conteo de la semana">
                       <i class="bi bi-eye"></i>
-                    </button>
+                    </a>
                     {% if item.record %}
                     <a href="{% url 'weekly_inventory_edit' item.record.pk %}" class="btn btn-outline-secondary" title="Editar inventario">
                       <i class="bi bi-pencil"></i>
@@ -1113,155 +1113,6 @@
     </div>
   </div>
 </div>
-
-{% for item in weekly_history %}
-<div class="modal fade" id="modalWeek_{{ item.week_start|date:'Y_m_d' }}" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-lg modal-dialog-scrollable">
-    <div class="modal-content">
-      <div class="modal-header" style="background: linear-gradient(135deg, #1E3A8A 0%, #2563EB 100%);">
-        <h5 class="modal-title text-white">
-          <i class="bi bi-calendar-week me-2"></i>
-          {{ item.week_start|date:"d/m/Y" }} — {{ item.week_end|date:"d/m/Y" }}
-        </h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-      </div>
-      <div class="modal-body">
-
-        {# ── Inventario ── #}
-        <h6 class="fw-bold mb-2"><i class="bi bi-box-seam me-1"></i>Inventario</h6>
-        <div class="row g-2 mb-3">
-          <div class="col-6 col-md-3">
-            <div class="modal-summary-pill text-center">
-              <div class="small text-muted">Inicial</div>
-              <div class="fw-bold">{{ item.initial_inventory_kg|floatformat:0 }} kg</div>
-            </div>
-          </div>
-          <div class="col-6 col-md-3">
-            <div class="modal-summary-pill text-center">
-              <div class="small text-muted">Viajes (kg)</div>
-              <div class="fw-bold text-primary">{{ item.viajes_kg|floatformat:0 }} kg</div>
-            </div>
-          </div>
-          <div class="col-6 col-md-3">
-            <div class="modal-summary-pill text-center">
-              <div class="small text-muted">Entradas (kg)</div>
-              <div class="fw-bold text-primary">{{ item.entradas_kg|floatformat:0 }} kg</div>
-            </div>
-          </div>
-          <div class="col-6 col-md-3">
-            <div class="modal-summary-pill text-center">
-              <div class="small text-muted">Total</div>
-              <div class="fw-bold text-success">{{ item.total_inventory_kg|floatformat:0 }} kg</div>
-            </div>
-          </div>
-        </div>
-
-        {# ── Viajes ── #}
-        <h6 class="fw-bold mb-2"><i class="bi bi-truck me-1"></i>Compras a Proveedores ({{ item.viajes_count }} viaje{{ item.viajes_count|pluralize:"s" }})</h6>
-        {% if item.viajes_list %}
-        <div class="table-responsive mb-3">
-          <table class="table table-sm table-hover align-middle mb-0" style="font-size:0.85rem;">
-            <thead class="bg-light">
-              <tr><th>Proveedor</th><th>Producto</th><th class="text-end">Precio Acordado</th><th class="text-end">Pagado</th><th class="text-end">Saldo</th></tr>
-            </thead>
-            <tbody>
-              {% for viaje in item.viajes_list %}
-              <tr>
-                <td>{{ viaje.proveedor }}</td>
-                <td>{{ viaje.producto }}</td>
-                <td class="text-end" style="color:#E65100;">${{ viaje.precio_total_acordado|cop }}</td>
-                <td class="text-end text-success">${{ viaje.total_pagado|cop }}</td>
-                <td class="text-end fw-bold {% if viaje.saldo_pendiente > 0 %}text-danger{% else %}text-success{% endif %}">
-                  {% if viaje.saldo_pendiente > 0 %}-${{ viaje.saldo_pendiente|cop }}{% else %}Pagado{% endif %}
-                </td>
-              </tr>
-              {% endfor %}
-              <tr class="table-light fw-bold">
-                <td colspan="2">Total</td>
-                <td class="text-end" style="color:#E65100;">${{ item.viajes_total|cop }}</td>
-                <td></td><td></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        {% else %}
-        <p class="text-muted small mb-3">Sin viajes esta semana.</p>
-        {% endif %}
-
-        {# ── Ventas & Gastos ── #}
-        <div class="row g-2 mb-3">
-          <div class="col-md-4">
-            <div class="modal-summary-pill text-center">
-              <div class="small text-muted">Ventas Totales</div>
-              <div class="fw-bold text-success">${{ item.total_ventas|cop }}</div>
-              <div class="small text-muted">{{ item.ventas_ef_count }} ef. · {{ item.ventas_cr_count }} cr.</div>
-            </div>
-          </div>
-          <div class="col-md-4">
-            <div class="modal-summary-pill text-center">
-              <div class="small text-muted">Gastos (inc. nómina)</div>
-              <div class="fw-bold text-danger">${{ item.gastos_total|cop }}</div>
-              <div class="small text-muted">Nómina: ${{ item.nomina_total|cop }}</div>
-            </div>
-          </div>
-          <div class="col-md-4">
-            <div class="modal-summary-pill text-center">
-              <div class="small text-muted">Balance</div>
-              <div class="fw-bold" style="color:{% if item.balance >= 0 %}#2E7D32{% else %}#C62828{% endif %};">
-                {% if item.balance > 0 %}+{% endif %}${{ item.balance|cop }}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {# ── Stock actual valorizado ── #}
-        <h6 class="fw-bold mb-2"><i class="bi bi-currency-dollar me-1"></i>Valor del Stock Actual</h6>
-        {% if stock_valorizado.items %}
-        <div class="table-responsive mb-2">
-          <table class="table table-sm table-hover align-middle mb-0" style="font-size:0.85rem;">
-            <thead class="bg-light">
-              <tr>
-                <th>Clasificación</th>
-                <th class="text-end">Stock (kg)</th>
-                <th class="text-end">Último precio/kg</th>
-                <th class="text-end">Valor</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for c in stock_valorizado.items %}
-              <tr>
-                <td>{{ c.producto.nombre }} — {{ c.nombre }}</td>
-                <td class="text-end">{{ c.stock_kg|floatformat:1 }} kg</td>
-                <td class="text-end text-muted">${{ c.ultimo_precio|default:0|cop }}</td>
-                <td class="text-end fw-semibold text-success">${{ c.valor_stock|cop }}</td>
-              </tr>
-              {% endfor %}
-              <tr class="table-light fw-bold">
-                <td class="text-end">Total</td>
-                <td class="text-end">{{ stock_valorizado.total_kg|floatformat:1 }} kg</td>
-                <td class="text-end text-muted">—</td>
-                <td class="text-end text-success">${{ stock_valorizado.total|cop }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        {% else %}
-        <p class="text-muted small mb-2">Sin stock registrado con precio.</p>
-        {% endif %}
-
-      </div>
-      <div class="modal-footer">
-        {% if item.record %}
-        <a href="{% url 'weekly_inventory_edit' item.record.pk %}" class="btn btn-primary btn-sm">
-          <i class="bi bi-pencil-square me-1"></i>Editar inventario
-        </a>
-        {% endif %}
-        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cerrar</button>
-      </div>
-    </div>
-  </div>
-</div>
-{% endfor %}
 
 
 <!-- Modal: Desechos Locales -->

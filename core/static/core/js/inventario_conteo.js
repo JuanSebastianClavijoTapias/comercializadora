@@ -19,6 +19,7 @@
   const PROVEEDORES = readData('proveedores-data');
   const PRODUCTOS = readData('productos-data');
   const CLASIFICACIONES = readData('clasificaciones-data');
+  const INITIAL_ROWS = readData('initial-rows');
 
   const container = document.getElementById('proveedores_container');
   const resumenEl = document.getElementById('resumen_conteo');
@@ -192,7 +193,8 @@
   }
 
   // ---------- construcción de bloques ----------
-  function buildPesadaRow() {
+  function buildPesadaRow(data) {
+    data = data || {};
     const i = seq++;
     const row = document.createElement('div');
     row.className = 'pesada-row d-flex flex-wrap gap-2 align-items-end mb-2';
@@ -224,10 +226,16 @@
         '<div class="kg-neto valor-pesada fw-semibold" style="color:var(--orange-primary);">-</div>' +
       '</div>' +
       '<button type="button" class="btn btn-sm btn-outline-danger btn-rm-pesada" title="Eliminar pesada"><i class="bi bi-x"></i></button>';
+
+    if (data.kg_bruto != null) row.querySelector('.input-bruto').value = data.kg_bruto;
+    if (data.num_canastillas_negras) row.querySelector('.input-neg').value = data.num_canastillas_negras;
+    if (data.num_canastillas_colores) row.querySelector('.input-col').value = data.num_canastillas_colores;
+    if (data.precio_por_kg) row.querySelector('.input-precio').value = data.precio_por_kg;
     return row;
   }
 
-  function buildCalidadBlock(provBlock) {
+  function buildCalidadBlock(provBlock, data) {
+    data = data || {};
     const cal = document.createElement('div');
     cal.className = 'calidad-block border rounded mb-2 p-2';
 
@@ -260,7 +268,6 @@
 
     const pesadas = document.createElement('div');
     pesadas.className = 'pesadas-container';
-    pesadas.appendChild(buildPesadaRow());
 
     const addBtn = document.createElement('button');
     addBtn.type = 'button';
@@ -269,11 +276,24 @@
 
     cal.append(header, pesadas, addBtn);
     provBlock.querySelector('.calidades-container').appendChild(cal);
+
+    if (data.productoId) {
+      prodSel.value = data.productoId;
+      fillSelect(calSel, clasificacionesDe(data.productoId), 'Calidad');
+      if (data.clasificacionId != null) calSel.value = data.clasificacionId;
+    }
+
+    const pesadasData = (data.pesadas && data.pesadas.length) ? data.pesadas : [null];
+    pesadasData.forEach(function (p) {
+      pesadas.appendChild(buildPesadaRow(p));
+    });
+
     syncCalidad(cal);
     return cal;
   }
 
-  function buildProveedorBlock() {
+  function buildProveedorBlock(data) {
+    data = data || {};
     const block = document.createElement('div');
     block.className = 'proveedor-block card border-0 shadow-sm mb-3';
 
@@ -289,6 +309,7 @@
     provSel.style.minWidth = '180px';
     provSel.required = true;
     fillSelect(provSel, PROVEEDORES.map(function (p) { return { value: p.id, label: p.nombre }; }), 'Proveedor');
+    if (data.proveedorId) provSel.value = data.proveedorId;
     left.append(icon, provSel);
 
     const right = document.createElement('div');
@@ -311,9 +332,47 @@
 
     block.append(header, body);
     container.appendChild(block);
-    buildCalidadBlock(block);
+
+    const calidades = (data.calidades && data.calidades.length) ? data.calidades : [null];
+    calidades.forEach(function (c) {
+      buildCalidadBlock(block, c);
+    });
+
     syncProveedor(block);
     return block;
+  }
+
+  // Reconstruye el formulario agrupado a partir de las pesadas guardadas.
+  function buildFromInitial(rows) {
+    const byProveedor = new Map();
+
+    rows.forEach(function (r) {
+      const pid = String(r.proveedor_id);
+      const cid = String(r.clasificacion_id);
+      if (!byProveedor.has(pid)) byProveedor.set(pid, new Map());
+      const byCalidad = byProveedor.get(pid);
+      if (!byCalidad.has(cid)) {
+        const cls = CLASIFICACIONES.find(function (c) { return String(c.id) === cid; });
+        byCalidad.set(cid, {
+          productoId: cls ? cls.producto_id : null,
+          clasificacionId: cid,
+          pesadas: [],
+        });
+      }
+      byCalidad.get(cid).pesadas.push({
+        kg_bruto: r.kg_bruto,
+        num_canastillas_negras: r.num_canastillas_negras,
+        num_canastillas_colores: r.num_canastillas_colores,
+        precio_por_kg: r.precio_por_kg,
+      });
+    });
+
+    byProveedor.forEach(function (byCalidad, pid) {
+      buildProveedorBlock({
+        proveedorId: pid,
+        calidades: Array.from(byCalidad.values()),
+      });
+    });
   }
 
   // ---------- eventos ----------
@@ -395,6 +454,10 @@
   }
 
   // ---------- arranque ----------
-  buildProveedorBlock();
+  if (INITIAL_ROWS.length) {
+    buildFromInitial(INITIAL_ROWS);
+  } else {
+    buildProveedorBlock();
+  }
   recalcAll();
 })();

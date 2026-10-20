@@ -500,6 +500,53 @@ class EntradaInventarioConteoTests(BaseDataMixin, TestCase):
         self.assertEqual(data['total_kg'], Decimal('100.00'))
         self.assertEqual(data['total'], Decimal('200000.00'))
 
+    def test_ver_semana_carga_los_datos_guardados(self):
+        from .models import Proveedor
+
+        prov = Proveedor.objects.create(nombre='Duvan')
+        self._post('2026-10-05', [(prov, self.clasificacion, '190', 9, 0)])
+
+        resp = self.client.get(reverse('entrada_inventario_create'), {'week': '2026-10-05'})
+
+        self.assertEqual(resp.status_code, 200)
+        self.assertTrue(resp.context['edit_week'])
+        rows = resp.context['initial_rows']
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]['proveedor_id'], prov.pk)
+        self.assertEqual(rows[0]['clasificacion_id'], self.clasificacion.pk)
+        self.assertEqual(Decimal(rows[0]['kg_bruto']), Decimal('190.00'))
+        self.assertEqual(rows[0]['num_canastillas_negras'], 9)
+
+    def test_editar_semana_reemplaza_y_actualiza_stock(self):
+        from datetime import timedelta
+
+        from .models import EntradaInventario, PesadaEntrada
+
+        prov = self._proveedor()
+        fecha = date(2026, 10, 5)
+        week = (fecha - timedelta(days=fecha.weekday())).isoformat()
+        self._post(fecha.isoformat(), [(prov, self.clasificacion, '100', 0, 0)])
+        self.clasificacion.refresh_from_db()
+        self.assertEqual(self.clasificacion.stock_kg, Decimal('100.00'))
+
+        data = {
+            'fecha': fecha.isoformat(),
+            'week': week,
+            'proveedor_0': prov.pk,
+            'clasificacion_0': self.clasificacion.pk,
+            'kg_bruto_0': '40',
+            'num_canastillas_negras_0': 0,
+            'num_canastillas_colores_0': 0,
+        }
+        resp = self.client.post(reverse('entrada_inventario_create'), data)
+
+        self.assertEqual(resp.status_code, 302)
+        # Reemplaza la semana, no duplica
+        self.assertEqual(EntradaInventario.objects.count(), 1)
+        self.assertEqual(PesadaEntrada.objects.count(), 1)
+        self.clasificacion.refresh_from_db()
+        self.assertEqual(self.clasificacion.stock_kg, Decimal('40.00'))
+
 
 class ReporteDiarioTests(BaseDataMixin, TestCase):
     def test_muestra_total_vendido(self):

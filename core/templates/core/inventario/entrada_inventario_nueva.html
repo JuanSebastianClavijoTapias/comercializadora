@@ -56,8 +56,16 @@
 </div>
 {% endif %}
 
+{% if edit_week %}
+<div class="alert alert-info py-2 d-flex align-items-center gap-2" role="alert">
+  <i class="bi bi-pencil-square"></i>
+  <span>Editando el conteo guardado de la semana. Podés corregir las pesadas y guardar.</span>
+</div>
+{% endif %}
+
 <form method="post" action="{% url 'entrada_inventario_create' %}" autocomplete="off" id="form_conteo">
   {% csrf_token %}
+  {% if edit_week %}<input type="hidden" name="week" value="{{ edit_week }}">{% endif %}
 
   <div class="d-flex flex-wrap gap-3 align-items-end mb-3">
     <div>
@@ -86,7 +94,7 @@
           <div class="d-grid mt-3">
             <button type="submit" class="btn py-2 fw-semibold text-white"
                     style="background:linear-gradient(135deg,var(--orange-primary) 0%,var(--orange-secondary) 100%);border:none;border-radius:8px;">
-              <i class="bi bi-check-lg me-1"></i>Guardar conteo
+              <i class="bi bi-check-lg me-1"></i>{% if edit_week %}Guardar cambios{% else %}Guardar conteo{% endif %}
             </button>
           </div>
         </div>
@@ -98,8 +106,9 @@
 {{ proveedores_data|json_script:"proveedores-data" }}
 {{ productos_data|json_script:"productos-data" }}
 {{ clasificaciones_data|json_script:"clasificaciones-data" }}
+{{ initial_rows|json_script:"initial-rows" }}
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'core/js/inventario_conteo.js' %}" defer></script>
+<script src="{% static 'core/js/inventario_conteo.js' %}?v=2" defer></script>
 {% endblock %}
