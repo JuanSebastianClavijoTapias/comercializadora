@@ -93,7 +93,7 @@
       <div>
         <div class="small text-muted mb-1">Total</div>
         <div class="fw-bold fs-5" style="color: var(--orange-primary);">${{ entrada.total|cop }}</div>
-        <div class="small text-muted">{{ kg_neto_total|floatformat:2 }} kg x ${{ entrada.precio_por_kg|cop }}</div>
+        <div class="small text-muted">{{ kg_neto_total|floatformat:2 }} kg · precio promedio ${{ entrada.precio_promedio|cop }}/kg</div>
       </div>
       <div class="stat-icon-wrapper" style="background: rgba(255,107,53,0.15); color: var(--orange-primary);"><i class="bi bi-currency-dollar"></i></div>
     </div>
@@ -146,6 +146,13 @@
                   <i class="bi bi-trash3"></i>
                 </a>
               </div>
+            </div>
+            <div class="d-flex justify-content-between small mt-1 pt-1 border-top">
+              <span class="text-muted">
+                Precio/kg: <strong>${{ p.precio_mostrar|cop }}</strong>
+                {% if p.precio_por_kg is None %}<span class="text-muted">(de la entrada)</span>{% endif %}
+              </span>
+              <span class="text-muted">Valor: <strong style="color:var(--orange-primary);">${{ p.valor_mostrar|cop }}</strong></span>
             </div>
           </div>
           {% endfor %}
@@ -281,6 +288,7 @@
           <div class="mb-3">
             <label class="form-label fw-semibold small text-uppercase" style="color: var(--text-sec); letter-spacing: 0.5px;">{{ field.label }}</label>
             {{ field }}
+            {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
             {% if field.errors %}<div class="text-danger small mt-1">{{ field.errors }}</div>{% endif %}
           </div>
           {% endfor %}
@@ -289,11 +297,11 @@
           </button>
         </form>
 
-        {% if kg_neto_total > 0 and entrada.precio_por_kg > 0 %}
+        {% if kg_neto_total > 0 and entrada.total > 0 %}
         <div class="mt-4 p-3 rounded-3 text-center" style="background: rgba(255,107,53,0.06); border: 1px solid rgba(255,107,53,0.15);">
           <div class="small text-muted fw-semibold mb-1 text-uppercase">Total de esta entrada</div>
           <div class="fs-4 fw-bold" style="color: var(--orange-primary);">${{ entrada.total|cop }}</div>
-          <div class="small text-muted mt-1">{{ kg_neto_total|floatformat:2 }} kg x ${{ entrada.precio_por_kg|cop }}/kg</div>
+          <div class="small text-muted mt-1">{{ kg_neto_total|floatformat:2 }} kg · precio promedio ${{ entrada.precio_promedio|cop }}/kg</div>
         </div>
         {% endif %}
 

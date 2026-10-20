@@ -344,12 +344,15 @@ class PesadaAddTests(BaseDataMixin, TestCase):
 class EntradaInventarioConteoTests(BaseDataMixin, TestCase):
     def _post(self, fecha, filas):
         data = {'fecha': fecha}
-        for i, (prov, clas, kg, neg, col) in enumerate(filas):
+        for i, fila in enumerate(filas):
+            prov, clas, kg, neg, col = fila[:5]
             data[f'proveedor_{i}'] = prov.pk
             data[f'clasificacion_{i}'] = clas.pk
             data[f'kg_bruto_{i}'] = kg
             data[f'num_canastillas_negras_{i}'] = neg
             data[f'num_canastillas_colores_{i}'] = col
+            if len(fila) > 5 and fila[5] is not None:
+                data[f'precio_{i}'] = fila[5]
         return self.client.post(reverse('entrada_inventario_create'), data)
 
     def _proveedor(self, nombre='Duvan'):
@@ -414,6 +417,88 @@ class EntradaInventarioConteoTests(BaseDataMixin, TestCase):
         self.client.post(reverse('entrada_inventario_create'), data)
 
         self.assertEqual(PesadaEntrada.objects.count(), 2)
+
+    def test_precio_por_pesada_se_guarda_y_totaliza(self):
+        from .models import EntradaInventario, PesadaEntrada
+
+        prov = self._proveedor()
+        self._post('2026-10-05', [
+            (prov, self.clasificacion, '100', 0, 0, '2000'),
+            (prov, self.clasificacion, '50', 0, 0, '3000'),
+        ])
+
+        entrada = EntradaInventario.objects.get()
+        pesadas = list(PesadaEntrada.objects.order_by('id'))
+        self.assertEqual(pesadas[0].precio_por_kg, Decimal('2000'))
+        self.assertEqual(pesadas[1].precio_por_kg, Decimal('3000'))
+        self.assertEqual(entrada.kg, Decimal('150'))
+        self.assertEqual(entrada.total, Decimal('350000'))
+        self.assertEqual(entrada.precio_promedio, Decimal('2333.33'))
+
+    def test_pesada_sin_precio_no_suma_al_total(self):
+        from .models import EntradaInventario
+
+        prov = self._proveedor()
+        self._post('2026-10-05', [(prov, self.clasificacion, '100', 0, 0)])
+
+        entrada = EntradaInventario.objects.get()
+        self.assertIsNone(entrada.pesadas.get().precio_por_kg)
+        self.assertEqual(entrada.total, Decimal('0'))
+
+    def test_pesada_sin_precio_hereda_el_precio_de_la_entrada(self):
+        from .models import EntradaInventario
+
+        prov = self._proveedor()
+        data = {
+            'fecha': '2026-10-05',
+            'proveedor_0': prov.pk,
+            'clasificacion_0': self.clasificacion.pk,
+            'kg_bruto_0': '100',
+            'num_canastillas_negras_0': 0,
+            'num_canastillas_colores_0': 0,
+            f'precio_clasif_{self.clasificacion.pk}_{prov.pk}': '1500',
+        }
+        self.client.post(reverse('entrada_inventario_create'), data)
+
+        entrada = EntradaInventario.objects.get()
+        self.assertIsNone(entrada.pesadas.get().precio_por_kg)
+        self.assertEqual(entrada.precio_por_kg, Decimal('1500'))
+        self.assertEqual(entrada.total, Decimal('150000'))
+
+    def test_precio_invalido_no_guarda_la_entrada(self):
+        from unittest.mock import patch
+
+        from django.http import HttpResponse
+
+        from .models import EntradaInventario
+
+        prov = self._proveedor()
+        for valor in ('abc', 'NaN', 'Infinity'):
+            with self.subTest(precio=valor):
+                with patch(
+                    'core.views.inventario.render',
+                    return_value=HttpResponse(status=200),
+                ) as render_mock:
+                    resp = self._post('2026-10-05', [
+                        (prov, self.clasificacion, '100', 0, 0, valor),
+                    ])
+
+                self.assertEqual(resp.status_code, 200)
+                form_errors = render_mock.call_args[0][2]['form_errors']
+                self.assertIn('no es válido', ' '.join(form_errors))
+                self.assertEqual(EntradaInventario.objects.count(), 0)
+
+    def test_stock_valorizado_usa_el_ultimo_precio_por_pesada(self):
+        from .services.inventario import stock_valorizado
+
+        prov = self._proveedor()
+        self._post('2026-10-05', [
+            (prov, self.clasificacion, '100', 0, 0, '2000'),
+        ])
+
+        data = stock_valorizado()
+        self.assertEqual(data['total_kg'], Decimal('100.00'))
+        self.assertEqual(data['total'], Decimal('200000.00'))
 
 
 class ReporteDiarioTests(BaseDataMixin, TestCase):

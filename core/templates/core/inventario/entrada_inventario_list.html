@@ -85,8 +85,8 @@
             </td>
             <td class="text-end text-muted">{{ entrada.pesadas.count }}</td>
             <td class="text-end fw-semibold">{{ entrada.kg|floatformat:2 }} kg</td>
-            <td class="text-end text-muted">{% if entrada.precio_por_kg > 0 %}${{ entrada.precio_por_kg|cop }}{% else %}<span class="text-warning small">Sin precio</span>{% endif %}</td>
-            <td class="text-end fw-bold" style="color: #0288D1;">{% if entrada.precio_por_kg > 0 %}${{ entrada.total|cop }}{% else %}–{% endif %}</td>
+            <td class="text-end text-muted">{% if entrada.total > 0 %}${{ entrada.precio_promedio|cop }}{% else %}<span class="text-warning small">Sin precio</span>{% endif %}</td>
+            <td class="text-end fw-bold" style="color: #0288D1;">{% if entrada.total > 0 %}${{ entrada.total|cop }}{% else %}–{% endif %}</td>
             <td class="text-center">
               <div class="d-flex justify-content-center gap-1">
                 <a href="{% url 'entrada_inventario_detail' entrada.pk %}" class="btn btn-sm btn-outline-primary" style="border-radius: 6px; padding: 0.2rem 0.5rem;" title="Ver / agregar pesadas">

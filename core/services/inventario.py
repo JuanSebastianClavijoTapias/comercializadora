@@ -282,19 +282,33 @@ def recalcular_stock_clasificacion(clasificacion_id):
 
 
 def stock_valorizado():
-    """Devuelve las clasificaciones con stock > 0 y su último precio de compra."""
-    latest_precio = EntradaInventario.objects.filter(
+    """Devuelve las clasificaciones con stock > 0 y su último precio de compra.
+
+    Prioriza el último precio registrado en una pesada; si no existe, usa el
+    precio de la última entrada (compatibilidad con entradas antiguas).
+    """
+    latest_precio_entrada = EntradaInventario.objects.filter(
         clasificacion=OuterRef('pk')
     ).order_by('-fecha', '-id').values('precio_por_kg')[:1]
+    latest_precio_pesada = PesadaEntrada.objects.filter(
+        entrada__clasificacion=OuterRef('pk'),
+        precio_por_kg__isnull=False,
+    ).order_by('-entrada__fecha', '-entrada__id', '-id').values('precio_por_kg')[:1]
     items = list(
         Clasificacion.objects
         .filter(stock_kg__gt=0)
         .select_related('producto')
-        .annotate(ultimo_precio=Subquery(latest_precio))
+        .annotate(
+            ultimo_precio=Subquery(latest_precio_entrada),
+            ultimo_precio_pesada=Subquery(latest_precio_pesada),
+        )
         .order_by('producto__nombre', 'orden')
     )
     for c in items:
-        precio = c.ultimo_precio or Decimal('0')
+        if c.ultimo_precio_pesada is not None:
+            precio = c.ultimo_precio_pesada
+        else:
+            precio = c.ultimo_precio or Decimal('0')
         c.valor_stock = c.stock_kg * precio
     total_valor = sum(c.valor_stock for c in items)
     total_kg = sum(c.stock_kg for c in items)

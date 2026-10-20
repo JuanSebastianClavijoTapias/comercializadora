@@ -50,14 +50,26 @@
       .map(function (c) { return { value: c.id, label: c.calidad }; });
   }
 
-  function calcNeto(row) {
+  function fmtCOP(n) {
+    return '$' + Math.round(n).toLocaleString('es-CO');
+  }
+
+  function calcPesada(row) {
     const bruto = parseFloat(row.querySelector('.input-bruto').value) || 0;
     const neg = parseFloat(row.querySelector('.input-neg').value) || 0;
     const col = parseFloat(row.querySelector('.input-col').value) || 0;
+    const precioInput = row.querySelector('.input-precio');
+    const precio = precioInput ? (parseFloat(precioInput.value) || 0) : 0;
     const neto = Math.max(bruto - (neg * PESO_NEGRA + col * PESO_COLOR), 0);
-    const el = row.querySelector('.kg-neto');
-    el.textContent = bruto > 0 ? neto.toFixed(2) + ' kg' : '-';
-    return { bruto: bruto, neto: neto };
+    const valor = neto * precio;
+
+    const netoEl = row.querySelector('.kg-neto');
+    if (netoEl) netoEl.textContent = bruto > 0 ? neto.toFixed(2) + ' kg' : '-';
+
+    const valorEl = row.querySelector('.valor-pesada');
+    if (valorEl) valorEl.textContent = valor > 0 ? fmtCOP(valor) : '-';
+
+    return { bruto: bruto, neto: neto, valor: valor };
   }
 
   // ---------- sincronización de la fila con su grupo ----------
@@ -83,6 +95,7 @@
     const porCalidad = {};
     const porProveedor = {};
     let total = 0;
+    let totalValor = 0;
 
     container.querySelectorAll('.calidad-block').forEach(function (calBlock) {
       const provSel = calBlock.closest('.proveedor-block').querySelector('.prov-select');
@@ -92,8 +105,9 @@
 
       let calTotal = 0;
       calBlock.querySelectorAll('.pesada-row').forEach(function (row) {
-        const r = calcNeto(row);
+        const r = calcPesada(row);
         if (r.bruto > 0) calTotal += r.neto;
+        totalValor += r.valor;
       });
 
       const badge = calBlock.querySelector('.calidad-total');
@@ -112,10 +126,10 @@
       }
     });
 
-    renderResumen(porCalidad, porProveedor, total);
+    renderResumen(porCalidad, porProveedor, total, totalValor);
   }
 
-  function renderResumen(porCalidad, porProveedor, total) {
+  function renderResumen(porCalidad, porProveedor, total, totalValor) {
     if (!resumenEl) return;
     resumenEl.innerHTML = '';
 
@@ -152,15 +166,29 @@
     resumenEl.appendChild(section('Total por calidad', porCalidad));
     resumenEl.appendChild(section('Por proveedor', porProveedor));
 
-    const totalBox = document.createElement('div');
-    totalBox.className = 'd-flex justify-content-between border-top pt-2 fw-bold';
+    const totalsBox = document.createElement('div');
+    totalsBox.className = 'border-top pt-2 mt-2';
+
+    const totalKgBox = document.createElement('div');
+    totalKgBox.className = 'd-flex justify-content-between fw-bold';
     const t1 = document.createElement('span');
     t1.textContent = 'Total en bodega';
     const t2 = document.createElement('span');
     t2.style.color = 'var(--orange-primary)';
     t2.textContent = total.toFixed(2) + ' kg';
-    totalBox.append(t1, t2);
-    resumenEl.appendChild(totalBox);
+    totalKgBox.append(t1, t2);
+
+    const totalValorBox = document.createElement('div');
+    totalValorBox.className = 'd-flex justify-content-between fw-bold mt-1';
+    const tv1 = document.createElement('span');
+    tv1.textContent = 'Total a pagar';
+    const tv2 = document.createElement('span');
+    tv2.style.color = 'var(--orange-primary)';
+    tv2.textContent = totalValor > 0 ? fmtCOP(totalValor) : '-';
+    totalValorBox.append(tv1, tv2);
+
+    totalsBox.append(totalKgBox, totalValorBox);
+    resumenEl.appendChild(totalsBox);
   }
 
   // ---------- construcción de bloques ----------
@@ -183,9 +211,17 @@
         '<label class="row-lbl"><span class="tag-col">C</span> Color 2.2</label>' +
         '<input type="number" min="0" name="num_canastillas_colores_' + i + '" class="form-control form-control-sm input-col" placeholder="0">' +
       '</div>' +
-      '<div style="flex:0 0 96px;">' +
+      '<div style="flex:0 0 90px;">' +
         '<label class="row-lbl">Neto</label>' +
         '<div class="kg-neto">-</div>' +
+      '</div>' +
+      '<div style="flex:1 1 110px;">' +
+        '<label class="row-lbl">Precio/kg</label>' +
+        '<input type="number" min="0" step="0.01" name="precio_' + i + '" class="form-control form-control-sm input-precio" placeholder="$/kg">' +
+      '</div>' +
+      '<div style="flex:0 0 104px;">' +
+        '<label class="row-lbl">Valor</label>' +
+        '<div class="kg-neto valor-pesada fw-semibold" style="color:var(--orange-primary);">-</div>' +
       '</div>' +
       '<button type="button" class="btn btn-sm btn-outline-danger btn-rm-pesada" title="Eliminar pesada"><i class="bi bi-x"></i></button>';
     return row;

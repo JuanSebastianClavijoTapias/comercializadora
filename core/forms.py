@@ -211,6 +211,12 @@ class DesechoLocalForm(forms.ModelForm):
 class EntradaInventarioForm(COPInputNormalizationMixin, forms.ModelForm):
     cop_fields = ('precio_por_kg',)
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['precio_por_kg'].help_text = (
+            'Precio por defecto para las pesadas que no tengan precio propio.'
+        )
+
     class Meta:
         model = EntradaInventario
         fields = ['fecha', 'proveedor', 'clasificacion', 'precio_por_kg', 'observaciones']

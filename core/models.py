@@ -496,7 +496,25 @@ class EntradaInventario(models.Model):
 
     @property
     def total(self):
-        return self.kg * self.precio_por_kg
+        """Valor total de la entrada.
+
+        Cada pesada puede tener su propio precio; si no lo tiene, hereda el
+        precio de la entrada (compatibilidad con entradas antiguas).
+        """
+        precio_entrada = self.precio_por_kg or Decimal('0')
+        total = Decimal('0')
+        for p in self.pesadas.all():
+            precio = p.precio_por_kg if p.precio_por_kg is not None else precio_entrada
+            total += p.kg_neto * precio
+        return total
+
+    @property
+    def precio_promedio(self):
+        """Precio efectivo por kg (total / kg neto)."""
+        kg = self.kg
+        if kg:
+            return (self.total / kg).quantize(Decimal('0.01'))
+        return self.precio_por_kg or Decimal('0')
 
     def __str__(self):
         return f"Entrada {self.clasificacion} – {self.fecha} ({self.proveedor})"
@@ -510,6 +528,21 @@ class EntradaInventario(models.Model):
 class PesadaEntrada(BasePesada):
     entrada = models.ForeignKey(EntradaInventario, on_delete=models.CASCADE, related_name='pesadas', verbose_name='Entrada')
     clasificacion = models.ForeignKey(Clasificacion, null=True, blank=True, on_delete=models.SET_NULL, verbose_name='Clasificación')
+    precio_por_kg = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True, default=None,
+        verbose_name='Precio por Kg',
+        help_text='Si está vacío, se usa el precio de la entrada.',
+    )
+
+    @property
+    def precio_efectivo(self):
+        if self.precio_por_kg is not None:
+            return self.precio_por_kg
+        return self.entrada.precio_por_kg or Decimal('0')
+
+    @property
+    def valor(self):
+        return self.kg_neto * self.precio_efectivo
 
     def __str__(self):
         return f"Pesada entrada {self.entrada_id} – {self.kg_bruto} kg bruto"

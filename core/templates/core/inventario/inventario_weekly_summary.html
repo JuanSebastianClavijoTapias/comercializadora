@@ -356,8 +356,8 @@
             <td class="fw-semibold">{{ entrada.proveedor }}</td>
             <td>{{ entrada.clasificacion }}</td>
             <td class="text-end text-primary fw-semibold">{{ entrada.kg|floatformat:2 }} kg</td>
-            <td class="text-end">${{ entrada.precio_por_kg|cop }}</td>
-            <td class="text-end fw-bold" style="color:#E91E63;">${{ entrada.total|cop }}</td>
+            <td class="text-end">{% if entrada.total > 0 %}${{ entrada.precio_promedio|cop }}{% else %}—{% endif %}</td>
+            <td class="text-end fw-bold" style="color:#E91E63;">{% if entrada.total > 0 %}${{ entrada.total|cop }}{% else %}—{% endif %}</td>
             <td class="text-center pe-3">
               <div class="d-flex justify-content-center gap-1">
                 <a href="{% url 'entrada_inventario_detail' entrada.pk %}" class="btn btn-sm btn-outline-primary" style="border-radius:6px;padding:0.2rem 0.5rem;" title="Ver / agregar pesadas">
@@ -1045,7 +1045,7 @@
                   <span class="badge ms-1 {% if ing.origen == 'Viaje' %}bg-warning text-dark{% else %}bg-info text-dark{% endif %}" style="font-size:0.7rem;">{{ ing.origen }}</span>
                 </td>
                 <td class="text-end fw-semibold text-primary">{{ ing.kg|floatformat:2 }} kg</td>
-                <td class="text-end">{% if ing.precio_por_kg is not None %}${{ ing.precio_por_kg|cop }}{% else %}—{% endif %}</td>
+                <td class="text-end">{% if ing.precio_promedio is not None %}${{ ing.precio_promedio|cop }}{% else %}—{% endif %}</td>
                 <td class="text-end fw-semibold" style="color:#E91E63;">{% if ing.total is not None %}${{ ing.total|cop }}{% else %}—{% endif %}</td>
               </tr>
               {% empty %}

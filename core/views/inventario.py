@@ -160,14 +160,14 @@ def inventario_weekly_summary(request):
     for e in compras_semana:
         ingresos_semana.append({
             'fecha': e.fecha, 'proveedor': e.proveedor, 'clasificacion': e.clasificacion,
-            'kg': e.kg, 'precio_por_kg': e.precio_por_kg, 'total': e.total,
+            'kg': e.kg, 'precio_promedio': e.precio_promedio, 'total': e.total,
             'origen': 'Entrada', 'url': reverse('entrada_inventario_detail', args=[e.pk]),
         })
     for v in viajes_semana:
         for l in v.lotes.all():
             ingresos_semana.append({
                 'fecha': v.fecha, 'proveedor': v.proveedor, 'clasificacion': l.clasificacion,
-                'kg': l.kg_neto, 'precio_por_kg': None, 'total': None,
+                'kg': l.kg_neto, 'precio_promedio': None, 'total': None,
                 'origen': 'Viaje', 'url': reverse('viaje_detail', args=[v.pk]),
             })
     ingresos_semana.sort(key=lambda x: (x['fecha'], 0 if x['origen'] == 'Entrada' else 1), reverse=True)
@@ -349,16 +349,38 @@ def entrada_inventario_create(request):
         rows = []
         for i in row_indices(request.POST, 'kg_bruto'):
             kg_val = request.POST.get(f'kg_bruto_{i}', '').strip()
-            if kg_val:
-                cid = request.POST.get(f'clasificacion_{i}', '').strip()
-                pid = request.POST.get(f'proveedor_{i}', '').strip()
-                rows.append({
-                    'clasificacion_id': cid,
-                    'proveedor_id': pid,
-                    'num_canastillas_negras': int(request.POST.get(f'num_canastillas_negras_{i}', 0) or 0),
-                    'num_canastillas_colores': int(request.POST.get(f'num_canastillas_colores_{i}', 0) or 0),
-                    'kg_bruto': kg_val,
-                })
+            if not kg_val:
+                continue
+
+            num_fila = len(rows) + 1
+            precio_raw = request.POST.get(f'precio_{i}', '').strip()
+            precio_val = None
+            if precio_raw:
+                try:
+                    precio_val = Decimal(precio_raw)
+                except InvalidOperation:
+                    form_errors.append(f'El precio de la pesada {num_fila} no es válido.')
+                else:
+                    if not precio_val.is_finite():
+                        form_errors.append(f'El precio de la pesada {num_fila} no es válido.')
+                        precio_val = None
+                    elif precio_val < 0:
+                        form_errors.append(f'El precio de la pesada {num_fila} no puede ser negativo.')
+                        precio_val = None
+                    elif precio_val > Decimal('99999999.99'):
+                        form_errors.append(f'El precio de la pesada {num_fila} es demasiado alto.')
+                        precio_val = None
+
+            cid = request.POST.get(f'clasificacion_{i}', '').strip()
+            pid = request.POST.get(f'proveedor_{i}', '').strip()
+            rows.append({
+                'clasificacion_id': cid,
+                'proveedor_id': pid,
+                'num_canastillas_negras': int(request.POST.get(f'num_canastillas_negras_{i}', 0) or 0),
+                'num_canastillas_colores': int(request.POST.get(f'num_canastillas_colores_{i}', 0) or 0),
+                'kg_bruto': kg_val,
+                'precio_por_kg': precio_val,
+            })
 
         if not rows:
             form_errors.append('Debes registrar al menos una pesada con Kg Bruto.')
@@ -408,6 +430,7 @@ def entrada_inventario_create(request):
                                 num_canastillas_negras=row['num_canastillas_negras'],
                                 num_canastillas_colores=row['num_canastillas_colores'],
                                 kg_bruto=Decimal(row['kg_bruto']),
+                                precio_por_kg=row['precio_por_kg'],
                             )
                         last_pk = entrada.pk
                 messages.success(request, 'Entrada registrada correctamente.')
@@ -429,7 +452,11 @@ def entrada_inventario_create(request):
 @login_required
 def entrada_inventario_detail(request, pk):
     entrada = get_object_or_404(EntradaInventario.objects.select_related('proveedor', 'clasificacion__producto').prefetch_related('pesadas'), pk=pk)
-    pesadas = entrada.pesadas.all()
+    pesadas = list(entrada.pesadas.all())
+    precio_entrada = entrada.precio_por_kg or Decimal('0')
+    for p in pesadas:
+        p.precio_mostrar = p.precio_por_kg if p.precio_por_kg is not None else precio_entrada
+        p.valor_mostrar = p.kg_neto * p.precio_mostrar
 
     # Actualizar precio si se envía
     if request.method == 'POST' and request.POST.get('form_type') == 'precio':
