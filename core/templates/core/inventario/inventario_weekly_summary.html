@@ -447,7 +447,8 @@
             <thead class="bg-light">
               <tr>
                 <th class="ps-4">Semana</th>
-                <th>Inventario</th>
+                <th>Viajes (compras)</th>
+                <th>Conteo (bodega)</th>
                 <th>Nómina</th>
                 <th class="text-end pe-4">Acciones</th>
               </tr>
@@ -468,9 +469,15 @@
                   </div>
                 </td>
                 <td>
-                  <div class="fw-semibold">{{ item.total_inventory_kg|floatformat:0 }} kg</div>
-                  {% if item.initial_inventory_kg %}
-                  <div class="small text-muted">Inicial: {{ item.initial_inventory_kg|floatformat:0 }} kg</div>
+                  <div class="fw-semibold">{{ item.viajes_kg|floatformat:0 }} kg</div>
+                  <div class="small text-muted">{{ item.viajes_count }} viaje{{ item.viajes_count|pluralize:"s" }}</div>
+                </td>
+                <td>
+                  {% if item.entradas_kg %}
+                  <div class="fw-semibold text-success">{{ item.entradas_kg|floatformat:0 }} kg</div>
+                  <div class="small text-muted">Conteo registrado</div>
+                  {% else %}
+                  <span class="badge bg-warning text-dark">Sin conteo</span>
                   {% endif %}
                 </td>
                 <td>
@@ -495,7 +502,7 @@
               </tr>
               {% empty %}
               <tr>
-                <td colspan="4">
+                <td colspan="5">
                   <div class="weekly-empty-state">
                     <i class="bi bi-calendar-x fs-1 d-block mb-2"></i>
                     No hay semanas registradas todavía.
